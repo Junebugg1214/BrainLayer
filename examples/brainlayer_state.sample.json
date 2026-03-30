@@ -1,0 +1,46 @@
+{
+  "working_state": [
+    {
+      "id": "working-1",
+      "content": "Current response_style: concise",
+      "priority": 0.95,
+      "status": "active",
+      "source_refs": ["episode-1", "belief-1"],
+      "updated_at": "2026-03-30T00:00:00+00:00"
+    }
+  ],
+  "episodes": [
+    {
+      "id": "episode-1",
+      "scenario": "preference_persistence",
+      "summary": "The user says: keep your answers concise and direct.",
+      "tags": ["preference", "response_style"],
+      "salience": 0.95,
+      "outcome": "captured preference",
+      "source_refs": [],
+      "timestamp": "2026-03-30T00:00:00+00:00"
+    }
+  ],
+  "beliefs": [
+    {
+      "id": "belief-1",
+      "key": "response_style",
+      "proposition": "The user prefers concise, direct responses.",
+      "value": "concise",
+      "confidence": 0.95,
+      "status": "active",
+      "evidence_episode_ids": ["episode-1"],
+      "updated_at": "2026-03-30T00:00:00+00:00"
+    }
+  ],
+  "autobiographical_state": [
+    {
+      "id": "autobio-1",
+      "summary": "Collaboration is strongest when replies stay aligned with the user's preferred response style: concise.",
+      "themes": ["communication-style", "user-model"],
+      "supporting_ids": ["episode-1", "belief-1"],
+      "updated_at": "2026-03-30T00:00:00+00:00"
+    }
+  ],
+  "procedures": []
+}

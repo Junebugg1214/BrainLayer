@@ -43,6 +43,9 @@ The main hypothesis is that agents become more coherent, adaptive, and useful wh
 - `docs/architecture.md`: proposed BrainLayer architecture
 - `docs/experiments.md`: hypotheses, tasks, and evaluation plan
 - `program.md`: Codex/autoresearch research prompt scaffold
+- `schemas/`: JSON Schemas for the core BrainLayer layers
+- `brainlayer/`: minimal Python prototype and benchmark harness
+- `examples/brainlayer_state.sample.json`: sample serialized BrainLayer state
 
 ## First Outcomes To Target
 
@@ -70,3 +73,26 @@ Use `program.md` as the working brief for Codex and start with a minimal prototy
 2. build a tiny simulation task suite
 3. compare it against a baseline memory agent
 4. keep only changes that improve measurable agent behavior
+
+## Minimal Prototype
+
+The repo now includes a dependency-light prototype with:
+
+- JSON Schema contracts for `working_state`, `episodes`, `beliefs`, `autobiographical_state`, and `procedures`
+- a tiny Python harness with three deterministic benchmark scenarios
+- three agents:
+  - `context_only`
+  - `naive_memory`
+  - `brainlayer`
+
+Run the seed benchmark suite with:
+
+```bash
+python3 scripts/run_benchmarks.py
+```
+
+To also dump serialized agent state for inspection:
+
+```bash
+python3 scripts/run_benchmarks.py --dump-states artifacts/states
+```

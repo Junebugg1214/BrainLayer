@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brainlayer.dev/schemas/brainlayer-state.schema.json",
+  "title": "BrainLayerState",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "working_state",
+    "episodes",
+    "beliefs",
+    "autobiographical_state",
+    "procedures"
+  ],
+  "properties": {
+    "working_state": {
+      "type": "array",
+      "items": {
+        "$ref": "working-item.schema.json"
+      }
+    },
+    "episodes": {
+      "type": "array",
+      "items": {
+        "$ref": "episode.schema.json"
+      }
+    },
+    "beliefs": {
+      "type": "array",
+      "items": {
+        "$ref": "belief.schema.json"
+      }
+    },
+    "autobiographical_state": {
+      "type": "array",
+      "items": {
+        "$ref": "autobio-note.schema.json"
+      }
+    },
+    "procedures": {
+      "type": "array",
+      "items": {
+        "$ref": "procedure.schema.json"
+      }
+    }
+  }
+}
