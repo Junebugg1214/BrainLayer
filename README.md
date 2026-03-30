@@ -79,13 +79,14 @@ Use `program.md` as the working brief for Codex and start with a minimal prototy
 The repo now includes a dependency-light prototype with:
 
 - JSON Schema contracts for `working_state`, `episodes`, `beliefs`, `autobiographical_state`, and `procedures`
-- a tiny Python harness with five deterministic benchmark scenarios
+- a tiny Python harness with six deterministic benchmark scenarios
 - three agents:
   - `context_only`
   - `naive_memory`
   - `brainlayer`
 - state validation and load/save helpers for persistent BrainLayer JSON files
 - a small `BrainLayerSession` wrapper for real agent loops
+- a consolidation/forgetting engine for promoting repeated signals and pruning low-value noise
 
 Run the seed benchmark suite with:
 
@@ -105,6 +106,12 @@ Validate a saved BrainLayer state file:
 python3 scripts/validate_state.py examples/brainlayer_state.sample.json
 ```
 
+Run consolidation and forgetting on a saved state file:
+
+```bash
+python3 scripts/consolidate_state.py examples/brainlayer_state.sample.json --output artifacts/consolidated_state.json
+```
+
 Use the persistence helpers in a real loop:
 
 ```python
@@ -121,5 +128,6 @@ session.observe(
     },
     salience=0.9,
 )
+session.consolidate()
 session.save("artifacts/live_state.json")
 ```

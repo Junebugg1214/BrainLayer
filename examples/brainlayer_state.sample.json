@@ -17,6 +17,11 @@
       "scenario": "preference_persistence",
       "summary": "The user says: keep your answers concise and direct.",
       "tags": ["preference", "response_style"],
+      "metadata": {
+        "key": "response_style",
+        "value": "concise",
+        "proposition": "The user prefers concise, direct responses."
+      },
       "salience": 0.95,
       "outcome": "captured preference",
       "source_refs": [],

@@ -9,6 +9,7 @@
     "scenario",
     "summary",
     "tags",
+    "metadata",
     "salience",
     "outcome",
     "source_refs",
@@ -27,6 +28,12 @@
     "tags": {
       "type": "array",
       "items": {
+        "type": "string"
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": {
         "type": "string"
       }
     },

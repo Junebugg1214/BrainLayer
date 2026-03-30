@@ -194,4 +194,44 @@ SCENARIOS: List[Scenario] = [
             ),
         ],
     ),
+    Scenario(
+        slug="hint_consolidation",
+        title="Hint Consolidation",
+        description="Can repeated weak signals consolidate into a stable preference belief?",
+        steps=[
+            Observation(
+                text="Across several turns, requests keep shrinking from full draft to short answer.",
+                memory_type="preference_hint",
+                payload={
+                    "key": "response_style",
+                    "value": "concise",
+                    "proposition": "The user likely prefers concise responses.",
+                },
+                salience=0.4,
+            ),
+            Observation(
+                text="The latest edits consistently cut long drafts down to the short version.",
+                memory_type="preference_hint",
+                payload={
+                    "key": "response_style",
+                    "value": "concise",
+                    "proposition": "The user likely prefers concise responses.",
+                },
+                salience=0.42,
+            ),
+            Observation(
+                text="The style guide note says to use title case headings.",
+                memory_type="noise",
+                payload={"value": "title case"},
+                salience=0.18,
+            ),
+            Query(
+                prompt="What response style should you infer for this user now?",
+                query_type="belief_lookup",
+                expected_answer="concise",
+                answer_key="value",
+                lookup_key="response_style",
+            ),
+        ],
+    ),
 ]

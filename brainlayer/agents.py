@@ -4,6 +4,7 @@ import re
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
+from .consolidation import ConsolidationConfig, ConsolidationEngine, ConsolidationReport
 from .models import BrainLayerState
 from .scenarios import Observation, Query
 
@@ -125,8 +126,16 @@ class NaiveMemoryAgent(BaseAgent):
 class BrainLayerAgent(BaseAgent):
     name = "brainlayer"
 
-    def __init__(self, state: BrainLayerState | None = None) -> None:
+    def __init__(
+        self,
+        state: BrainLayerState | None = None,
+        *,
+        auto_consolidate: bool = True,
+        consolidation_config: ConsolidationConfig | None = None,
+    ) -> None:
         self.state = state or BrainLayerState()
+        self.auto_consolidate = auto_consolidate
+        self.consolidation_engine = ConsolidationEngine(consolidation_config)
 
     def reset(self) -> None:
         self.state = BrainLayerState()
@@ -137,6 +146,7 @@ class BrainLayerAgent(BaseAgent):
                 scenario=scenario_slug,
                 summary=observation.text,
                 tags=[observation.memory_type, observation.payload["key"]],
+                metadata=observation.payload,
                 salience=observation.salience,
                 outcome="captured preference",
             )
@@ -172,6 +182,7 @@ class BrainLayerAgent(BaseAgent):
                 scenario=scenario_slug,
                 summary=observation.text,
                 tags=["lesson", observation.payload["trigger"]],
+                metadata=observation.payload,
                 salience=observation.salience,
                 outcome="failure lesson",
             )
@@ -196,6 +207,7 @@ class BrainLayerAgent(BaseAgent):
                 scenario=scenario_slug,
                 summary=observation.text,
                 tags=["goal", observation.payload["key"]],
+                metadata=observation.payload,
                 salience=observation.salience,
                 outcome="captured goal",
             )
@@ -213,6 +225,7 @@ class BrainLayerAgent(BaseAgent):
                 scenario=scenario_slug,
                 summary=observation.text,
                 tags=["relationship", observation.payload["key"]],
+                metadata=observation.payload,
                 salience=observation.salience,
                 outcome="updated relationship framing",
             )
@@ -237,15 +250,39 @@ class BrainLayerAgent(BaseAgent):
             )
             return
 
+        if observation.memory_type in {
+            "preference_hint",
+            "lesson_hint",
+            "goal_hint",
+            "relationship_hint",
+        }:
+            topic_key = observation.payload.get("key") or observation.payload.get("trigger", "signal")
+            self.state.record_episode(
+                scenario=scenario_slug,
+                summary=observation.text,
+                tags=[observation.memory_type, topic_key],
+                metadata=observation.payload,
+                salience=observation.salience,
+                outcome="captured candidate signal",
+            )
+            return
+
         self.state.record_episode(
             scenario=scenario_slug,
             summary=observation.text,
             tags=["noise"],
+            metadata=observation.payload,
             salience=observation.salience,
             outcome="ignored",
         )
 
+    def consolidate(self) -> ConsolidationReport:
+        return self.consolidation_engine.run(self.state)
+
     def answer(self, query: Query) -> AnswerRecord:
+        if self.auto_consolidate:
+            self.consolidate()
+
         if query.query_type == "belief_lookup":
             for belief in reversed(self.state.beliefs):
                 if belief.key == query.lookup_key and belief.status == "active":

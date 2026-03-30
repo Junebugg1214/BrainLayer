@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from .agents import AnswerRecord, BrainLayerAgent
+from .consolidation import ConsolidationConfig, ConsolidationReport
 from .models import BrainLayerState
 from .scenarios import Observation, Query
 from .storage import load_state, save_state
@@ -11,8 +12,18 @@ from .storage import load_state, save_state
 class BrainLayerSession:
     """Small stateful wrapper for using BrainLayer in a persistent agent loop."""
 
-    def __init__(self, state: BrainLayerState | None = None) -> None:
-        self.agent = BrainLayerAgent(state=state or BrainLayerState())
+    def __init__(
+        self,
+        state: BrainLayerState | None = None,
+        *,
+        auto_consolidate: bool = True,
+        consolidation_config: ConsolidationConfig | None = None,
+    ) -> None:
+        self.agent = BrainLayerAgent(
+            state=state or BrainLayerState(),
+            auto_consolidate=auto_consolidate,
+            consolidation_config=consolidation_config,
+        )
 
     @property
     def state(self) -> BrainLayerState:
@@ -60,6 +71,9 @@ class BrainLayerSession:
                 procedure_trigger=procedure_trigger,
             )
         )
+
+    def consolidate(self) -> ConsolidationReport:
+        return self.agent.consolidate()
 
     def save(self, path: str | Path, validate: bool = True) -> Path:
         return save_state(self.state, path, validate=validate)

@@ -77,7 +77,8 @@ def _validate_object(instance: Dict[str, Any], schema: Dict[str, Any], schema_na
             raise BrainLayerValidationError(f"{schema_name}: missing required key {key!r}")
 
     properties = schema.get("properties", {})
-    if schema.get("additionalProperties") is False:
+    additional_properties = schema.get("additionalProperties", True)
+    if additional_properties is False:
         unexpected = set(instance) - set(properties)
         if unexpected:
             extra = ", ".join(sorted(unexpected))
@@ -86,6 +87,8 @@ def _validate_object(instance: Dict[str, Any], schema: Dict[str, Any], schema_na
     for key, value in instance.items():
         if key in properties:
             _validate_instance(value, properties[key], schema_name)
+        elif isinstance(additional_properties, dict):
+            _validate_instance(value, additional_properties, schema_name)
 
 
 def _validate_array(instance: Any, schema: Dict[str, Any], schema_name: str) -> None:

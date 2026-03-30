@@ -44,6 +44,7 @@ class Episode:
     scenario: str
     summary: str
     tags: List[str]
+    metadata: Dict[str, str]
     salience: float
     outcome: str = ""
     source_refs: List[str] = field(default_factory=list)
@@ -56,6 +57,7 @@ class Episode:
             scenario=str(payload["scenario"]),
             summary=str(payload["summary"]),
             tags=[str(value) for value in payload["tags"]],
+            metadata={str(key): str(value) for key, value in payload["metadata"].items()},
             salience=float(payload["salience"]),
             outcome=str(payload["outcome"]),
             source_refs=[str(value) for value in payload["source_refs"]],
@@ -157,10 +159,11 @@ class BrainLayerState:
         source_refs: List[str],
     ) -> WorkingItem:
         for item in self.working_state:
-            if item.key == key and item.status == "active":
+            if item.key == key:
                 item.value = value
                 item.content = content
                 item.priority = priority
+                item.status = "active"
                 item.source_refs = list(source_refs)
                 item.updated_at = utc_now_iso()
                 return item
@@ -181,6 +184,7 @@ class BrainLayerState:
         scenario: str,
         summary: str,
         tags: List[str],
+        metadata: Dict[str, str],
         salience: float,
         outcome: str = "",
         source_refs: List[str] | None = None,
@@ -190,6 +194,7 @@ class BrainLayerState:
             scenario=scenario,
             summary=summary,
             tags=list(tags),
+            metadata=dict(metadata),
             salience=salience,
             outcome=outcome,
             source_refs=list(source_refs or []),
@@ -295,6 +300,14 @@ class BrainLayerState:
             ],
             "procedures": [asdict(item) for item in self.procedures],
         }
+
+    def forget_episodes(self, episode_ids: List[str]) -> int:
+        target_ids = set(episode_ids)
+        if not target_ids:
+            return 0
+        before = len(self.episodes)
+        self.episodes = [episode for episode in self.episodes if episode.id not in target_ids]
+        return before - len(self.episodes)
 
     @classmethod
     def from_dict(cls, payload: Dict[str, object]) -> "BrainLayerState":

@@ -16,7 +16,7 @@ class BenchmarkHarnessTests(unittest.TestCase):
     def test_brainlayer_agent_solves_all_seed_experiments(self) -> None:
         results = run_suite()
         brainlayer_results = [result for result in results if result.agent_name == "brainlayer"]
-        self.assertEqual(len(brainlayer_results), 5)
+        self.assertEqual(len(brainlayer_results), 6)
         self.assertTrue(all(result.passed for result in brainlayer_results))
 
     def test_brainlayer_state_schema_lists_all_layers(self) -> None:
