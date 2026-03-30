@@ -6,6 +6,8 @@
   "additionalProperties": false,
   "required": [
     "id",
+    "key",
+    "value",
     "summary",
     "themes",
     "supporting_ids",
@@ -13,6 +15,12 @@
   ],
   "properties": {
     "id": {
+      "type": "string"
+    },
+    "key": {
+      "type": "string"
+    },
+    "value": {
       "type": "string"
     },
     "summary": {

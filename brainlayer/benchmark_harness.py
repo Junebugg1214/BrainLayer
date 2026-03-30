@@ -14,6 +14,7 @@ from .agents import (
     NaiveMemoryAgent,
 )
 from .scenarios import Observation, Query, SCENARIOS, Scenario
+from .validation import validate_state_dict
 
 
 @dataclass
@@ -105,6 +106,8 @@ def render_report(results: Sequence[ScenarioResult]) -> str:
 def dump_states(results: Sequence[ScenarioResult], output_dir: Path) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     for result in results:
+        if result.agent_name == "brainlayer":
+            validate_state_dict(result.exported_state)
         filename = output_dir / f"{result.scenario_slug}.{result.agent_name}.json"
         filename.write_text(json.dumps(result.exported_state, indent=2) + "\n")
 

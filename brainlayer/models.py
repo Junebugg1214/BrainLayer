@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import re
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from typing import Dict, List
+
+
+ID_RE = re.compile(r"^(?P<prefix>[a-z_]+)-(?P<count>\d+)$")
 
 
 def utc_now_iso() -> str:
@@ -12,11 +16,26 @@ def utc_now_iso() -> str:
 @dataclass
 class WorkingItem:
     id: str
+    key: str
+    value: str
     content: str
     priority: float
     status: str = "active"
     source_refs: List[str] = field(default_factory=list)
     updated_at: str = field(default_factory=utc_now_iso)
+
+    @classmethod
+    def from_dict(cls, payload: Dict[str, object]) -> "WorkingItem":
+        return cls(
+            id=str(payload["id"]),
+            key=str(payload["key"]),
+            value=str(payload["value"]),
+            content=str(payload["content"]),
+            priority=float(payload["priority"]),
+            status=str(payload["status"]),
+            source_refs=[str(value) for value in payload["source_refs"]],
+            updated_at=str(payload["updated_at"]),
+        )
 
 
 @dataclass
@@ -30,6 +49,19 @@ class Episode:
     source_refs: List[str] = field(default_factory=list)
     timestamp: str = field(default_factory=utc_now_iso)
 
+    @classmethod
+    def from_dict(cls, payload: Dict[str, object]) -> "Episode":
+        return cls(
+            id=str(payload["id"]),
+            scenario=str(payload["scenario"]),
+            summary=str(payload["summary"]),
+            tags=[str(value) for value in payload["tags"]],
+            salience=float(payload["salience"]),
+            outcome=str(payload["outcome"]),
+            source_refs=[str(value) for value in payload["source_refs"]],
+            timestamp=str(payload["timestamp"]),
+        )
+
 
 @dataclass
 class Belief:
@@ -42,14 +74,41 @@ class Belief:
     evidence_episode_ids: List[str] = field(default_factory=list)
     updated_at: str = field(default_factory=utc_now_iso)
 
+    @classmethod
+    def from_dict(cls, payload: Dict[str, object]) -> "Belief":
+        return cls(
+            id=str(payload["id"]),
+            key=str(payload["key"]),
+            proposition=str(payload["proposition"]),
+            value=str(payload["value"]),
+            confidence=float(payload["confidence"]),
+            status=str(payload["status"]),
+            evidence_episode_ids=[str(value) for value in payload["evidence_episode_ids"]],
+            updated_at=str(payload["updated_at"]),
+        )
+
 
 @dataclass
 class AutobioNote:
     id: str
+    key: str
+    value: str
     summary: str
     themes: List[str]
     supporting_ids: List[str] = field(default_factory=list)
     updated_at: str = field(default_factory=utc_now_iso)
+
+    @classmethod
+    def from_dict(cls, payload: Dict[str, object]) -> "AutobioNote":
+        return cls(
+            id=str(payload["id"]),
+            key=str(payload["key"]),
+            value=str(payload["value"]),
+            summary=str(payload["summary"]),
+            themes=[str(value) for value in payload["themes"]],
+            supporting_ids=[str(value) for value in payload["supporting_ids"]],
+            updated_at=str(payload["updated_at"]),
+        )
 
 
 @dataclass
@@ -61,6 +120,18 @@ class Procedure:
     confidence: float
     derived_from: List[str] = field(default_factory=list)
     updated_at: str = field(default_factory=utc_now_iso)
+
+    @classmethod
+    def from_dict(cls, payload: Dict[str, object]) -> "Procedure":
+        return cls(
+            id=str(payload["id"]),
+            trigger=str(payload["trigger"]),
+            summary=str(payload["summary"]),
+            steps=[str(value) for value in payload["steps"]],
+            confidence=float(payload["confidence"]),
+            derived_from=[str(value) for value in payload["derived_from"]],
+            updated_at=str(payload["updated_at"]),
+        )
 
 
 @dataclass
@@ -77,14 +148,27 @@ class BrainLayerState:
         self._counters[prefix] = current
         return f"{prefix}-{current}"
 
-    def add_working_item(
+    def upsert_working_item(
         self,
+        key: str,
+        value: str,
         content: str,
         priority: float,
         source_refs: List[str],
     ) -> WorkingItem:
+        for item in self.working_state:
+            if item.key == key and item.status == "active":
+                item.value = value
+                item.content = content
+                item.priority = priority
+                item.source_refs = list(source_refs)
+                item.updated_at = utc_now_iso()
+                return item
+
         item = WorkingItem(
             id=self._next_id("working"),
+            key=key,
+            value=value,
             content=content,
             priority=priority,
             source_refs=list(source_refs),
@@ -147,20 +231,25 @@ class BrainLayerState:
 
     def upsert_autobio_note(
         self,
+        key: str,
+        value: str,
         summary: str,
         themes: List[str],
         supporting_ids: List[str],
     ) -> AutobioNote:
-        theme_key = tuple(sorted(themes))
         for note in self.autobiographical_state:
-            if tuple(sorted(note.themes)) == theme_key:
+            if note.key == key:
+                note.value = value
                 note.summary = summary
+                note.themes = list(themes)
                 note.supporting_ids = list(supporting_ids)
                 note.updated_at = utc_now_iso()
                 return note
 
         note = AutobioNote(
             id=self._next_id("autobio"),
+            key=key,
+            value=value,
             summary=summary,
             themes=list(themes),
             supporting_ids=list(supporting_ids),
@@ -206,3 +295,44 @@ class BrainLayerState:
             ],
             "procedures": [asdict(item) for item in self.procedures],
         }
+
+    @classmethod
+    def from_dict(cls, payload: Dict[str, object]) -> "BrainLayerState":
+        state = cls(
+            working_state=[
+                WorkingItem.from_dict(item) for item in payload.get("working_state", [])
+            ],
+            episodes=[Episode.from_dict(item) for item in payload.get("episodes", [])],
+            beliefs=[Belief.from_dict(item) for item in payload.get("beliefs", [])],
+            autobiographical_state=[
+                AutobioNote.from_dict(item)
+                for item in payload.get("autobiographical_state", [])
+            ],
+            procedures=[
+                Procedure.from_dict(item) for item in payload.get("procedures", [])
+            ],
+        )
+        state._rebuild_counters()
+        return state
+
+    def _rebuild_counters(self) -> None:
+        counters: Dict[str, int] = {}
+        all_ids = [
+            item.id for item in self.working_state
+        ] + [
+            item.id for item in self.episodes
+        ] + [
+            item.id for item in self.beliefs
+        ] + [
+            item.id for item in self.autobiographical_state
+        ] + [
+            item.id for item in self.procedures
+        ]
+        for item_id in all_ids:
+            match = ID_RE.match(item_id)
+            if not match:
+                continue
+            prefix = match.group("prefix")
+            count = int(match.group("count"))
+            counters[prefix] = max(counters.get(prefix, 0), count)
+        self._counters = counters

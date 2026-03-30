@@ -128,4 +128,70 @@ SCENARIOS: List[Scenario] = [
             ),
         ],
     ),
+    Scenario(
+        slug="goal_focus",
+        title="Goal-Focused Working State",
+        description="Can the agent keep the primary task goal distinct from nearby citation-related noise?",
+        steps=[
+            Observation(
+                text="Primary goal for this task: preserve source citations in every answer.",
+                memory_type="goal",
+                payload={
+                    "key": "primary_goal",
+                    "value": "preserve source citations",
+                    "summary": "The current primary goal is to preserve source citations in every answer.",
+                },
+                salience=0.93,
+            ),
+            Observation(
+                text="Current task goal: fix citation formatting before publishing.",
+                memory_type="noise",
+                payload={"value": "fix citation formatting"},
+                salience=0.3,
+            ),
+            Query(
+                prompt="What is the current primary goal for this task?",
+                query_type="working_lookup",
+                expected_answer="preserve source citations",
+                answer_key="value",
+                lookup_key="primary_goal",
+            ),
+        ],
+    ),
+    Scenario(
+        slug="autobio_continuity",
+        title="Autobiographical Continuity",
+        description="Can the agent revise the collaboration mode and keep the latest relationship framing?",
+        steps=[
+            Observation(
+                text="At first, act like a task executor for this project.",
+                memory_type="relationship",
+                payload={
+                    "key": "collaboration_mode",
+                    "value": "task executor",
+                    "summary": "The collaboration mode is task executor.",
+                    "themes": "relationship,project-mode",
+                },
+                salience=0.65,
+            ),
+            Observation(
+                text="Update that framing: we are research partners exploring BrainLayer together.",
+                memory_type="relationship",
+                payload={
+                    "key": "collaboration_mode",
+                    "value": "research partner",
+                    "summary": "The collaboration mode is research partner.",
+                    "themes": "relationship,research-mode",
+                },
+                salience=0.97,
+            ),
+            Query(
+                prompt="What collaboration mode should define this project right now?",
+                query_type="autobio_lookup",
+                expected_answer="research partner",
+                answer_key="value",
+                lookup_key="collaboration_mode",
+            ),
+        ],
+    ),
 ]

@@ -2,6 +2,8 @@
   "working_state": [
     {
       "id": "working-1",
+      "key": "response_style",
+      "value": "concise",
       "content": "Current response_style: concise",
       "priority": 0.95,
       "status": "active",
@@ -36,6 +38,8 @@
   "autobiographical_state": [
     {
       "id": "autobio-1",
+      "key": "collaboration_tone",
+      "value": "concise",
       "summary": "Collaboration is strongest when replies stay aligned with the user's preferred response style: concise.",
       "themes": ["communication-style", "user-model"],
       "supporting_ids": ["episode-1", "belief-1"],

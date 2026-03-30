@@ -125,6 +125,9 @@ class NaiveMemoryAgent(BaseAgent):
 class BrainLayerAgent(BaseAgent):
     name = "brainlayer"
 
+    def __init__(self, state: BrainLayerState | None = None) -> None:
+        self.state = state or BrainLayerState()
+
     def reset(self) -> None:
         self.state = BrainLayerState()
 
@@ -144,13 +147,17 @@ class BrainLayerAgent(BaseAgent):
                 confidence=observation.salience,
                 evidence_episode_ids=[episode.id],
             )
-            self.state.add_working_item(
+            self.state.upsert_working_item(
+                key=belief.key,
+                value=belief.value,
                 content=f"Current {belief.key}: {belief.value}",
                 priority=observation.salience,
                 source_refs=[episode.id, belief.id],
             )
             if belief.key == "response_style":
                 self.state.upsert_autobio_note(
+                    key="collaboration_tone",
+                    value=belief.value,
                     summary=(
                         "Collaboration is strongest when replies stay aligned with the "
                         f"user's preferred response style: {belief.value}."
@@ -175,10 +182,58 @@ class BrainLayerAgent(BaseAgent):
                 confidence=observation.salience,
                 derived_from=[episode.id],
             )
-            self.state.add_working_item(
+            self.state.upsert_working_item(
+                key=f"procedure:{procedure.trigger}",
+                value=procedure.steps[0],
                 content=f"When {procedure.trigger}, {procedure.steps[0]}",
                 priority=observation.salience,
                 source_refs=[episode.id, procedure.id],
+            )
+            return
+
+        if observation.memory_type == "goal":
+            episode = self.state.record_episode(
+                scenario=scenario_slug,
+                summary=observation.text,
+                tags=["goal", observation.payload["key"]],
+                salience=observation.salience,
+                outcome="captured goal",
+            )
+            self.state.upsert_working_item(
+                key=observation.payload["key"],
+                value=observation.payload["value"],
+                content=observation.payload["summary"],
+                priority=observation.salience,
+                source_refs=[episode.id],
+            )
+            return
+
+        if observation.memory_type == "relationship":
+            episode = self.state.record_episode(
+                scenario=scenario_slug,
+                summary=observation.text,
+                tags=["relationship", observation.payload["key"]],
+                salience=observation.salience,
+                outcome="updated relationship framing",
+            )
+            themes = [
+                value.strip()
+                for value in observation.payload.get("themes", "").split(",")
+                if value.strip()
+            ]
+            autobio = self.state.upsert_autobio_note(
+                key=observation.payload["key"],
+                value=observation.payload["value"],
+                summary=observation.payload["summary"],
+                themes=themes or ["relationship"],
+                supporting_ids=[episode.id],
+            )
+            self.state.upsert_working_item(
+                key=autobio.key,
+                value=autobio.value,
+                content=autobio.summary,
+                priority=observation.salience,
+                source_refs=[episode.id, autobio.id],
             )
             return
 
@@ -208,6 +263,24 @@ class BrainLayerAgent(BaseAgent):
                         evidence=f"Procedure {procedure.id} from {procedure.derived_from}",
                     )
             return AnswerRecord(answer="unknown", evidence="No matching procedure found.")
+
+        if query.query_type == "working_lookup":
+            for item in reversed(self.state.working_state):
+                if item.key == query.lookup_key and item.status == "active":
+                    return AnswerRecord(
+                        answer=item.value,
+                        evidence=f"working item {item.id} from {item.source_refs}",
+                    )
+            return AnswerRecord(answer="unknown", evidence="No active working item found.")
+
+        if query.query_type == "autobio_lookup":
+            for note in reversed(self.state.autobiographical_state):
+                if note.key == query.lookup_key:
+                    return AnswerRecord(
+                        answer=note.value,
+                        evidence=f"autobio note {note.id} from {note.supporting_ids}",
+                    )
+            return AnswerRecord(answer="unknown", evidence="No autobiographical note found.")
 
         return AnswerRecord(answer="unknown", evidence="Unsupported query type.")
 
