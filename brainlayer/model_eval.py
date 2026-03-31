@@ -8,6 +8,14 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Sequence
 
 from .agents import BrainLayerFeatureConfig
+from .benchmark_harness import (
+    append_csv,
+    get_git_commit,
+    slugify_label,
+    utc_now_compact,
+    utc_now_iso,
+    write_csv,
+)
 from .llm import LLMAdapter, ModelMessage, ModelResponse
 from .runtime import BrainLayerRuntime
 from .session import BrainLayerSession
@@ -560,6 +568,150 @@ def render_model_eval_report(results: Sequence[ModelEvalResult]) -> str:
     return "\n".join(lines)
 
 
+def serializable_model_eval_result(result: ModelEvalResult) -> Dict[str, object]:
+    payload: Dict[str, object] = {
+        "scenario_slug": result.scenario_slug,
+        "checkpoint": result.checkpoint,
+        "case_label": f"{result.scenario_slug}/{result.checkpoint}",
+        "runtime_name": result.runtime_name,
+        "expected": result.expected,
+        "actual": result.actual,
+        "passed": result.passed,
+        "retrieved_layers": ",".join(result.retrieved_layers),
+    }
+    for key, value in sorted(result.state_metrics.items()):
+        payload[f"metric_{key}"] = value
+    return payload
+
+
+def serializable_model_eval_summary(summary: ModelEvalSummary) -> Dict[str, object]:
+    payload: Dict[str, object] = {
+        "runtime_name": summary.runtime_name,
+        "passed": summary.passed,
+        "total": summary.total,
+        "pass_rate": summary.pass_rate,
+    }
+    for key, value in sorted(summary.avg_metrics.items()):
+        payload[f"avg_{key}"] = value
+    return payload
+
+
+def build_model_eval_metadata(
+    results: Sequence[ModelEvalResult],
+    *,
+    include_ablations: bool,
+    label: str | None,
+) -> Dict[str, object]:
+    timestamp = utc_now_compact()
+    run_id = timestamp if not label else f"{timestamp}-{slugify_label(label)}"
+    return {
+        "run_id": run_id,
+        "generated_at_utc": utc_now_iso(),
+        "git_commit": get_git_commit(),
+        "include_ablations": include_ablations,
+        "label": label or "",
+        "scenario_count": len({result.scenario_slug for result in results}),
+        "checkpoint_count": len({(result.scenario_slug, result.checkpoint) for result in results}),
+        "runtime_count": len({result.runtime_name for result in results}),
+    }
+
+
+def render_model_eval_x_post(
+    summaries: Sequence[ModelEvalSummary],
+    *,
+    include_ablations: bool,
+    label: str | None,
+) -> str:
+    summary_by_name = {summary.runtime_name: summary for summary in summaries}
+    model_loop = summary_by_name.get("model_loop")
+    if model_loop is None:
+        return "BrainLayer model-loop eval completed."
+
+    prefix = "BrainLayer model-loop eval"
+    if label:
+        prefix = f"BrainLayer model-loop eval ({label})"
+
+    parts = [f"{prefix}: full runtime {model_loop.passed}/{model_loop.total}."]
+
+    if include_ablations:
+        no_consolidation = summary_by_name.get("model_loop_no_consolidation")
+        no_autobio = summary_by_name.get("model_loop_no_autobio")
+        no_working_state = summary_by_name.get("model_loop_no_working_state")
+        no_forgetting = summary_by_name.get("model_loop_no_forgetting")
+        if no_consolidation and no_autobio and no_working_state and no_forgetting:
+            parts.append(
+                "Ablations:"
+                f" no_consolidation {no_consolidation.passed}/{no_consolidation.total},"
+                f" no_autobio {no_autobio.passed}/{no_autobio.total},"
+                f" no_working_state {no_working_state.passed}/{no_working_state.total}."
+            )
+            parts.append(
+                "No-forgetting stayed"
+                f" {no_forgetting.passed}/{no_forgetting.total}"
+                f" but retained more state"
+                f" ({no_forgetting.avg_metrics.get('total_records', 0.0):.1f}"
+                f" vs {model_loop.avg_metrics.get('total_records', 0.0):.1f} avg records)."
+            )
+
+    return " ".join(parts)
+
+
+def export_model_eval_results(
+    results: Sequence[ModelEvalResult],
+    export_root: Path,
+    *,
+    include_ablations: bool,
+    label: str | None = None,
+) -> Path:
+    summaries = summarize_model_eval_results(results)
+    metadata = build_model_eval_metadata(
+        results,
+        include_ablations=include_ablations,
+        label=label,
+    )
+    run_dir = export_root / str(metadata["run_id"])
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    result_rows = [serializable_model_eval_result(result) for result in results]
+    summary_rows = [serializable_model_eval_summary(summary) for summary in summaries]
+    x_post = render_model_eval_x_post(
+        summaries,
+        include_ablations=include_ablations,
+        label=label,
+    )
+
+    payload = {
+        "metadata": metadata,
+        "summary": summary_rows,
+        "results": result_rows,
+        "x_post": x_post,
+    }
+
+    (run_dir / "results.json").write_text(json.dumps(payload, indent=2) + "\n")
+    write_csv(run_dir / "results.csv", result_rows)
+    write_csv(run_dir / "summary.csv", summary_rows)
+    (run_dir / "x_post.txt").write_text(x_post + "\n")
+
+    history_rows = []
+    for row in summary_rows:
+        history_rows.append(
+            {
+                "run_id": metadata["run_id"],
+                "generated_at_utc": metadata["generated_at_utc"],
+                "git_commit": metadata["git_commit"],
+                "label": metadata["label"],
+                "include_ablations": metadata["include_ablations"],
+                **row,
+            }
+        )
+
+    append_csv(export_root / "model_eval_history.csv", history_rows)
+    with (export_root / "model_eval_history.jsonl").open("a") as handle:
+        handle.write(json.dumps(payload) + "\n")
+
+    return run_dir
+
+
 def dump_model_eval_states(results: Sequence[ModelEvalResult], output_dir: Path) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     for result in results:
@@ -582,12 +734,32 @@ def main(argv: Sequence[str] | None = None) -> int:
         type=Path,
         help="Optional directory for writing state snapshots at each checkpoint.",
     )
+    parser.add_argument(
+        "--export-results",
+        type=Path,
+        help="Write per-run CSV/JSON summaries into DIR and append model-loop history files there.",
+    )
+    parser.add_argument(
+        "--label",
+        help="Optional label to attach to exported model-loop eval runs for later comparison.",
+    )
     args = parser.parse_args(argv)
 
-    results = run_model_eval_suite(include_ablations=not args.core_only)
+    include_ablations = not args.core_only
+    results = run_model_eval_suite(include_ablations=include_ablations)
     if args.dump_states:
         dump_model_eval_states(results, args.dump_states)
     print(render_model_eval_report(results))
+    if args.export_results:
+        run_dir = export_model_eval_results(
+            results,
+            args.export_results,
+            include_ablations=include_ablations,
+            label=args.label,
+        )
+        print("")
+        print(f"Model-loop exports written to {run_dir}")
+        print(f"X post saved to {run_dir / 'x_post.txt'}")
     return 0
 
 
@@ -598,7 +770,9 @@ __all__ = [
     "ModelEvalScenario",
     "ModelEvalSummary",
     "ModelEvalTurn",
+    "export_model_eval_results",
     "dump_model_eval_states",
+    "render_model_eval_x_post",
     "render_model_eval_report",
     "run_model_eval_scenario",
     "run_model_eval_suite",

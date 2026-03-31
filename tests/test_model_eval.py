@@ -1,8 +1,10 @@
+import json
+import tempfile
 import subprocess
 import unittest
 from pathlib import Path
 
-from brainlayer.model_eval import run_model_eval_suite
+from brainlayer.model_eval import export_model_eval_results, run_model_eval_suite
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -100,6 +102,30 @@ class ModelEvalTests(unittest.TestCase):
 
         self.assertIn("Model-Backed BrainLayer Eval Report", completed.stdout)
         self.assertIn("model_loop: 8/8", completed.stdout)
+
+    def test_export_model_eval_results_writes_csv_json_history_and_x_post(self) -> None:
+        results = run_model_eval_suite(include_ablations=False)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            export_root = Path(tmpdir) / "exports"
+            run_dir = export_model_eval_results(
+                results,
+                export_root,
+                include_ablations=False,
+                label="smoke",
+            )
+
+            self.assertTrue((run_dir / "results.json").exists())
+            self.assertTrue((run_dir / "results.csv").exists())
+            self.assertTrue((run_dir / "summary.csv").exists())
+            self.assertTrue((run_dir / "x_post.txt").exists())
+            self.assertTrue((export_root / "model_eval_history.csv").exists())
+            self.assertTrue((export_root / "model_eval_history.jsonl").exists())
+
+            payload = json.loads((run_dir / "results.json").read_text())
+            self.assertEqual(payload["metadata"]["label"], "smoke")
+            self.assertFalse(payload["metadata"]["include_ablations"])
+            self.assertIn("BrainLayer model-loop eval", payload["x_post"])
 
 
 if __name__ == "__main__":

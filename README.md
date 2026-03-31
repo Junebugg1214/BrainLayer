@@ -205,6 +205,12 @@ Run only the full model-backed runtime without ablations:
 python3 scripts/run_model_evals.py --core-only
 ```
 
+Export a timestamped model-loop eval run with CSV, JSON, append-only history, and an X-ready post:
+
+```bash
+python3 scripts/run_model_evals.py --export-results artifacts/model_eval_runs --label contradiction-v1
+```
+
 These model-loop evals focus on the cases where BrainLayer should matter most:
 
 - explicit preference revision after contradiction
@@ -219,3 +225,11 @@ They use a deterministic adapter over the real runtime path, which means the eva
 - model-style JSON output parsing
 - memory write-back into BrainLayer
 - later retrieval after revision and consolidation
+
+Model-loop eval exports produce:
+
+- `results.json`
+- `results.csv`
+- `summary.csv`
+- `x_post.txt`
+- append-only `model_eval_history.csv` and `model_eval_history.jsonl` for cross-run tracking
