@@ -283,3 +283,53 @@ The natural suite is aimed at the more realistic research question: can a model 
 
 - `extraction`: did the runtime store the right belief, goal, relationship note, or procedure?
 - `behavior`: did the later answer reflect the right state?
+
+Run both model-backed suites across a matrix of configs:
+
+```bash
+python3 scripts/run_model_matrix.py \
+  --config examples/model_matrix.sample.json
+```
+
+Add ablations across every config when you want the full comparison grid:
+
+```bash
+python3 scripts/run_model_matrix.py \
+  --config examples/model_matrix.sample.json \
+  --with-ablations
+```
+
+Export a timestamped matrix run with case rows, suite summaries, a leaderboard, append-only history, and an X-ready post:
+
+```bash
+python3 scripts/run_model_matrix.py \
+  --config examples/model_matrix.sample.json \
+  --export-results artifacts/matrix_runs \
+  --label matrix-v1
+```
+
+Dump the exported BrainLayer state for each matrix case:
+
+```bash
+python3 scripts/run_model_matrix.py \
+  --config examples/model_matrix.sample.json \
+  --dump-states artifacts/matrix_states
+```
+
+The sample config includes enabled heuristic entries plus a disabled live example you can turn on by setting `enabled` to `true` and exporting `OPENAI_API_KEY`.
+
+Matrix exports produce:
+
+- `results.json`
+- `results.csv`
+- `summary.csv`
+- `leaderboard.csv`
+- `x_post.txt`
+- append-only `matrix_history.csv` and `matrix_history.jsonl`
+
+The matrix runner is the easiest way to compare multiple models or providers on the same BrainLayer workloads, with shared reporting across:
+
+- contradiction and revision
+- natural-conversation extraction
+- later behavior grounded in BrainLayer state
+- reliability signals like parse failures, empty answers, latency, and token usage

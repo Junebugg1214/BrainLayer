@@ -1,0 +1,21 @@
+{
+  "entries": [
+    {
+      "name": "heuristic-baseline",
+      "mode": "heuristic",
+      "enabled": true
+    },
+    {
+      "name": "heuristic-repeat",
+      "mode": "heuristic",
+      "enabled": true
+    },
+    {
+      "name": "live-gpt41-mini",
+      "mode": "live",
+      "provider_name": "openai_compatible",
+      "model": "gpt-4.1-mini",
+      "enabled": false
+    }
+  ]
+}
