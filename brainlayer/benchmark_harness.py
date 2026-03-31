@@ -21,6 +21,7 @@ from .validation import validate_state_dict
 @dataclass
 class ScenarioResult:
     scenario_slug: str
+    checkpoint: str
     agent_name: str
     expected: str
     actual: str
@@ -103,33 +104,30 @@ def run_scenario(scenario: Scenario, agents: Sequence[BaseAgent]) -> List[Scenar
     results: List[ScenarioResult] = []
     for agent in agents:
         agent.reset()
-        answer: AnswerRecord | None = None
-        query_step: Query | None = None
 
         for step in scenario.steps:
             if isinstance(step, Observation):
                 agent.observe(scenario.slug, step)
-            else:
-                query_step = step
-                answer = agent.answer(step)
+                continue
 
-        if not answer or not query_step:
-            raise ValueError(f"Scenario {scenario.slug} is missing a query step.")
-
-        exported_state = agent.export_state()
-        results.append(
-            ScenarioResult(
-                scenario_slug=scenario.slug,
-                agent_name=agent.name,
-                expected=query_step.expected_answer,
-                actual=answer.answer,
-                passed=normalize_answer(answer.answer)
-                == normalize_answer(query_step.expected_answer),
-                evidence=answer.evidence,
-                exported_state=exported_state,
-                state_metrics=collect_state_metrics(agent.name, exported_state),
+            answer = agent.answer(step)
+            exported_state = agent.export_state()
+            results.append(
+                ScenarioResult(
+                    scenario_slug=scenario.slug,
+                    checkpoint=step.checkpoint,
+                    agent_name=agent.name,
+                    expected=step.expected_answer,
+                    actual=answer.answer,
+                    passed=normalize_answer(answer.answer)
+                    == normalize_answer(step.expected_answer),
+                    evidence=answer.evidence,
+                    exported_state=exported_state,
+                    state_metrics=collect_state_metrics(agent.name, exported_state),
+                )
             )
-        )
+    if not results:
+        raise ValueError(f"Scenario {scenario.slug} is missing a query step.")
     return results
 
 
@@ -162,8 +160,11 @@ def render_report(results: Sequence[ScenarioResult]) -> str:
         for key, value in result.state_metrics.items():
             agent_metric_totals[key] = agent_metric_totals.get(key, 0.0) + value
         status = "PASS" if result.passed else "FAIL"
+        case_label = result.scenario_slug
+        if result.checkpoint != "final":
+            case_label = f"{case_label}/{result.checkpoint}"
         lines.append(
-            f"[{status}] {result.agent_name} on {result.scenario_slug}: "
+            f"[{status}] {result.agent_name} on {case_label}: "
             f"expected={result.expected!r}, actual={result.actual!r}"
         )
         lines.append(f"        evidence: {result.evidence}")
@@ -192,7 +193,7 @@ def dump_states(results: Sequence[ScenarioResult], output_dir: Path) -> None:
     for result in results:
         if result.agent_name.startswith("brainlayer"):
             validate_state_dict(result.exported_state)
-        filename = output_dir / f"{result.scenario_slug}.{result.agent_name}.json"
+        filename = output_dir / f"{result.scenario_slug}.{result.checkpoint}.{result.agent_name}.json"
         filename.write_text(json.dumps(result.exported_state, indent=2) + "\n")
 
 

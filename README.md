@@ -79,7 +79,7 @@ Use `program.md` as the working brief for Codex and start with a minimal prototy
 The repo now includes a dependency-light prototype with:
 
 - JSON Schema contracts for `working_state`, `episodes`, `beliefs`, `autobiographical_state`, and `procedures`
-- a tiny Python harness with six deterministic benchmark scenarios
+- a tiny Python harness with short-form and long-horizon deterministic benchmark scenarios
 - three core agents:
   - `context_only`
   - `naive_memory`
@@ -104,6 +104,13 @@ Run only the core baseline set:
 ```bash
 python3 scripts/run_benchmarks.py --core-only
 ```
+
+The benchmark report now includes:
+
+- short scenarios for isolated capability checks
+- long-horizon scenarios with multiple checkpoints
+- ablation results for `no_consolidation`, `no_forgetting`, `no_autobio`, and `no_working_state`
+- compactness signals like average retained records and average retained episodes
 
 To also dump serialized agent state for inspection:
 

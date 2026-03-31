@@ -18,6 +18,7 @@ class Query:
     query_type: str
     expected_answer: str
     answer_key: str
+    checkpoint: str = "final"
     lookup_key: str = ""
     procedure_trigger: str = ""
 
@@ -31,6 +32,15 @@ class Scenario:
     title: str
     description: str
     steps: List[Step]
+
+
+def noise_observation(text: str, value: str, salience: float = 0.15) -> Observation:
+    return Observation(
+        text=text,
+        memory_type="noise",
+        payload={"value": value},
+        salience=salience,
+    )
 
 
 SCENARIOS: List[Scenario] = [
@@ -231,6 +241,209 @@ SCENARIOS: List[Scenario] = [
                 expected_answer="concise",
                 answer_key="value",
                 lookup_key="response_style",
+            ),
+        ],
+    ),
+    Scenario(
+        slug="long_horizon_preference_revision",
+        title="Long-Horizon Preference Revision",
+        description="Can the agent retain an early style preference, then revise it correctly after many noisy turns?",
+        steps=[
+            Observation(
+                text="The user starts by saying: keep answers concise and direct.",
+                memory_type="preference",
+                payload={
+                    "key": "response_style",
+                    "value": "concise",
+                    "proposition": "The user prefers concise, direct responses.",
+                },
+                salience=0.92,
+            ),
+            noise_observation(
+                "The answer style guide for headings says to use title case headings.",
+                "title case headings",
+            ),
+            noise_observation(
+                "The appendix notes say to keep long code blocks intact.",
+                "long code blocks",
+                0.18,
+            ),
+            noise_observation(
+                "The answer style notes for tables say to use compact borders.",
+                "compact borders",
+                0.17,
+            ),
+            Query(
+                prompt="What answer style should you use at this stage?",
+                query_type="belief_lookup",
+                expected_answer="concise",
+                answer_key="value",
+                checkpoint="midpoint",
+                lookup_key="response_style",
+            ),
+            noise_observation(
+                "The benchmark summary should mention latency deltas.",
+                "latency deltas",
+                0.14,
+            ),
+            Observation(
+                text="Later, the user updates the instruction: use brief answers unless deeper detail is requested.",
+                memory_type="correction",
+                payload={
+                    "key": "response_style",
+                    "value": "brief",
+                    "proposition": "The user now prefers brief answers by default.",
+                },
+                salience=0.97,
+            ),
+            noise_observation(
+                "The answer style guide for figure captions says to use italic labels.",
+                "italic labels",
+                0.18,
+            ),
+            noise_observation(
+                "The answer style notes for charts say to use muted colors.",
+                "muted colors",
+                0.16,
+            ),
+            Query(
+                prompt="What answer style should you use right now?",
+                query_type="belief_lookup",
+                expected_answer="brief",
+                answer_key="value",
+                checkpoint="final_revision",
+                lookup_key="response_style",
+            ),
+        ],
+    ),
+    Scenario(
+        slug="long_horizon_project_reuse",
+        title="Long-Horizon Project Reuse",
+        description="Can the agent consolidate repeated release lessons and keep using them after many unrelated release tasks?",
+        steps=[
+            Observation(
+                text="From a prior failed release: check GitHub authentication before retrying.",
+                memory_type="lesson_hint",
+                payload={
+                    "trigger": "retry_release",
+                    "action": "check authentication",
+                    "summary": "Before retrying a release, confirm GitHub auth first.",
+                },
+                salience=0.41,
+            ),
+            noise_observation(
+                "The release action items say to mention benchmark deltas.",
+                "mention benchmark deltas",
+            ),
+            noise_observation(
+                "The release action items say to polish the landing page copy.",
+                "polish landing page copy",
+                0.17,
+            ),
+            Observation(
+                text="Another failed release note repeats the same lesson: check GitHub authentication first.",
+                memory_type="lesson_hint",
+                payload={
+                    "trigger": "retry_release",
+                    "action": "check authentication",
+                    "summary": "Before retrying a release, confirm GitHub auth first.",
+                },
+                salience=0.44,
+            ),
+            noise_observation(
+                "The release action for docs is to fix broken links.",
+                "fix broken links",
+                0.16,
+            ),
+            Query(
+                prompt="Before retrying the release, what should you do first?",
+                query_type="procedure_lookup",
+                expected_answer="check authentication",
+                answer_key="action",
+                checkpoint="midpoint",
+                procedure_trigger="retry_release",
+            ),
+            noise_observation(
+                "The release action list says to refresh hero screenshots.",
+                "refresh hero screenshots",
+                0.14,
+            ),
+            noise_observation(
+                "The release action list says to update the FAQ entry.",
+                "update faq entry",
+                0.13,
+            ),
+            Query(
+                prompt="Before retrying the release, what should you do first?",
+                query_type="procedure_lookup",
+                expected_answer="check authentication",
+                answer_key="action",
+                checkpoint="late_recall",
+                procedure_trigger="retry_release",
+            ),
+        ],
+    ),
+    Scenario(
+        slug="long_horizon_collaboration_continuity",
+        title="Long-Horizon Collaboration Continuity",
+        description="Can the agent preserve and later revise the collaboration framing across a longer interaction history?",
+        steps=[
+            Observation(
+                text="At the start, the collaboration mode is task executor.",
+                memory_type="relationship",
+                payload={
+                    "key": "collaboration_mode",
+                    "value": "task executor",
+                    "summary": "The collaboration mode is task executor.",
+                    "themes": "relationship,execution-mode",
+                },
+                salience=0.7,
+            ),
+            noise_observation(
+                "The collaboration mode for the weekly report is checklist driven.",
+                "checklist driven",
+            ),
+            Query(
+                prompt="What collaboration mode defines the project right now?",
+                query_type="autobio_lookup",
+                expected_answer="task executor",
+                answer_key="value",
+                checkpoint="early_frame",
+                lookup_key="collaboration_mode",
+            ),
+            noise_observation(
+                "The collaboration mode for status updates is bullet first.",
+                "bullet first",
+                0.16,
+            ),
+            Observation(
+                text="Later, reframe the partnership: we are research partners exploring BrainLayer together.",
+                memory_type="relationship",
+                payload={
+                    "key": "collaboration_mode",
+                    "value": "research partner",
+                    "summary": "The collaboration mode is research partner.",
+                    "themes": "relationship,research-mode",
+                },
+                salience=0.98,
+            ),
+            noise_observation(
+                "The collaboration mode for slide styling is light background.",
+                "light background",
+                0.14,
+            ),
+            noise_observation(
+                "The collaboration mode for agenda notes is numbered sections.",
+                "numbered sections",
+                0.13,
+            ),
+            Query(
+                prompt="What collaboration mode should define the project right now?",
+                query_type="autobio_lookup",
+                expected_answer="research partner",
+                answer_key="value",
+                checkpoint="late_frame",
+                lookup_key="collaboration_mode",
             ),
         ],
     ),

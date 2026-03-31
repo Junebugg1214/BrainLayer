@@ -16,21 +16,39 @@ class BenchmarkHarnessTests(unittest.TestCase):
     def test_brainlayer_agent_solves_all_seed_experiments(self) -> None:
         results = run_suite()
         brainlayer_results = [result for result in results if result.agent_name == "brainlayer"]
-        self.assertEqual(len(brainlayer_results), 6)
+        self.assertEqual(len(brainlayer_results), 12)
         self.assertTrue(all(result.passed for result in brainlayer_results))
 
     def test_ablation_variants_show_targeted_regressions(self) -> None:
         results = run_suite()
 
-        def lookup(agent_name: str, scenario_slug: str) -> object:
+        def lookup(agent_name: str, scenario_slug: str, checkpoint: str = "final") -> object:
             for result in results:
-                if result.agent_name == agent_name and result.scenario_slug == scenario_slug:
+                if (
+                    result.agent_name == agent_name
+                    and result.scenario_slug == scenario_slug
+                    and result.checkpoint == checkpoint
+                ):
                     return result
-            self.fail(f"Missing result for {agent_name} on {scenario_slug}")
+            self.fail(f"Missing result for {agent_name} on {scenario_slug}/{checkpoint}")
 
         self.assertFalse(lookup("brainlayer_no_consolidation", "hint_consolidation").passed)
         self.assertFalse(lookup("brainlayer_no_autobio", "autobio_continuity").passed)
         self.assertFalse(lookup("brainlayer_no_working_state", "goal_focus").passed)
+        self.assertFalse(
+            lookup(
+                "brainlayer_no_consolidation",
+                "long_horizon_project_reuse",
+                "midpoint",
+            ).passed
+        )
+        self.assertFalse(
+            lookup(
+                "brainlayer_no_autobio",
+                "long_horizon_collaboration_continuity",
+                "late_frame",
+            ).passed
+        )
 
     def test_no_forgetting_retains_more_state_than_full_brainlayer(self) -> None:
         results = run_suite()
@@ -38,11 +56,16 @@ class BenchmarkHarnessTests(unittest.TestCase):
         full_result = None
         no_forgetting_result = None
         for result in results:
-            if result.agent_name == "brainlayer" and result.scenario_slug == "hint_consolidation":
+            if (
+                result.agent_name == "brainlayer"
+                and result.scenario_slug == "long_horizon_project_reuse"
+                and result.checkpoint == "late_recall"
+            ):
                 full_result = result
             if (
                 result.agent_name == "brainlayer_no_forgetting"
-                and result.scenario_slug == "hint_consolidation"
+                and result.scenario_slug == "long_horizon_project_reuse"
+                and result.checkpoint == "late_recall"
             ):
                 no_forgetting_result = result
 
@@ -51,6 +74,34 @@ class BenchmarkHarnessTests(unittest.TestCase):
         self.assertLess(
             full_result.state_metrics["episodes"],
             no_forgetting_result.state_metrics["episodes"],
+        )
+
+    def test_long_horizon_checkpoints_land_correctly(self) -> None:
+        results = run_suite(include_ablations=False)
+        lookup = {
+            (result.scenario_slug, result.checkpoint, result.agent_name): result
+            for result in results
+        }
+
+        self.assertTrue(
+            lookup[
+                ("long_horizon_preference_revision", "midpoint", "brainlayer")
+            ].passed
+        )
+        self.assertTrue(
+            lookup[
+                ("long_horizon_preference_revision", "final_revision", "brainlayer")
+            ].passed
+        )
+        self.assertTrue(
+            lookup[
+                ("long_horizon_project_reuse", "late_recall", "brainlayer")
+            ].passed
+        )
+        self.assertTrue(
+            lookup[
+                ("long_horizon_collaboration_continuity", "late_frame", "brainlayer")
+            ].passed
         )
 
     def test_brainlayer_state_schema_lists_all_layers(self) -> None:

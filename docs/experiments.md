@@ -169,6 +169,17 @@ Start with three simple experiments:
 2. Repeated task execution with lessons from prior failures
 3. Contradictory evidence that forces belief revision
 
+## Longer-Horizon Evaluation
+
+After the seed experiments, add longer-horizon scenarios with:
+
+- multiple noisy turns between signal and recall
+- more than one query checkpoint inside the same scenario
+- late contradictions that require belief revision
+- repeated weak hints that must be consolidated before they help
+
+These longer runs are where forgetting and autobiographical continuity should start to matter more clearly.
+
 ## What To Log
 
 For every run, log:
