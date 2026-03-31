@@ -2,6 +2,7 @@
 
 from .benchmark_harness import run_suite
 from .consolidation import ConsolidationConfig, ConsolidationEngine, ConsolidationReport
+from .agents import BrainLayerFeatureConfig
 from .session import BrainLayerSession
 from .storage import load_state, save_state
 from .validation import BrainLayerValidationError, validate_state_dict
@@ -9,6 +10,7 @@ from .validation import BrainLayerValidationError, validate_state_dict
 __all__ = [
     "BrainLayerSession",
     "BrainLayerValidationError",
+    "BrainLayerFeatureConfig",
     "ConsolidationConfig",
     "ConsolidationEngine",
     "ConsolidationReport",

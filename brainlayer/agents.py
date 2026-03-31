@@ -44,6 +44,14 @@ class AnswerRecord:
     evidence: str
 
 
+@dataclass(frozen=True)
+class BrainLayerFeatureConfig:
+    enable_consolidation: bool = True
+    enable_forgetting: bool = True
+    enable_autobio: bool = True
+    enable_working_state: bool = True
+
+
 class BaseAgent:
     name = "base"
 
@@ -130,12 +138,46 @@ class BrainLayerAgent(BaseAgent):
         self,
         state: BrainLayerState | None = None,
         *,
+        agent_name: str | None = None,
         auto_consolidate: bool = True,
+        features: BrainLayerFeatureConfig | None = None,
         consolidation_config: ConsolidationConfig | None = None,
     ) -> None:
         self.state = state or BrainLayerState()
+        self.name = agent_name or self.name
         self.auto_consolidate = auto_consolidate
-        self.consolidation_engine = ConsolidationEngine(consolidation_config)
+        self.features = features or BrainLayerFeatureConfig()
+        engine_config = consolidation_config or ConsolidationConfig()
+        engine_config = ConsolidationConfig(
+            enable_belief_consolidation=(
+                engine_config.enable_belief_consolidation
+                and self.features.enable_consolidation
+            ),
+            enable_procedure_consolidation=(
+                engine_config.enable_procedure_consolidation
+                and self.features.enable_consolidation
+            ),
+            enable_working_state_consolidation=(
+                engine_config.enable_working_state_consolidation
+                and self.features.enable_consolidation
+                and self.features.enable_working_state
+            ),
+            enable_autobio_consolidation=(
+                engine_config.enable_autobio_consolidation
+                and self.features.enable_consolidation
+                and self.features.enable_autobio
+            ),
+            enable_forgetting=engine_config.enable_forgetting and self.features.enable_forgetting,
+            belief_promotion_min_support=engine_config.belief_promotion_min_support,
+            procedure_promotion_min_support=engine_config.procedure_promotion_min_support,
+            working_item_promotion_min_support=engine_config.working_item_promotion_min_support,
+            autobio_promotion_min_support=engine_config.autobio_promotion_min_support,
+            repeated_signal_min_count=engine_config.repeated_signal_min_count,
+            noise_forget_threshold=engine_config.noise_forget_threshold,
+            max_active_working_items=engine_config.max_active_working_items,
+            working_item_priority_floor=engine_config.working_item_priority_floor,
+        )
+        self.consolidation_engine = ConsolidationEngine(engine_config)
 
     def reset(self) -> None:
         self.state = BrainLayerState()
@@ -157,14 +199,15 @@ class BrainLayerAgent(BaseAgent):
                 confidence=observation.salience,
                 evidence_episode_ids=[episode.id],
             )
-            self.state.upsert_working_item(
-                key=belief.key,
-                value=belief.value,
-                content=f"Current {belief.key}: {belief.value}",
-                priority=observation.salience,
-                source_refs=[episode.id, belief.id],
-            )
-            if belief.key == "response_style":
+            if self.features.enable_working_state:
+                self.state.upsert_working_item(
+                    key=belief.key,
+                    value=belief.value,
+                    content=f"Current {belief.key}: {belief.value}",
+                    priority=observation.salience,
+                    source_refs=[episode.id, belief.id],
+                )
+            if belief.key == "response_style" and self.features.enable_autobio:
                 self.state.upsert_autobio_note(
                     key="collaboration_tone",
                     value=belief.value,
@@ -193,13 +236,14 @@ class BrainLayerAgent(BaseAgent):
                 confidence=observation.salience,
                 derived_from=[episode.id],
             )
-            self.state.upsert_working_item(
-                key=f"procedure:{procedure.trigger}",
-                value=procedure.steps[0],
-                content=f"When {procedure.trigger}, {procedure.steps[0]}",
-                priority=observation.salience,
-                source_refs=[episode.id, procedure.id],
-            )
+            if self.features.enable_working_state:
+                self.state.upsert_working_item(
+                    key=f"procedure:{procedure.trigger}",
+                    value=procedure.steps[0],
+                    content=f"When {procedure.trigger}, {procedure.steps[0]}",
+                    priority=observation.salience,
+                    source_refs=[episode.id, procedure.id],
+                )
             return
 
         if observation.memory_type == "goal":
@@ -211,13 +255,14 @@ class BrainLayerAgent(BaseAgent):
                 salience=observation.salience,
                 outcome="captured goal",
             )
-            self.state.upsert_working_item(
-                key=observation.payload["key"],
-                value=observation.payload["value"],
-                content=observation.payload["summary"],
-                priority=observation.salience,
-                source_refs=[episode.id],
-            )
+            if self.features.enable_working_state:
+                self.state.upsert_working_item(
+                    key=observation.payload["key"],
+                    value=observation.payload["value"],
+                    content=observation.payload["summary"],
+                    priority=observation.salience,
+                    source_refs=[episode.id],
+                )
             return
 
         if observation.memory_type == "relationship":
@@ -234,20 +279,22 @@ class BrainLayerAgent(BaseAgent):
                 for value in observation.payload.get("themes", "").split(",")
                 if value.strip()
             ]
-            autobio = self.state.upsert_autobio_note(
-                key=observation.payload["key"],
-                value=observation.payload["value"],
-                summary=observation.payload["summary"],
-                themes=themes or ["relationship"],
-                supporting_ids=[episode.id],
-            )
-            self.state.upsert_working_item(
-                key=autobio.key,
-                value=autobio.value,
-                content=autobio.summary,
-                priority=observation.salience,
-                source_refs=[episode.id, autobio.id],
-            )
+            if self.features.enable_autobio:
+                autobio = self.state.upsert_autobio_note(
+                    key=observation.payload["key"],
+                    value=observation.payload["value"],
+                    summary=observation.payload["summary"],
+                    themes=themes or ["relationship"],
+                    supporting_ids=[episode.id],
+                )
+                if self.features.enable_working_state:
+                    self.state.upsert_working_item(
+                        key=autobio.key,
+                        value=autobio.value,
+                        content=autobio.summary,
+                        priority=observation.salience,
+                        source_refs=[episode.id, autobio.id],
+                    )
             return
 
         if observation.memory_type in {
@@ -302,6 +349,8 @@ class BrainLayerAgent(BaseAgent):
             return AnswerRecord(answer="unknown", evidence="No matching procedure found.")
 
         if query.query_type == "working_lookup":
+            if not self.features.enable_working_state:
+                return AnswerRecord(answer="unknown", evidence="Working state disabled.")
             for item in reversed(self.state.working_state):
                 if item.key == query.lookup_key and item.status == "active":
                     return AnswerRecord(
@@ -311,6 +360,8 @@ class BrainLayerAgent(BaseAgent):
             return AnswerRecord(answer="unknown", evidence="No active working item found.")
 
         if query.query_type == "autobio_lookup":
+            if not self.features.enable_autobio:
+                return AnswerRecord(answer="unknown", evidence="Autobiographical state disabled.")
             for note in reversed(self.state.autobiographical_state):
                 if note.key == query.lookup_key:
                     return AnswerRecord(

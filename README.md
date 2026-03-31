@@ -80,18 +80,29 @@ The repo now includes a dependency-light prototype with:
 
 - JSON Schema contracts for `working_state`, `episodes`, `beliefs`, `autobiographical_state`, and `procedures`
 - a tiny Python harness with six deterministic benchmark scenarios
-- three agents:
+- three core agents:
   - `context_only`
   - `naive_memory`
   - `brainlayer`
+- four BrainLayer ablations:
+  - `brainlayer_no_consolidation`
+  - `brainlayer_no_forgetting`
+  - `brainlayer_no_autobio`
+  - `brainlayer_no_working_state`
 - state validation and load/save helpers for persistent BrainLayer JSON files
 - a small `BrainLayerSession` wrapper for real agent loops
 - a consolidation/forgetting engine for promoting repeated signals and pruning low-value noise
 
-Run the seed benchmark suite with:
+Run the full benchmark suite with ablations:
 
 ```bash
 python3 scripts/run_benchmarks.py
+```
+
+Run only the core baseline set:
+
+```bash
+python3 scripts/run_benchmarks.py --core-only
 ```
 
 To also dump serialized agent state for inspection:

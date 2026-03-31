@@ -13,6 +13,11 @@ def _has_any_tag(episode: Episode, tags: Sequence[str]) -> bool:
 
 @dataclass(frozen=True)
 class ConsolidationConfig:
+    enable_belief_consolidation: bool = True
+    enable_procedure_consolidation: bool = True
+    enable_working_state_consolidation: bool = True
+    enable_autobio_consolidation: bool = True
+    enable_forgetting: bool = True
     belief_promotion_min_support: float = 0.75
     procedure_promotion_min_support: float = 0.8
     working_item_promotion_min_support: float = 0.75
@@ -39,12 +44,17 @@ class ConsolidationEngine:
 
     def run(self, state: BrainLayerState) -> ConsolidationReport:
         report = ConsolidationReport()
-        self._consolidate_beliefs(state, report)
-        self._consolidate_procedures(state, report)
-        self._consolidate_working_state(state, report)
-        self._consolidate_autobio(state, report)
-        self._pause_stale_working_items(state, report)
-        self._forget_low_salience_noise(state, report)
+        if self.config.enable_belief_consolidation:
+            self._consolidate_beliefs(state, report)
+        if self.config.enable_procedure_consolidation:
+            self._consolidate_procedures(state, report)
+        if self.config.enable_working_state_consolidation:
+            self._consolidate_working_state(state, report)
+        if self.config.enable_autobio_consolidation:
+            self._consolidate_autobio(state, report)
+        if self.config.enable_forgetting:
+            self._pause_stale_working_items(state, report)
+            self._forget_low_salience_noise(state, report)
         return report
 
     def _consolidate_beliefs(
