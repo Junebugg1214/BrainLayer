@@ -110,6 +110,13 @@ Measure:
 - whether the agent revises beliefs gracefully
 - whether historical evidence remains inspectable
 
+The next implementation step after the deterministic benchmark harness is to run these contradiction-heavy cases through the live BrainLayer runtime itself, not just the rule-based benchmark agents. That means evaluating full turns where a model:
+
+- reads retrieved BrainLayer context
+- emits a user-facing answer
+- proposes structured memory updates
+- gets scored later on whether revision and continuity still hold
+
 ### Task Family E: Skill Acquisition
 
 The agent repeats similar workflows and should learn better procedures over time.
@@ -179,6 +186,13 @@ After the seed experiments, add longer-horizon scenarios with:
 - repeated weak hints that must be consolidated before they help
 
 These longer runs are where forgetting and autobiographical continuity should start to matter more clearly.
+
+The repo now includes an initial contradiction-focused runtime suite for this layer in `scripts/run_model_evals.py`, covering:
+
+- preference revision
+- goal replacement
+- relationship reframing
+- hint consolidation followed by explicit correction
 
 ## What To Log
 

@@ -93,6 +93,7 @@ The repo now includes a dependency-light prototype with:
 - a small `BrainLayerSession` wrapper for real agent loops
 - a consolidation/forgetting engine for promoting repeated signals and pruning low-value noise
 - a model-backed BrainLayer runtime with an adapter interface for live LLM turns
+- contradiction-heavy model-loop evals for revision, continuity, and consolidation
 
 Run the full benchmark suite with ablations:
 
@@ -191,3 +192,30 @@ The model-backed loop now does a full BrainLayer turn:
 - records the reply as an episode
 - optionally applies model-suggested memory observations back into the BrainLayer state
 - saves the updated state for the next turn
+
+Run the contradiction-heavy eval suite for the model-backed loop:
+
+```bash
+python3 scripts/run_model_evals.py
+```
+
+Run only the full model-backed runtime without ablations:
+
+```bash
+python3 scripts/run_model_evals.py --core-only
+```
+
+These model-loop evals focus on the cases where BrainLayer should matter most:
+
+- explicit preference revision after contradiction
+- goal replacement when the active task changes
+- relationship reframing across turns
+- repeated weak hints that must consolidate before a later correction
+
+They use a deterministic adapter over the real runtime path, which means the eval exercises:
+
+- retrieval from the layered BrainLayer state
+- runtime prompt construction
+- model-style JSON output parsing
+- memory write-back into BrainLayer
+- later retrieval after revision and consolidation

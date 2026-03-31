@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .agents import AnswerRecord, BrainLayerAgent
+from .agents import AnswerRecord, BrainLayerAgent, BrainLayerFeatureConfig
 from .consolidation import ConsolidationConfig, ConsolidationReport
 from .models import BrainLayerState
 from .scenarios import Observation, Query
@@ -17,11 +17,13 @@ class BrainLayerSession:
         state: BrainLayerState | None = None,
         *,
         auto_consolidate: bool = True,
+        features: BrainLayerFeatureConfig | None = None,
         consolidation_config: ConsolidationConfig | None = None,
     ) -> None:
         self.agent = BrainLayerAgent(
             state=state or BrainLayerState(),
             auto_consolidate=auto_consolidate,
+            features=features,
             consolidation_config=consolidation_config,
         )
 
