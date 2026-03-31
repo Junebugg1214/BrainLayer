@@ -105,12 +105,24 @@ Run only the core baseline set:
 python3 scripts/run_benchmarks.py --core-only
 ```
 
+Export a timestamped benchmark run with CSV, JSON, append-only history, and an X-ready post:
+
+```bash
+python3 scripts/run_benchmarks.py --export-results artifacts/benchmark_runs --label baseline-v1
+```
+
 The benchmark report now includes:
 
 - short scenarios for isolated capability checks
 - long-horizon scenarios with multiple checkpoints
 - ablation results for `no_consolidation`, `no_forgetting`, `no_autobio`, and `no_working_state`
 - compactness signals like average retained records and average retained episodes
+- optional run exports:
+  - `results.json`
+  - `results.csv`
+  - `summary.csv`
+  - `x_post.txt`
+  - append-only `history.csv` and `history.jsonl` for cross-run tracking
 
 To also dump serialized agent state for inspection:
 

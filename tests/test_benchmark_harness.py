@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from brainlayer.benchmark_harness import run_suite
+from brainlayer.benchmark_harness import export_results, run_suite
 from brainlayer.session import BrainLayerSession
 from brainlayer.storage import load_state, save_state
 from brainlayer.validation import BrainLayerValidationError, validate_state_dict
@@ -103,6 +103,30 @@ class BenchmarkHarnessTests(unittest.TestCase):
                 ("long_horizon_collaboration_continuity", "late_frame", "brainlayer")
             ].passed
         )
+
+    def test_export_results_writes_csv_json_history_and_x_post(self) -> None:
+        results = run_suite(include_ablations=False)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            export_root = Path(tmpdir) / "exports"
+            run_dir = export_results(
+                results,
+                export_root,
+                include_ablations=False,
+                label="smoke",
+            )
+
+            self.assertTrue((run_dir / "results.json").exists())
+            self.assertTrue((run_dir / "results.csv").exists())
+            self.assertTrue((run_dir / "summary.csv").exists())
+            self.assertTrue((run_dir / "x_post.txt").exists())
+            self.assertTrue((export_root / "history.csv").exists())
+            self.assertTrue((export_root / "history.jsonl").exists())
+
+            payload = json.loads((run_dir / "results.json").read_text())
+            self.assertEqual(payload["metadata"]["label"], "smoke")
+            self.assertFalse(payload["metadata"]["include_ablations"])
+            self.assertIn("BrainLayer eval", payload["x_post"])
 
     def test_brainlayer_state_schema_lists_all_layers(self) -> None:
         schema_path = ROOT / "schemas" / "brainlayer-state.schema.json"
