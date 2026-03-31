@@ -5,8 +5,11 @@ from .consolidation import ConsolidationConfig, ConsolidationEngine, Consolidati
 from .agents import BrainLayerFeatureConfig
 from .llm import LLMAdapter, LLMError, ModelMessage, ModelResponse, OpenAICompatibleChatAdapter
 from .model_eval import (
+    build_live_model_eval_adapter,
+    default_model_eval_runtime_config,
     export_model_eval_results,
     render_model_eval_report,
+    run_live_model_eval_suite,
     run_model_eval_suite,
 )
 from .runtime import BrainLayerRuntime, BrainLayerRuntimeConfig, ModelTurnResult
@@ -30,8 +33,11 @@ __all__ = [
     "ModelResponse",
     "ModelTurnResult",
     "OpenAICompatibleChatAdapter",
+    "build_live_model_eval_adapter",
+    "default_model_eval_runtime_config",
     "export_model_eval_results",
     "render_model_eval_report",
+    "run_live_model_eval_suite",
     "run_suite",
     "run_model_eval_suite",
     "save_state",

@@ -4,10 +4,45 @@ import subprocess
 import unittest
 from pathlib import Path
 
-from brainlayer.model_eval import export_model_eval_results, run_model_eval_suite
+from brainlayer.llm import LLMError, LLMAdapter, ModelMessage, ModelResponse, StaticLLMAdapter
+from brainlayer.model_eval import (
+    HeuristicBrainLayerEvalAdapter,
+    ModelEvalScenario,
+    ModelEvalTurn,
+    export_model_eval_results,
+    run_model_eval_suite,
+)
 
 
 ROOT = Path(__file__).resolve().parent.parent
+
+
+def make_live_like_adapter() -> StaticLLMAdapter:
+    heuristic = HeuristicBrainLayerEvalAdapter()
+
+    def handler(messages: list[ModelMessage]) -> ModelResponse:
+        response = heuristic.generate(messages, model="ignored")
+        return ModelResponse(
+            content=response.content,
+            model="test-live-model",
+            finish_reason="stop",
+            usage={"prompt_tokens": 12, "completion_tokens": 4, "total_tokens": 16},
+        )
+
+    return StaticLLMAdapter(handler=handler)
+
+
+class FailingAdapter(LLMAdapter):
+    def generate(
+        self,
+        messages: list[ModelMessage],
+        *,
+        model: str,
+        temperature: float = 0.2,
+        max_output_tokens: int = 900,
+    ) -> ModelResponse:
+        del messages, model, temperature, max_output_tokens
+        raise LLMError("boom")
 
 
 class ModelEvalTests(unittest.TestCase):
@@ -126,6 +161,57 @@ class ModelEvalTests(unittest.TestCase):
             self.assertEqual(payload["metadata"]["label"], "smoke")
             self.assertFalse(payload["metadata"]["include_ablations"])
             self.assertIn("BrainLayer model-loop eval", payload["x_post"])
+
+    def test_live_like_mode_records_metadata_and_usage(self) -> None:
+        results = run_model_eval_suite(
+            include_ablations=False,
+            adapter=make_live_like_adapter(),
+            eval_mode="live",
+            provider_name="test_provider",
+            requested_model="test-live-model",
+        )
+
+        self.assertTrue(all(result.eval_mode == "live" for result in results))
+        self.assertTrue(all(result.provider_name == "test_provider" for result in results))
+        self.assertTrue(all(result.requested_model == "test-live-model" for result in results))
+        self.assertTrue(all(result.response_model == "test-live-model" for result in results))
+        self.assertTrue(all(result.used_json for result in results))
+        self.assertTrue(all(not result.parse_failure for result in results))
+        self.assertTrue(all(result.usage_metrics.get("total_tokens") == 16.0 for result in results))
+
+    def test_live_mode_gracefully_records_runtime_errors(self) -> None:
+        scenario = ModelEvalScenario(
+            slug="live_failure",
+            title="Live Failure",
+            description="Error handling smoke test for live eval mode.",
+            turns=[
+                ModelEvalTurn(
+                    prompt=(
+                        "Record preference: key=response_style; value=brief; "
+                        "proposition=The user prefers brief replies."
+                    )
+                ),
+                ModelEvalTurn(
+                    prompt="What response style should you use right now?",
+                    expected_answer="brief",
+                    checkpoint="after_failure",
+                ),
+            ],
+        )
+
+        results = run_model_eval_suite(
+            [scenario],
+            include_ablations=False,
+            adapter=FailingAdapter(),
+            eval_mode="live",
+            provider_name="test_provider",
+            requested_model="broken-model",
+        )
+
+        self.assertEqual(len(results), 1)
+        self.assertFalse(results[0].passed)
+        self.assertTrue(results[0].skipped)
+        self.assertIn("boom", results[0].error)
 
 
 if __name__ == "__main__":

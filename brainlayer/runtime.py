@@ -98,6 +98,7 @@ class ParsedModelOutput:
     memory_observations: List[Observation] = field(default_factory=list)
     raw_text: str = ""
     used_json: bool = False
+    empty_answer: bool = False
 
 
 @dataclass
@@ -111,6 +112,8 @@ class ModelTurnResult:
     consolidation_report: ConsolidationReport | None
     model_response: ModelResponse
     exported_state: Dict[str, object]
+    used_json: bool
+    empty_answer: bool
 
 
 class BrainLayerRuntime:
@@ -202,6 +205,8 @@ class BrainLayerRuntime:
             consolidation_report=consolidation_report,
             model_response=model_response,
             exported_state=self.session.state.to_dict(),
+            used_json=parsed_output.used_json,
+            empty_answer=parsed_output.empty_answer,
         )
 
     def retrieve_memories(self, prompt: str) -> List[RetrievedMemory]:
@@ -294,6 +299,7 @@ class BrainLayerRuntime:
                 assistant_response=answer,
                 episodic_summary=self.default_episode_summary(fallback_prompt, answer),
                 raw_text=raw_text,
+                empty_answer=not bool(candidate),
             )
 
         if not isinstance(payload, dict):
@@ -302,9 +308,12 @@ class BrainLayerRuntime:
                 assistant_response=answer,
                 episodic_summary=self.default_episode_summary(fallback_prompt, answer),
                 raw_text=raw_text,
+                empty_answer=not bool(candidate),
             )
 
-        answer = str(payload.get("assistant_response") or payload.get("answer") or "").strip()
+        raw_answer = str(payload.get("assistant_response") or payload.get("answer") or "").strip()
+        empty_answer = not bool(raw_answer)
+        answer = raw_answer
         if not answer:
             answer = "unknown"
         episodic_summary = str(payload.get("episodic_summary") or "").strip()
@@ -320,6 +329,7 @@ class BrainLayerRuntime:
             memory_observations=observations,
             raw_text=raw_text,
             used_json=True,
+            empty_answer=empty_answer,
         )
 
     def default_episode_summary(self, prompt: str, answer: str) -> str:

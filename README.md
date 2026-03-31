@@ -211,6 +211,17 @@ Export a timestamped model-loop eval run with CSV, JSON, append-only history, an
 python3 scripts/run_model_evals.py --export-results artifacts/model_eval_runs --label contradiction-v1
 ```
 
+Run the same eval suite against a live chat-completions-compatible model:
+
+```bash
+OPENAI_API_KEY=... python3 scripts/run_model_evals.py \
+  --mode live \
+  --model gpt-4.1-mini \
+  --provider-name openai_compatible \
+  --export-results artifacts/model_eval_runs \
+  --label live-gpt41
+```
+
 These model-loop evals focus on the cases where BrainLayer should matter most:
 
 - explicit preference revision after contradiction
@@ -233,3 +244,12 @@ Model-loop eval exports produce:
 - `summary.csv`
 - `x_post.txt`
 - append-only `model_eval_history.csv` and `model_eval_history.jsonl` for cross-run tracking
+
+The live runner also records model-facing reliability signals per checkpoint:
+
+- parse failures
+- empty answers
+- finish reasons
+- latency in milliseconds
+- provider/model metadata
+- token usage when the provider returns it
