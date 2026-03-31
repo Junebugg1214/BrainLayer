@@ -1,0 +1,22 @@
+[
+  {
+    "text": "Primary goal for this task: preserve citations while drafting the reply.",
+    "memory_type": "goal",
+    "payload": {
+      "key": "primary_goal",
+      "value": "preserve citations",
+      "summary": "The current primary goal is to preserve citations while drafting the reply."
+    },
+    "salience": 0.92
+  },
+  {
+    "text": "The user prefers concise and direct replies.",
+    "memory_type": "preference",
+    "payload": {
+      "key": "response_style",
+      "value": "concise",
+      "proposition": "The user prefers concise and direct replies."
+    },
+    "salience": 0.95
+  }
+]

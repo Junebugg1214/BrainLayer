@@ -92,6 +92,7 @@ The repo now includes a dependency-light prototype with:
 - state validation and load/save helpers for persistent BrainLayer JSON files
 - a small `BrainLayerSession` wrapper for real agent loops
 - a consolidation/forgetting engine for promoting repeated signals and pruning low-value noise
+- a model-backed BrainLayer runtime with an adapter interface for live LLM turns
 
 Run the full benchmark suite with ablations:
 
@@ -161,3 +162,32 @@ session.observe(
 session.consolidate()
 session.save("artifacts/live_state.json")
 ```
+
+Run a model-backed BrainLayer turn with a chat-completions-compatible provider:
+
+```bash
+OPENAI_API_KEY=... python3 scripts/run_model_loop.py \
+  --prompt "Draft the reply for the user." \
+  --observe-file examples/live_turn_observations.sample.json \
+  --state artifacts/live_state.json
+```
+
+Run the same loop without network access using a static dry-run response:
+
+```bash
+python3 scripts/run_model_loop.py \
+  --prompt "Draft the reply for the user." \
+  --observe-file examples/live_turn_observations.sample.json \
+  --state artifacts/live_state.json \
+  --dry-run-response '{"assistant_response":"I will keep the reply concise.","episodic_summary":"The assistant committed to a concise reply.","memory_observations":[]}'
+```
+
+The model-backed loop now does a full BrainLayer turn:
+
+- ingests any explicit observations you pass in
+- consolidates before retrieval so the prompt sees current beliefs and goals
+- retrieves relevant working state, beliefs, autobiographical notes, procedures, and episodes
+- prompts the model with a BrainLayer snapshot
+- records the reply as an episode
+- optionally applies model-suggested memory observations back into the BrainLayer state
+- saves the updated state for the next turn
