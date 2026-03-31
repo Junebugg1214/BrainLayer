@@ -253,3 +253,33 @@ The live runner also records model-facing reliability signals per checkpoint:
 - latency in milliseconds
 - provider/model metadata
 - token usage when the provider returns it
+
+Run the natural-conversation eval suite:
+
+```bash
+python3 scripts/run_natural_model_evals.py
+```
+
+Export a natural-conversation run with extraction/behavior tracking:
+
+```bash
+python3 scripts/run_natural_model_evals.py \
+  --export-results artifacts/natural_eval_runs \
+  --label natural-v1
+```
+
+Run the same natural suite against a live model:
+
+```bash
+OPENAI_API_KEY=... python3 scripts/run_natural_model_evals.py \
+  --mode live \
+  --model gpt-4.1-mini \
+  --provider-name openai_compatible \
+  --export-results artifacts/natural_eval_runs \
+  --label natural-live-gpt41
+```
+
+The natural suite is aimed at the more realistic research question: can a model infer BrainLayer updates from ordinary dialogue, not just explicit `Record ...` instructions? It scores two things separately:
+
+- `extraction`: did the runtime store the right belief, goal, relationship note, or procedure?
+- `behavior`: did the later answer reflect the right state?

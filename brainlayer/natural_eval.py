@@ -1,0 +1,1225 @@
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import time
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Dict, Iterable, List, Sequence
+
+from .benchmark_harness import (
+    append_csv,
+    get_git_commit,
+    slugify_label,
+    utc_now_compact,
+    utc_now_iso,
+    write_csv,
+)
+from .llm import LLMAdapter, LLMError, ModelMessage, ModelResponse
+from .model_eval import (
+    DEFAULT_HEURISTIC_MODEL,
+    DEFAULT_HEURISTIC_PROVIDER,
+    DEFAULT_LIVE_MODEL,
+    DEFAULT_LIVE_PROVIDER,
+    answers_match,
+    build_live_model_eval_adapter,
+    build_runtime_variants,
+    collect_state_metrics,
+    normalize_usage_metrics,
+)
+from .runtime import BrainLayerRuntime, BrainLayerRuntimeConfig
+from .session import BrainLayerSession
+
+
+TASK_RE = re.compile(r"Task:\n(?P<task>.*?)\n\nReturn a JSON object", re.DOTALL)
+CONTEXT_RE = re.compile(r"BrainLayer context:\n(?P<context>.*?)\n\nTask:\n", re.DOTALL)
+SLOT_RE = re.compile(r"(?P<key>[a-z_]+)\s=\s(?P<value>[^.]+)\.")
+PROCEDURE_RE = re.compile(r"When (?P<trigger>[^,]+), (?P<step>[^.]+)\.")
+NATURAL_EVAL_SYSTEM_PROMPT = (
+    "You are participating in a BrainLayer natural-conversation evaluation. "
+    "When a normal user utterance reveals a stable preference, active goal, relationship framing, "
+    "or reusable lesson, infer the appropriate structured memory_observations entry. "
+    "When the user simply asks for a value like the current response style or goal, return only the "
+    "shortest value needed to answer correctly. Always return valid JSON."
+)
+
+
+@dataclass(frozen=True)
+class NaturalEvalTurn:
+    prompt: str
+    checkpoint: str = ""
+    evaluation_type: str = ""
+    target_layer: str = ""
+    target_key: str = ""
+    expected_value: str = ""
+
+
+@dataclass(frozen=True)
+class NaturalEvalScenario:
+    slug: str
+    title: str
+    description: str
+    turns: List[NaturalEvalTurn]
+
+
+@dataclass(frozen=True)
+class NaturalEvalResult:
+    scenario_slug: str
+    checkpoint: str
+    runtime_name: str
+    evaluation_type: str
+    target_layer: str
+    target_key: str
+    expected: str
+    actual: str
+    passed: bool
+    retrieved_layers: List[str]
+    state_metrics: Dict[str, float]
+    exported_state: Dict[str, object]
+    eval_mode: str
+    provider_name: str
+    requested_model: str
+    response_model: str
+    finish_reason: str
+    latency_ms: float
+    used_json: bool
+    parse_failure: bool
+    empty_answer: bool
+    applied_observation_count: int
+    usage_metrics: Dict[str, float]
+    error: str = ""
+    skipped: bool = False
+
+
+@dataclass(frozen=True)
+class NaturalEvalSummary:
+    runtime_name: str
+    passed: int
+    total: int
+    pass_rate: float
+    extraction_passed: int
+    extraction_total: int
+    behavior_passed: int
+    behavior_total: int
+    parse_failures: int
+    empty_answers: int
+    errors: int
+    skipped: int
+    avg_metrics: Dict[str, float]
+
+
+NATURAL_EVAL_SCENARIOS: List[NaturalEvalScenario] = [
+    NaturalEvalScenario(
+        slug="natural_preference_sync",
+        title="Natural Preference Sync",
+        description="Can the agent infer a response-style preference from ordinary dialogue and use it later?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="I'm skimming between meetings, so please keep this really brief.",
+                checkpoint="extract_preference",
+                evaluation_type="extraction",
+                target_layer="beliefs",
+                target_key="response_style",
+                expected_value="brief",
+            ),
+            NaturalEvalTurn(
+                prompt="How should you answer by default right now?",
+                checkpoint="behavior_preference",
+                evaluation_type="behavior",
+                expected_value="brief",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="natural_goal_shift",
+        title="Natural Goal Shift",
+        description="Can the agent infer a changing task goal from normal project language?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="Before anything else, let's make sure every answer keeps the citations intact.",
+                checkpoint="extract_initial_goal",
+                evaluation_type="extraction",
+                target_layer="working_state",
+                target_key="primary_goal",
+                expected_value="preserve citations",
+            ),
+            NaturalEvalTurn(
+                prompt="Actually the deadline moved up, so the main thing now is shipping the eval summary today.",
+                checkpoint="extract_revised_goal",
+                evaluation_type="extraction",
+                target_layer="working_state",
+                target_key="primary_goal",
+                expected_value="ship eval summary",
+            ),
+            NaturalEvalTurn(
+                prompt="What is the main goal right now?",
+                checkpoint="behavior_goal",
+                evaluation_type="behavior",
+                expected_value="ship eval summary",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="natural_relationship_reframe",
+        title="Natural Relationship Reframe",
+        description="Can the agent infer collaboration framing from a normal interaction?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="I don't just need a task runner here; think with me like a research partner on this.",
+                checkpoint="extract_relationship",
+                evaluation_type="extraction",
+                target_layer="autobiographical_state",
+                target_key="collaboration_mode",
+                expected_value="research partner",
+            ),
+            NaturalEvalTurn(
+                prompt="What collaboration mode should define this project right now?",
+                checkpoint="behavior_relationship",
+                evaluation_type="behavior",
+                expected_value="research partner",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="natural_lesson_reuse",
+        title="Natural Lesson Reuse",
+        description="Can the agent infer a reusable lesson from a natural retrospective?",
+        turns=[
+            NaturalEvalTurn(
+                prompt=(
+                    "Last time the release failed because we retried before checking GitHub auth. "
+                    "Next time, check auth first."
+                ),
+                checkpoint="extract_lesson",
+                evaluation_type="extraction",
+                target_layer="procedures",
+                target_key="retry_release",
+                expected_value="check authentication",
+            ),
+            NaturalEvalTurn(
+                prompt="Before retrying the release, what should you do first?",
+                checkpoint="behavior_lesson",
+                evaluation_type="behavior",
+                expected_value="check authentication",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="natural_hint_accumulation",
+        title="Natural Hint Accumulation",
+        description="Can the agent consolidate repeated indirect style hints from ordinary dialogue?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="Can you trim that down a lot? I only need the gist.",
+            ),
+            NaturalEvalTurn(
+                prompt="Still a bit long. Even shorter is better for me.",
+                checkpoint="extract_hint_consolidation",
+                evaluation_type="extraction",
+                target_layer="beliefs",
+                target_key="response_style",
+                expected_value="concise",
+            ),
+            NaturalEvalTurn(
+                prompt="How should you answer by default right now?",
+                checkpoint="behavior_hint_consolidation",
+                evaluation_type="behavior",
+                expected_value="concise",
+            ),
+        ],
+    ),
+]
+
+
+class HeuristicNaturalConversationAdapter(LLMAdapter):
+    """Deterministic adapter for natural-conversation BrainLayer evals."""
+
+    def generate(
+        self,
+        messages: Sequence[ModelMessage],
+        *,
+        model: str,
+        temperature: float = 0.2,
+        max_output_tokens: int = 900,
+    ) -> ModelResponse:
+        del model, temperature, max_output_tokens
+        user_message = messages[-1].content if messages else ""
+        context = self._extract_context(user_message)
+        task = self._extract_task(user_message)
+        response_payload = self._respond(task, context)
+        return ModelResponse(
+            content=json.dumps(response_payload),
+            model=DEFAULT_HEURISTIC_MODEL,
+            finish_reason="stop",
+        )
+
+    def _extract_context(self, user_message: str) -> str:
+        match = CONTEXT_RE.search(user_message)
+        if not match:
+            return ""
+        return match.group("context").strip()
+
+    def _extract_task(self, user_message: str) -> str:
+        match = TASK_RE.search(user_message)
+        if not match:
+            return user_message.strip()
+        return match.group("task").strip()
+
+    def _respond(self, task: str, context: str) -> Dict[str, object]:
+        lowered = task.lower()
+        if self._is_query(lowered):
+            return self._query_response(task, context)
+        return self._conversation_response(task, context)
+
+    def _is_query(self, lowered_task: str) -> bool:
+        return (
+            "how should you answer" in lowered_task
+            or "response style" in lowered_task
+            or "main goal" in lowered_task
+            or "collaboration mode" in lowered_task
+            or "before retrying the release" in lowered_task
+        )
+
+    def _query_response(self, task: str, context: str) -> Dict[str, object]:
+        memories = self._parse_context(context)
+        lowered = task.lower()
+        answer = "unknown"
+
+        if "response style" in lowered or "how should you answer" in lowered:
+            answer = memories["slots"].get("response_style", "unknown")
+        elif "main goal" in lowered:
+            answer = memories["slots"].get("primary_goal", "unknown")
+        elif "collaboration mode" in lowered:
+            answer = memories["slots"].get("collaboration_mode", "unknown")
+        elif "before retrying the release" in lowered:
+            answer = memories["procedures"].get("retry_release", "unknown")
+
+        return {
+            "assistant_response": answer,
+            "episodic_summary": f"Answered natural-eval query using BrainLayer context: {answer}",
+            "memory_observations": [],
+        }
+
+    def _conversation_response(self, task: str, context: str) -> Dict[str, object]:
+        observation = self._infer_observation(task, context)
+        if observation is None:
+            return {
+                "assistant_response": "Noted.",
+                "episodic_summary": f"Processed dialogue turn without a durable memory update: {task}",
+                "memory_observations": [],
+            }
+
+        return {
+            "assistant_response": "Noted.",
+            "episodic_summary": f"Inferred a BrainLayer update from natural dialogue: {observation['memory_type']}",
+            "memory_observations": [observation],
+        }
+
+    def _infer_observation(self, task: str, context: str) -> Dict[str, object] | None:
+        lowered = task.lower()
+        slots = self._parse_context(context)["slots"]
+
+        if "research partner" in lowered or "task runner" in lowered:
+            return {
+                "text": "The collaboration mode is research partner.",
+                "memory_type": "relationship",
+                "salience": 0.95,
+                "payload": {
+                    "key": "collaboration_mode",
+                    "value": "research partner",
+                    "summary": "The collaboration mode is research partner.",
+                    "themes": "relationship,research-mode",
+                },
+            }
+
+        if "last time the release failed" in lowered or "check auth first" in lowered:
+            return {
+                "text": "Before retrying a release, check authentication first.",
+                "memory_type": "lesson",
+                "salience": 0.92,
+                "payload": {
+                    "trigger": "retry_release",
+                    "action": "check authentication",
+                    "summary": "Before retrying a release, confirm GitHub authentication first.",
+                },
+            }
+
+        if "main thing now is" in lowered or "deadline moved up" in lowered:
+            return {
+                "text": "The current primary goal is to ship the eval summary.",
+                "memory_type": "goal",
+                "salience": 0.96,
+                "payload": {
+                    "key": "primary_goal",
+                    "value": "ship eval summary",
+                    "summary": "The current primary goal is to ship the eval summary.",
+                },
+            }
+
+        if "before anything else" in lowered or "citations intact" in lowered:
+            return {
+                "text": "The current primary goal is to preserve citations.",
+                "memory_type": "goal",
+                "salience": 0.9,
+                "payload": {
+                    "key": "primary_goal",
+                    "value": "preserve citations",
+                    "summary": "The current primary goal is to preserve citations.",
+                },
+            }
+
+        if "still a bit long" in lowered or "even shorter is better" in lowered:
+            return {
+                "text": "The user likely prefers concise replies.",
+                "memory_type": "preference_hint",
+                "salience": 0.42,
+                "payload": {
+                    "key": "response_style",
+                    "value": "concise",
+                    "proposition": "The user likely prefers concise replies.",
+                },
+            }
+
+        if "trim that down" in lowered or "only need the gist" in lowered:
+            return {
+                "text": "The user likely prefers concise replies.",
+                "memory_type": "preference_hint",
+                "salience": 0.41,
+                "payload": {
+                    "key": "response_style",
+                    "value": "concise",
+                    "proposition": "The user likely prefers concise replies.",
+                },
+            }
+
+        if "keep this really brief" in lowered or "skimming between meetings" in lowered:
+            memory_type = "correction" if "response_style" in slots else "preference"
+            proposition = "The user prefers brief replies."
+            return {
+                "text": proposition,
+                "memory_type": memory_type,
+                "salience": 0.94,
+                "payload": {
+                    "key": "response_style",
+                    "value": "brief",
+                    "proposition": proposition,
+                },
+            }
+
+        return None
+
+    def _parse_context(self, context: str) -> Dict[str, Dict[str, str]]:
+        slots: Dict[str, str] = {}
+        procedures: Dict[str, str] = {}
+
+        for line in context.splitlines():
+            line = line.strip()
+            if not line.startswith("- ["):
+                continue
+
+            layer_match = re.match(r"^- \[(?P<layer>[^\]]+)\]\s+[^:]+:\s+(?P<content>.+)$", line)
+            if not layer_match:
+                continue
+            layer = layer_match.group("layer")
+            content = layer_match.group("content")
+
+            slot_match = SLOT_RE.search(content)
+            if slot_match and layer in {"working_state", "beliefs", "autobiographical_state"}:
+                slots.setdefault(slot_match.group("key"), slot_match.group("value").strip())
+
+            procedure_match = PROCEDURE_RE.search(content)
+            if procedure_match and layer == "procedures":
+                procedures.setdefault(
+                    procedure_match.group("trigger").strip(),
+                    procedure_match.group("step").strip(),
+                )
+
+        return {"slots": slots, "procedures": procedures}
+
+
+def default_natural_eval_runtime_config(
+    *,
+    temperature: float = 0.0,
+    max_output_tokens: int = 700,
+) -> BrainLayerRuntimeConfig:
+    return BrainLayerRuntimeConfig(
+        system_prompt=NATURAL_EVAL_SYSTEM_PROMPT,
+        default_scenario_slug="natural_model_session",
+        top_k_per_layer=2,
+        max_memories=8,
+        response_temperature=temperature,
+        max_output_tokens=max_output_tokens,
+        interaction_salience=0.55,
+        consolidate_before_reply=True,
+        auto_consolidate_after_turn=True,
+    )
+
+
+def _combined_metrics(result: NaturalEvalResult) -> Dict[str, float]:
+    metrics = dict(result.state_metrics)
+    metrics["latency_ms"] = result.latency_ms
+    metrics["applied_observation_count"] = float(result.applied_observation_count)
+    for key, value in result.usage_metrics.items():
+        metrics[f"usage_{key}"] = value
+    return metrics
+
+
+def lookup_state_value(exported_state: Dict[str, object], layer: str, key: str) -> str:
+    if layer == "beliefs":
+        for belief in reversed(exported_state.get("beliefs", [])):
+            if belief.get("key") == key and belief.get("status") == "active":
+                return str(belief.get("value", "unknown"))
+        return "unknown"
+
+    if layer == "working_state":
+        for item in reversed(exported_state.get("working_state", [])):
+            if item.get("key") == key and item.get("status") == "active":
+                return str(item.get("value", "unknown"))
+        return "unknown"
+
+    if layer == "autobiographical_state":
+        for note in reversed(exported_state.get("autobiographical_state", [])):
+            if note.get("key") == key:
+                return str(note.get("value", "unknown"))
+        return "unknown"
+
+    if layer == "procedures":
+        for procedure in reversed(exported_state.get("procedures", [])):
+            if procedure.get("trigger") == key:
+                steps = procedure.get("steps", [])
+                if isinstance(steps, list) and steps:
+                    return str(steps[0])
+        return "unknown"
+
+    return "unknown"
+
+
+def _build_runtime(
+    adapter: LLMAdapter,
+    *,
+    features: object,
+    requested_model: str,
+    runtime_config: BrainLayerRuntimeConfig,
+) -> BrainLayerRuntime:
+    return BrainLayerRuntime(
+        adapter,
+        session=BrainLayerSession(features=features),
+        model=requested_model,
+        config=runtime_config,
+    )
+
+
+def _build_result_from_turn(
+    *,
+    scenario_slug: str,
+    turn: NaturalEvalTurn,
+    runtime_name: str,
+    eval_mode: str,
+    provider_name: str,
+    requested_model: str,
+    turn_result: object,
+    latency_ms: float,
+) -> NaturalEvalResult:
+    if turn.evaluation_type == "behavior":
+        actual = turn_result.assistant_response
+    else:
+        actual = lookup_state_value(turn_result.exported_state, turn.target_layer, turn.target_key)
+
+    response_model = turn_result.model_response.model or requested_model
+    return NaturalEvalResult(
+        scenario_slug=scenario_slug,
+        checkpoint=turn.checkpoint,
+        runtime_name=runtime_name,
+        evaluation_type=turn.evaluation_type,
+        target_layer=turn.target_layer,
+        target_key=turn.target_key,
+        expected=turn.expected_value,
+        actual=actual,
+        passed=answers_match(turn.expected_value, actual),
+        retrieved_layers=[memory.layer for memory in turn_result.retrieved_memories],
+        state_metrics=collect_state_metrics(turn_result.exported_state),
+        exported_state=turn_result.exported_state,
+        eval_mode=eval_mode,
+        provider_name=provider_name,
+        requested_model=requested_model,
+        response_model=response_model,
+        finish_reason=turn_result.model_response.finish_reason,
+        latency_ms=latency_ms,
+        used_json=turn_result.used_json,
+        parse_failure=not turn_result.used_json,
+        empty_answer=turn_result.empty_answer,
+        applied_observation_count=len(turn_result.applied_observations),
+        usage_metrics=normalize_usage_metrics(turn_result.model_response.usage),
+    )
+
+
+def _build_error_result(
+    *,
+    scenario_slug: str,
+    turn: NaturalEvalTurn,
+    runtime_name: str,
+    eval_mode: str,
+    provider_name: str,
+    requested_model: str,
+    exported_state: Dict[str, object],
+    error: str,
+    latency_ms: float,
+    skipped: bool,
+) -> NaturalEvalResult:
+    return NaturalEvalResult(
+        scenario_slug=scenario_slug,
+        checkpoint=turn.checkpoint,
+        runtime_name=runtime_name,
+        evaluation_type=turn.evaluation_type,
+        target_layer=turn.target_layer,
+        target_key=turn.target_key,
+        expected=turn.expected_value,
+        actual="skipped" if skipped else "error",
+        passed=False,
+        retrieved_layers=[],
+        state_metrics=collect_state_metrics(exported_state),
+        exported_state=exported_state,
+        eval_mode=eval_mode,
+        provider_name=provider_name,
+        requested_model=requested_model,
+        response_model=requested_model,
+        finish_reason="",
+        latency_ms=latency_ms,
+        used_json=False,
+        parse_failure=False,
+        empty_answer=False,
+        applied_observation_count=0,
+        usage_metrics={},
+        error=error,
+        skipped=skipped,
+    )
+
+
+def run_natural_eval_scenario(
+    scenario: NaturalEvalScenario,
+    *,
+    include_ablations: bool = True,
+    adapter: LLMAdapter | None = None,
+    eval_mode: str = "heuristic",
+    provider_name: str | None = None,
+    requested_model: str | None = None,
+    runtime_config: BrainLayerRuntimeConfig | None = None,
+) -> List[NaturalEvalResult]:
+    active_adapter = adapter or HeuristicNaturalConversationAdapter()
+    active_provider_name = provider_name or DEFAULT_HEURISTIC_PROVIDER
+    active_requested_model = requested_model or DEFAULT_HEURISTIC_MODEL
+    active_runtime_config = runtime_config or default_natural_eval_runtime_config()
+
+    results: List[NaturalEvalResult] = []
+    for runtime_name, features in build_runtime_variants(include_ablations=include_ablations):
+        runtime = _build_runtime(
+            active_adapter,
+            features=features,
+            requested_model=active_requested_model,
+            runtime_config=active_runtime_config,
+        )
+        blocked_error = ""
+        for turn in scenario.turns:
+            if blocked_error:
+                if turn.checkpoint:
+                    results.append(
+                        _build_error_result(
+                            scenario_slug=scenario.slug,
+                            turn=turn,
+                            runtime_name=runtime_name,
+                            eval_mode=eval_mode,
+                            provider_name=active_provider_name,
+                            requested_model=active_requested_model,
+                            exported_state=runtime.session.state.to_dict(),
+                            error=blocked_error,
+                            latency_ms=0.0,
+                            skipped=True,
+                        )
+                    )
+                continue
+
+            started_at = time.perf_counter()
+            try:
+                turn_result = runtime.run_turn(turn.prompt, scenario_slug=scenario.slug)
+            except LLMError as exc:
+                blocked_error = str(exc)
+                latency_ms = (time.perf_counter() - started_at) * 1000.0
+                if turn.checkpoint:
+                    results.append(
+                        _build_error_result(
+                            scenario_slug=scenario.slug,
+                            turn=turn,
+                            runtime_name=runtime_name,
+                            eval_mode=eval_mode,
+                            provider_name=active_provider_name,
+                            requested_model=active_requested_model,
+                            exported_state=runtime.session.state.to_dict(),
+                            error=blocked_error,
+                            latency_ms=latency_ms,
+                            skipped=False,
+                        )
+                    )
+                continue
+            except Exception as exc:
+                blocked_error = f"Unexpected error: {exc}"
+                latency_ms = (time.perf_counter() - started_at) * 1000.0
+                if turn.checkpoint:
+                    results.append(
+                        _build_error_result(
+                            scenario_slug=scenario.slug,
+                            turn=turn,
+                            runtime_name=runtime_name,
+                            eval_mode=eval_mode,
+                            provider_name=active_provider_name,
+                            requested_model=active_requested_model,
+                            exported_state=runtime.session.state.to_dict(),
+                            error=blocked_error,
+                            latency_ms=latency_ms,
+                            skipped=False,
+                        )
+                    )
+                continue
+
+            latency_ms = (time.perf_counter() - started_at) * 1000.0
+            if not turn.checkpoint:
+                continue
+
+            results.append(
+                _build_result_from_turn(
+                    scenario_slug=scenario.slug,
+                    turn=turn,
+                    runtime_name=runtime_name,
+                    eval_mode=eval_mode,
+                    provider_name=active_provider_name,
+                    requested_model=active_requested_model,
+                    turn_result=turn_result,
+                    latency_ms=latency_ms,
+                )
+            )
+    return results
+
+
+def run_natural_eval_suite(
+    scenarios: Iterable[NaturalEvalScenario] | None = None,
+    *,
+    include_ablations: bool = True,
+    adapter: LLMAdapter | None = None,
+    eval_mode: str = "heuristic",
+    provider_name: str | None = None,
+    requested_model: str | None = None,
+    runtime_config: BrainLayerRuntimeConfig | None = None,
+) -> List[NaturalEvalResult]:
+    active_scenarios = list(scenarios or NATURAL_EVAL_SCENARIOS)
+    results: List[NaturalEvalResult] = []
+    for scenario in active_scenarios:
+        results.extend(
+            run_natural_eval_scenario(
+                scenario,
+                include_ablations=include_ablations,
+                adapter=adapter,
+                eval_mode=eval_mode,
+                provider_name=provider_name,
+                requested_model=requested_model,
+                runtime_config=runtime_config,
+            )
+        )
+    return results
+
+
+def run_live_natural_eval_suite(
+    scenarios: Iterable[NaturalEvalScenario] | None = None,
+    *,
+    include_ablations: bool = True,
+    provider_name: str = DEFAULT_LIVE_PROVIDER,
+    requested_model: str = DEFAULT_LIVE_MODEL,
+    base_url: str = "https://api.openai.com/v1",
+    api_key_env: str = "OPENAI_API_KEY",
+    request_path: str = "/chat/completions",
+    timeout_seconds: float = 30.0,
+    max_output_tokens_field: str | None = "max_tokens",
+    temperature: float = 0.0,
+    max_output_tokens: int = 700,
+) -> List[NaturalEvalResult]:
+    adapter = build_live_model_eval_adapter(
+        api_key_env=api_key_env,
+        base_url=base_url,
+        request_path=request_path,
+        timeout_seconds=timeout_seconds,
+        max_output_tokens_field=max_output_tokens_field,
+    )
+    runtime_config = default_natural_eval_runtime_config(
+        temperature=temperature,
+        max_output_tokens=max_output_tokens,
+    )
+    return run_natural_eval_suite(
+        scenarios,
+        include_ablations=include_ablations,
+        adapter=adapter,
+        eval_mode="live",
+        provider_name=provider_name,
+        requested_model=requested_model,
+        runtime_config=runtime_config,
+    )
+
+
+def summarize_natural_eval_results(results: Sequence[NaturalEvalResult]) -> List[NaturalEvalSummary]:
+    passed_counts: Dict[str, int] = {}
+    totals: Dict[str, int] = {}
+    extraction_passed: Dict[str, int] = {}
+    extraction_totals: Dict[str, int] = {}
+    behavior_passed: Dict[str, int] = {}
+    behavior_totals: Dict[str, int] = {}
+    parse_failures: Dict[str, int] = {}
+    empty_answers: Dict[str, int] = {}
+    errors: Dict[str, int] = {}
+    skipped: Dict[str, int] = {}
+    metric_totals: Dict[str, Dict[str, float]] = {}
+
+    for result in results:
+        totals[result.runtime_name] = totals.get(result.runtime_name, 0) + 1
+        passed_counts[result.runtime_name] = passed_counts.get(result.runtime_name, 0) + int(
+            result.passed
+        )
+        if result.evaluation_type == "extraction":
+            extraction_totals[result.runtime_name] = extraction_totals.get(result.runtime_name, 0) + 1
+            extraction_passed[result.runtime_name] = extraction_passed.get(result.runtime_name, 0) + int(
+                result.passed
+            )
+        if result.evaluation_type == "behavior":
+            behavior_totals[result.runtime_name] = behavior_totals.get(result.runtime_name, 0) + 1
+            behavior_passed[result.runtime_name] = behavior_passed.get(result.runtime_name, 0) + int(
+                result.passed
+            )
+        parse_failures[result.runtime_name] = parse_failures.get(result.runtime_name, 0) + int(
+            result.parse_failure
+        )
+        empty_answers[result.runtime_name] = empty_answers.get(result.runtime_name, 0) + int(
+            result.empty_answer
+        )
+        errors[result.runtime_name] = errors.get(result.runtime_name, 0) + int(bool(result.error))
+        skipped[result.runtime_name] = skipped.get(result.runtime_name, 0) + int(result.skipped)
+        runtime_metric_totals = metric_totals.setdefault(result.runtime_name, {})
+        for key, value in _combined_metrics(result).items():
+            runtime_metric_totals[key] = runtime_metric_totals.get(key, 0.0) + value
+
+    summaries: List[NaturalEvalSummary] = []
+    for runtime_name in sorted(totals):
+        total = totals[runtime_name]
+        avg_metrics = {
+            key: value / total for key, value in metric_totals.get(runtime_name, {}).items()
+        }
+        summaries.append(
+            NaturalEvalSummary(
+                runtime_name=runtime_name,
+                passed=passed_counts[runtime_name],
+                total=total,
+                pass_rate=passed_counts[runtime_name] / total if total else 0.0,
+                extraction_passed=extraction_passed.get(runtime_name, 0),
+                extraction_total=extraction_totals.get(runtime_name, 0),
+                behavior_passed=behavior_passed.get(runtime_name, 0),
+                behavior_total=behavior_totals.get(runtime_name, 0),
+                parse_failures=parse_failures.get(runtime_name, 0),
+                empty_answers=empty_answers.get(runtime_name, 0),
+                errors=errors.get(runtime_name, 0),
+                skipped=skipped.get(runtime_name, 0),
+                avg_metrics=avg_metrics,
+            )
+        )
+    return summaries
+
+
+def render_natural_eval_report(results: Sequence[NaturalEvalResult]) -> str:
+    lines = [
+        "Natural Conversation BrainLayer Eval Report",
+        "===========================================",
+        "",
+    ]
+    summaries = summarize_natural_eval_results(results)
+    if results:
+        first = results[0]
+        lines.append(
+            f"Mode: {first.eval_mode} | provider={first.provider_name} | requested_model={first.requested_model}"
+        )
+        lines.append("")
+
+    for result in results:
+        status = "SKIP" if result.skipped else "PASS" if result.passed else "FAIL"
+        case_label = f"{result.scenario_slug}/{result.checkpoint}"
+        layers = ",".join(result.retrieved_layers) or "-"
+        target = (
+            f"{result.evaluation_type}:{result.target_layer}:{result.target_key}"
+            if result.evaluation_type == "extraction"
+            else result.evaluation_type
+        )
+        extras = [
+            f"target={target}",
+            f"latency_ms={result.latency_ms:.1f}",
+            f"json={str(result.used_json).lower()}",
+        ]
+        if result.error:
+            extras.append(f"error={result.error}")
+        lines.append(
+            f"[{status}] {result.runtime_name} on {case_label}: "
+            f"expected={result.expected!r}, actual={result.actual!r}, "
+            f"layers={layers}, " + ", ".join(extras)
+        )
+
+    lines.append("")
+    lines.append("Summary")
+    lines.append("-------")
+    for summary in summaries:
+        extras = [
+            f"extraction={summary.extraction_passed}/{summary.extraction_total}",
+            f"behavior={summary.behavior_passed}/{summary.behavior_total}",
+            f"avg_records={summary.avg_metrics.get('total_records', 0.0):.1f}",
+            f"avg_latency_ms={summary.avg_metrics.get('latency_ms', 0.0):.1f}",
+            f"parse_failures={summary.parse_failures}",
+            f"errors={summary.errors}",
+        ]
+        avg_total_tokens = summary.avg_metrics.get("usage_total_tokens", 0.0)
+        if avg_total_tokens:
+            extras.append(f"avg_total_tokens={avg_total_tokens:.1f}")
+        lines.append(
+            f"{summary.runtime_name}: {summary.passed}/{summary.total} | " + ", ".join(extras)
+        )
+    return "\n".join(lines)
+
+
+def serializable_natural_eval_result(result: NaturalEvalResult) -> Dict[str, object]:
+    payload: Dict[str, object] = {
+        "scenario_slug": result.scenario_slug,
+        "checkpoint": result.checkpoint,
+        "case_label": f"{result.scenario_slug}/{result.checkpoint}",
+        "runtime_name": result.runtime_name,
+        "evaluation_type": result.evaluation_type,
+        "target_layer": result.target_layer,
+        "target_key": result.target_key,
+        "expected": result.expected,
+        "actual": result.actual,
+        "passed": result.passed,
+        "eval_mode": result.eval_mode,
+        "provider_name": result.provider_name,
+        "requested_model": result.requested_model,
+        "response_model": result.response_model,
+        "finish_reason": result.finish_reason,
+        "latency_ms": result.latency_ms,
+        "used_json": result.used_json,
+        "parse_failure": result.parse_failure,
+        "empty_answer": result.empty_answer,
+        "applied_observation_count": result.applied_observation_count,
+        "error": result.error,
+        "skipped": result.skipped,
+        "retrieved_layers": ",".join(result.retrieved_layers),
+    }
+    for key, value in sorted(result.state_metrics.items()):
+        payload[f"metric_{key}"] = value
+    for key, value in sorted(result.usage_metrics.items()):
+        payload[f"usage_{key}"] = value
+    return payload
+
+
+def serializable_natural_eval_summary(summary: NaturalEvalSummary) -> Dict[str, object]:
+    payload: Dict[str, object] = {
+        "runtime_name": summary.runtime_name,
+        "passed": summary.passed,
+        "total": summary.total,
+        "pass_rate": summary.pass_rate,
+        "extraction_passed": summary.extraction_passed,
+        "extraction_total": summary.extraction_total,
+        "behavior_passed": summary.behavior_passed,
+        "behavior_total": summary.behavior_total,
+        "parse_failures": summary.parse_failures,
+        "empty_answers": summary.empty_answers,
+        "errors": summary.errors,
+        "skipped": summary.skipped,
+    }
+    for key, value in sorted(summary.avg_metrics.items()):
+        payload[f"avg_{key}"] = value
+    return payload
+
+
+def build_natural_eval_metadata(
+    results: Sequence[NaturalEvalResult],
+    *,
+    include_ablations: bool,
+    label: str | None,
+) -> Dict[str, object]:
+    timestamp = utc_now_compact()
+    run_id = timestamp if not label else f"{timestamp}-{slugify_label(label)}"
+    first = results[0] if results else None
+    return {
+        "run_id": run_id,
+        "generated_at_utc": utc_now_iso(),
+        "git_commit": get_git_commit(),
+        "include_ablations": include_ablations,
+        "label": label or "",
+        "eval_mode": first.eval_mode if first else "",
+        "provider_name": first.provider_name if first else "",
+        "requested_model": first.requested_model if first else "",
+        "scenario_count": len({result.scenario_slug for result in results}),
+        "checkpoint_count": len({(result.scenario_slug, result.checkpoint) for result in results}),
+        "runtime_count": len({result.runtime_name for result in results}),
+        "extraction_count": len([result for result in results if result.evaluation_type == "extraction"]),
+        "behavior_count": len([result for result in results if result.evaluation_type == "behavior"]),
+    }
+
+
+def render_natural_eval_x_post(
+    summaries: Sequence[NaturalEvalSummary],
+    *,
+    include_ablations: bool,
+    label: str | None,
+    eval_mode: str,
+    requested_model: str,
+) -> str:
+    summary_by_name = {summary.runtime_name: summary for summary in summaries}
+    model_loop = summary_by_name.get("model_loop")
+    if model_loop is None:
+        return "BrainLayer natural eval completed."
+
+    prefix = "BrainLayer natural eval"
+    if eval_mode == "live":
+        prefix = f"BrainLayer natural live eval {requested_model}"
+    if label:
+        prefix = f"{prefix} ({label})"
+
+    parts = [
+        f"{prefix}: full runtime {model_loop.passed}/{model_loop.total}",
+        f"with extraction {model_loop.extraction_passed}/{model_loop.extraction_total}",
+        f"and behavior {model_loop.behavior_passed}/{model_loop.behavior_total}.",
+    ]
+
+    if include_ablations:
+        no_consolidation = summary_by_name.get("model_loop_no_consolidation")
+        no_autobio = summary_by_name.get("model_loop_no_autobio")
+        no_working_state = summary_by_name.get("model_loop_no_working_state")
+        if no_consolidation and no_autobio and no_working_state:
+            parts.append(
+                "Ablations:"
+                f" no_consolidation {no_consolidation.passed}/{no_consolidation.total},"
+                f" no_autobio {no_autobio.passed}/{no_autobio.total},"
+                f" no_working_state {no_working_state.passed}/{no_working_state.total}."
+            )
+
+    return " ".join(parts)
+
+
+def export_natural_eval_results(
+    results: Sequence[NaturalEvalResult],
+    export_root: Path,
+    *,
+    include_ablations: bool,
+    label: str | None = None,
+) -> Path:
+    summaries = summarize_natural_eval_results(results)
+    metadata = build_natural_eval_metadata(
+        results,
+        include_ablations=include_ablations,
+        label=label,
+    )
+    run_dir = export_root / str(metadata["run_id"])
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    result_rows = [serializable_natural_eval_result(result) for result in results]
+    summary_rows = [serializable_natural_eval_summary(summary) for summary in summaries]
+    x_post = render_natural_eval_x_post(
+        summaries,
+        include_ablations=include_ablations,
+        label=label,
+        eval_mode=str(metadata["eval_mode"]),
+        requested_model=str(metadata["requested_model"]),
+    )
+
+    payload = {
+        "metadata": metadata,
+        "summary": summary_rows,
+        "results": result_rows,
+        "x_post": x_post,
+    }
+
+    (run_dir / "results.json").write_text(json.dumps(payload, indent=2) + "\n")
+    write_csv(run_dir / "results.csv", result_rows)
+    write_csv(run_dir / "summary.csv", summary_rows)
+    (run_dir / "x_post.txt").write_text(x_post + "\n")
+
+    history_rows = []
+    for row in summary_rows:
+        history_rows.append(
+            {
+                "run_id": metadata["run_id"],
+                "generated_at_utc": metadata["generated_at_utc"],
+                "git_commit": metadata["git_commit"],
+                "label": metadata["label"],
+                "include_ablations": metadata["include_ablations"],
+                "eval_mode": metadata["eval_mode"],
+                "provider_name": metadata["provider_name"],
+                "requested_model": metadata["requested_model"],
+                **row,
+            }
+        )
+
+    append_csv(export_root / "natural_eval_history.csv", history_rows)
+    with (export_root / "natural_eval_history.jsonl").open("a") as handle:
+        handle.write(json.dumps(payload) + "\n")
+
+    return run_dir
+
+
+def dump_natural_eval_states(results: Sequence[NaturalEvalResult], output_dir: Path) -> None:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    for result in results:
+        filename = f"{result.runtime_name}__{result.scenario_slug}__{result.checkpoint}.json"
+        target = output_dir / filename
+        target.write_text(json.dumps(result.exported_state, indent=2) + "\n")
+
+
+def _build_adapter_from_args(args: argparse.Namespace) -> tuple[LLMAdapter, str, str]:
+    if args.mode == "heuristic":
+        return (
+            HeuristicNaturalConversationAdapter(),
+            DEFAULT_HEURISTIC_PROVIDER,
+            DEFAULT_HEURISTIC_MODEL,
+        )
+
+    max_output_tokens_field = args.max_output_tokens_field
+    if max_output_tokens_field is not None and max_output_tokens_field.lower() == "none":
+        max_output_tokens_field = None
+    adapter = build_live_model_eval_adapter(
+        api_key_env=args.api_key_env,
+        base_url=args.base_url,
+        request_path=args.request_path,
+        timeout_seconds=args.timeout_seconds,
+        max_output_tokens_field=max_output_tokens_field,
+    )
+    return adapter, args.provider_name, args.model
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="Run natural-conversation evals against the model-backed BrainLayer loop."
+    )
+    parser.add_argument(
+        "--mode",
+        choices=("heuristic", "live"),
+        default="heuristic",
+        help="Choose the deterministic heuristic backend or a live chat-completions-compatible provider.",
+    )
+    parser.add_argument(
+        "--model",
+        default=DEFAULT_LIVE_MODEL,
+        help="Requested model name for live eval mode.",
+    )
+    parser.add_argument(
+        "--provider-name",
+        default=DEFAULT_LIVE_PROVIDER,
+        help="Provider label to store in run metadata for live eval mode.",
+    )
+    parser.add_argument(
+        "--base-url",
+        default="https://api.openai.com/v1",
+        help="Base URL for a chat-completions-compatible provider in live mode.",
+    )
+    parser.add_argument(
+        "--api-key-env",
+        default="OPENAI_API_KEY",
+        help="Environment variable containing the API key for live mode.",
+    )
+    parser.add_argument(
+        "--request-path",
+        default="/chat/completions",
+        help="Request path for the live chat-completions-compatible provider.",
+    )
+    parser.add_argument(
+        "--timeout-seconds",
+        type=float,
+        default=30.0,
+        help="HTTP timeout for live provider requests.",
+    )
+    parser.add_argument(
+        "--max-output-tokens-field",
+        default="max_tokens",
+        help="Field name used by the live provider for output tokens. Use 'none' to omit it.",
+    )
+    parser.add_argument(
+        "--temperature",
+        type=float,
+        default=0.0,
+        help="Sampling temperature for the evaluation runtime.",
+    )
+    parser.add_argument(
+        "--max-output-tokens",
+        type=int,
+        default=700,
+        help="Maximum output tokens requested per evaluation turn.",
+    )
+    parser.add_argument(
+        "--core-only",
+        action="store_true",
+        help="Run only the full BrainLayer runtime without ablations.",
+    )
+    parser.add_argument(
+        "--dump-states",
+        type=Path,
+        help="Optional directory for writing state snapshots at each checkpoint.",
+    )
+    parser.add_argument(
+        "--export-results",
+        type=Path,
+        help="Write per-run CSV/JSON summaries into DIR and append natural-eval history files there.",
+    )
+    parser.add_argument(
+        "--label",
+        help="Optional label to attach to exported natural-eval runs for later comparison.",
+    )
+    args = parser.parse_args(argv)
+
+    adapter, provider_name, requested_model = _build_adapter_from_args(args)
+    runtime_config = default_natural_eval_runtime_config(
+        temperature=args.temperature,
+        max_output_tokens=args.max_output_tokens,
+    )
+    include_ablations = not args.core_only
+    results = run_natural_eval_suite(
+        include_ablations=include_ablations,
+        adapter=adapter,
+        eval_mode=args.mode,
+        provider_name=provider_name,
+        requested_model=requested_model,
+        runtime_config=runtime_config,
+    )
+
+    if args.dump_states:
+        dump_natural_eval_states(results, args.dump_states)
+    print(render_natural_eval_report(results))
+    if args.export_results:
+        run_dir = export_natural_eval_results(
+            results,
+            args.export_results,
+            include_ablations=include_ablations,
+            label=args.label,
+        )
+        print("")
+        print(f"Natural-eval exports written to {run_dir}")
+        print(f"X post saved to {run_dir / 'x_post.txt'}")
+    return 0
+
+
+__all__ = [
+    "NATURAL_EVAL_SCENARIOS",
+    "HeuristicNaturalConversationAdapter",
+    "NaturalEvalResult",
+    "NaturalEvalScenario",
+    "NaturalEvalSummary",
+    "NaturalEvalTurn",
+    "default_natural_eval_runtime_config",
+    "dump_natural_eval_states",
+    "export_natural_eval_results",
+    "lookup_state_value",
+    "render_natural_eval_report",
+    "render_natural_eval_x_post",
+    "run_live_natural_eval_suite",
+    "run_natural_eval_scenario",
+    "run_natural_eval_suite",
+    "summarize_natural_eval_results",
+]

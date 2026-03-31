@@ -194,6 +194,11 @@ The repo now includes an initial contradiction-focused runtime suite for this la
 - relationship reframing
 - hint consolidation followed by explicit correction
 
+The next realism step is a natural-conversation suite where signals are implicit in ordinary dialogue instead of explicit `Record ...` prompts. The repo now includes that layer in `scripts/run_natural_model_evals.py`, with separate scoring for:
+
+- extraction accuracy: whether the right BrainLayer state update was inferred
+- behavior accuracy: whether later answers reflect that inferred state
+
 ## What To Log
 
 For every run, log:
