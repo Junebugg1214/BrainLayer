@@ -1,0 +1,52 @@
+{
+  "entries": [
+    {
+      "name": "openai-gpt-4o-mini",
+      "mode": "live",
+      "provider_name": "openai_compatible",
+      "base_url": "https://api.openai.com/v1",
+      "api_key_env": "OPENAI_API_KEY",
+      "max_output_tokens_field": "max_completion_tokens",
+      "model": "gpt-4o-mini",
+      "input_cost_per_1k_tokens": 0.00015,
+      "output_cost_per_1k_tokens": 0.0006,
+      "enabled": true
+    },
+    {
+      "name": "openai-gpt-4.1-mini",
+      "mode": "live",
+      "provider_name": "openai_compatible",
+      "base_url": "https://api.openai.com/v1",
+      "api_key_env": "OPENAI_API_KEY",
+      "max_output_tokens_field": "max_completion_tokens",
+      "model": "gpt-4.1-mini",
+      "input_cost_per_1k_tokens": 0.0004,
+      "output_cost_per_1k_tokens": 0.0016,
+      "enabled": true
+    },
+    {
+      "name": "openai-gpt-4o",
+      "mode": "live",
+      "provider_name": "openai_compatible",
+      "base_url": "https://api.openai.com/v1",
+      "api_key_env": "OPENAI_API_KEY",
+      "max_output_tokens_field": "max_completion_tokens",
+      "model": "gpt-4o",
+      "input_cost_per_1k_tokens": 0.0025,
+      "output_cost_per_1k_tokens": 0.01,
+      "enabled": true
+    },
+    {
+      "name": "openai-gpt-4.1",
+      "mode": "live",
+      "provider_name": "openai_compatible",
+      "base_url": "https://api.openai.com/v1",
+      "api_key_env": "OPENAI_API_KEY",
+      "max_output_tokens_field": "max_completion_tokens",
+      "model": "gpt-4.1",
+      "input_cost_per_1k_tokens": 0.002,
+      "output_cost_per_1k_tokens": 0.008,
+      "enabled": true
+    }
+  ]
+}

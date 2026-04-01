@@ -9,6 +9,7 @@ from brainlayer.natural_eval import (
     HeuristicNaturalConversationAdapter,
     NaturalEvalScenario,
     NaturalEvalTurn,
+    default_natural_eval_runtime_config,
     export_natural_eval_results,
     run_natural_eval_suite,
 )
@@ -93,6 +94,15 @@ class FailingAdapter(LLMAdapter):
 
 
 class NaturalEvalTests(unittest.TestCase):
+    def test_natural_eval_prompt_mentions_canonical_brainlayer_keys(self) -> None:
+        prompt = default_natural_eval_runtime_config().system_prompt
+
+        self.assertIn("key=response_style", prompt)
+        self.assertIn("key=primary_goal", prompt)
+        self.assertIn("key=collaboration_mode", prompt)
+        self.assertIn("trigger=retry_release", prompt)
+        self.assertIn("action=check authentication", prompt)
+
     def test_full_natural_suite_passes_with_heuristic_adapter(self) -> None:
         results = run_natural_eval_suite(include_ablations=False)
         model_loop_results = [result for result in results if result.runtime_name == "model_loop"]

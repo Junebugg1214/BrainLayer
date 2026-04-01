@@ -48,6 +48,7 @@ VALID_MEMORY_TYPES = {
 REQUIRED_PAYLOAD_KEYS = {
     "preference": {"key", "value", "proposition"},
     "correction": {"key", "value", "proposition"},
+    "preference_hint": {"key", "value", "proposition"},
     "lesson": {"trigger", "action", "summary"},
     "lesson_hint": {"trigger", "action", "summary"},
     "goal": {"key", "value", "summary"},
@@ -168,13 +169,16 @@ class BrainLayerRuntime:
 
         applied_observations: List[Observation] = []
         for observation in parsed_output.memory_observations:
-            self.session.observe(
-                text=observation.text,
-                memory_type=observation.memory_type,
-                payload=observation.payload,
-                salience=observation.salience,
-                scenario_slug=active_scenario_slug,
-            )
+            try:
+                self.session.observe(
+                    text=observation.text,
+                    memory_type=observation.memory_type,
+                    payload=observation.payload,
+                    salience=observation.salience,
+                    scenario_slug=active_scenario_slug,
+                )
+            except Exception:
+                continue
             applied_observations.append(observation)
 
         interaction_episode = self.session.state.record_episode(
@@ -510,15 +514,23 @@ class BrainLayerRuntime:
         payload: Dict[str, str],
     ) -> str:
         if memory_type in {"preference", "correction", "preference_hint"}:
-            return f"{payload['key']} is currently {payload['value']}."
+            key = payload.get("key")
+            value = payload.get("value")
+            if key and value:
+                return f"{key} is currently {value}."
+            return "Captured preference update."
         if memory_type in {"goal", "goal_hint"}:
-            return payload["summary"]
+            return payload.get("summary", "Captured goal update.")
         if memory_type in {"relationship", "relationship_hint"}:
-            return payload["summary"]
+            return payload.get("summary", "Captured relationship update.")
         if memory_type in {"lesson", "lesson_hint"}:
-            return f"When {payload['trigger']}, {payload['action']}."
+            trigger = payload.get("trigger")
+            action = payload.get("action")
+            if trigger and action:
+                return f"When {trigger}, {action}."
+            return payload.get("summary", "Captured lesson update.")
         if memory_type == "noise":
-            return "Captured low-salience turn detail."
+            return payload.get("value", "Captured low-salience turn detail.")
         return "Captured model observation."
 
 

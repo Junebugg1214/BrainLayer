@@ -99,6 +99,65 @@ class BrainLayerRuntimeTests(unittest.TestCase):
             )
         )
 
+    def test_runtime_skips_invalid_model_generated_memory_updates(self) -> None:
+        session = BrainLayerSession()
+        runtime = BrainLayerRuntime(
+            StaticLLMAdapter(
+                response=json.dumps(
+                    {
+                        "assistant_response": "I will keep the answer brief.",
+                        "episodic_summary": "The assistant tried to store a malformed update.",
+                        "memory_observations": [
+                            {
+                                "text": "Malformed preference update.",
+                                "memory_type": "preference",
+                                "salience": 0.9,
+                                "payload": {
+                                    "value": "brief",
+                                    "proposition": "The user prefers brief replies.",
+                                },
+                            }
+                        ],
+                    }
+                )
+            ),
+            session=session,
+        )
+
+        result = runtime.run_turn("How should you respond going forward?")
+
+        self.assertEqual(len(result.applied_observations), 0)
+        self.assertFalse(session.state.beliefs)
+
+    def test_runtime_rejects_malformed_preference_hint_payloads(self) -> None:
+        session = BrainLayerSession()
+        runtime = BrainLayerRuntime(
+            StaticLLMAdapter(
+                response=json.dumps(
+                    {
+                        "assistant_response": "Noted.",
+                        "episodic_summary": "The assistant saw a malformed hint payload.",
+                        "memory_observations": [
+                            {
+                                "memory_type": "preference_hint",
+                                "salience": 0.4,
+                                "payload": {
+                                    "value": "concise",
+                                    "proposition": "The user likely prefers concise replies.",
+                                },
+                            }
+                        ],
+                    }
+                )
+            ),
+            session=session,
+        )
+
+        result = runtime.run_turn("Record a likely response style preference.")
+
+        self.assertEqual(len(result.applied_observations), 0)
+        self.assertFalse(session.state.beliefs)
+
     def test_runtime_falls_back_to_plain_text_model_output(self) -> None:
         runtime = BrainLayerRuntime(StaticLLMAdapter(response="Plain text answer."))
 
