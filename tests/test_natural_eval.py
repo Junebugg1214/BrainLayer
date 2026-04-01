@@ -99,6 +99,12 @@ class NaturalEvalTests(unittest.TestCase):
         self.assertEqual(len(model_loop_results), 11)
         self.assertTrue(all(result.passed for result in model_loop_results))
 
+    def test_hard_natural_suite_passes_with_heuristic_adapter(self) -> None:
+        results = run_natural_eval_suite(include_ablations=False, scenario_pack="hard")
+        model_loop_results = [result for result in results if result.runtime_name == "model_loop"]
+        self.assertEqual(len(model_loop_results), 10)
+        self.assertTrue(all(result.passed for result in model_loop_results))
+
     def test_natural_ablations_show_targeted_regressions(self) -> None:
         results = run_natural_eval_suite()
 
@@ -134,6 +140,41 @@ class NaturalEvalTests(unittest.TestCase):
             ).passed
         )
 
+    def test_hard_natural_pack_shows_targeted_regressions(self) -> None:
+        results = run_natural_eval_suite(scenario_pack="hard")
+
+        def lookup(runtime_name: str, scenario_slug: str, checkpoint: str) -> object:
+            for result in results:
+                if (
+                    result.runtime_name == runtime_name
+                    and result.scenario_slug == scenario_slug
+                    and result.checkpoint == checkpoint
+                ):
+                    return result
+            self.fail(f"Missing result for {runtime_name} on {scenario_slug}/{checkpoint}")
+
+        self.assertFalse(
+            lookup(
+                "model_loop_no_consolidation",
+                "natural_delayed_hint_accumulation",
+                "extract_hint_consolidation",
+            ).passed
+        )
+        self.assertFalse(
+            lookup(
+                "model_loop_no_autobio",
+                "natural_collaboration_reframe_after_noise",
+                "extract_relationship",
+            ).passed
+        )
+        self.assertFalse(
+            lookup(
+                "model_loop_no_working_state",
+                "natural_long_horizon_goal_shift",
+                "extract_revised_goal",
+            ).passed
+        )
+
     def test_natural_eval_script_reports_summary(self) -> None:
         completed = subprocess.run(
             ["python3", str(ROOT / "scripts" / "run_natural_model_evals.py"), "--core-only"],
@@ -144,6 +185,23 @@ class NaturalEvalTests(unittest.TestCase):
 
         self.assertIn("Natural Conversation BrainLayer Eval Report", completed.stdout)
         self.assertIn("model_loop: 11/11", completed.stdout)
+
+    def test_natural_eval_script_reports_hard_pack_summary(self) -> None:
+        completed = subprocess.run(
+            [
+                "python3",
+                str(ROOT / "scripts" / "run_natural_model_evals.py"),
+                "--core-only",
+                "--scenario-pack",
+                "hard",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        self.assertIn("Natural Conversation BrainLayer Eval Report", completed.stdout)
+        self.assertIn("model_loop: 10/10", completed.stdout)
 
     def test_export_natural_eval_results_writes_csv_json_history_and_x_post(self) -> None:
         results = run_natural_eval_suite(include_ablations=False)

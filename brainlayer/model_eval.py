@@ -60,6 +60,7 @@ DEFAULT_HEURISTIC_PROVIDER = "heuristic"
 DEFAULT_HEURISTIC_MODEL = "heuristic-brainlayer-eval"
 DEFAULT_LIVE_PROVIDER = "openai_compatible"
 DEFAULT_LIVE_MODEL = os.environ.get("BRAINLAYER_MODEL", "gpt-4.1-mini")
+DEFAULT_SCENARIO_PACK = "standard"
 MODEL_EVAL_SYSTEM_PROMPT = (
     "You are participating in a BrainLayer evaluation. "
     "Follow the task literally. "
@@ -130,7 +131,7 @@ class ModelEvalSummary:
     avg_metrics: Dict[str, float]
 
 
-MODEL_EVAL_SCENARIOS: List[ModelEvalScenario] = [
+STANDARD_MODEL_EVAL_SCENARIOS: List[ModelEvalScenario] = [
     ModelEvalScenario(
         slug="model_preference_revision",
         title="Model Preference Revision",
@@ -266,6 +267,152 @@ MODEL_EVAL_SCENARIOS: List[ModelEvalScenario] = [
     ),
 ]
 
+HARD_MODEL_EVAL_SCENARIOS: List[ModelEvalScenario] = [
+    ModelEvalScenario(
+        slug="model_delayed_hint_consolidation",
+        title="Model Delayed Hint Consolidation",
+        description="Can the runtime consolidate repeated weak hints across noisy intervening turns before a delayed query?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record preference hint: key=response_style; value=concise; "
+                    "proposition=The user likely prefers concise replies."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The appendix will probably need a separate notation legend."
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The changelog should stay sorted by subsystem."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record preference hint: key=response_style; value=concise; "
+                    "proposition=The user likely prefers concise replies."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The benchmark spreadsheet still needs a reviewer column."
+            ),
+            ModelEvalTurn(
+                prompt="What response style should you use right now?",
+                expected_answer="concise",
+                checkpoint="late_hint_consolidated",
+            ),
+        ],
+    ),
+    ModelEvalScenario(
+        slug="model_multihop_goal_drift",
+        title="Model Multihop Goal Drift",
+        description="Can the runtime keep the latest goal after several unrelated updates intervene?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=primary_goal; value=preserve citations; "
+                    "summary=The current primary goal is to preserve citations in every answer."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The poster mockup should use sentence case headings."
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The benchmark labels should align with the spreadsheet tabs."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=primary_goal; value=ship eval report; "
+                    "summary=The current primary goal is to ship the evaluation report."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The footnotes need a final consistency pass."
+            ),
+            ModelEvalTurn(
+                prompt="What is the current primary goal for this task?",
+                expected_answer="ship eval report",
+                checkpoint="late_revised_goal",
+            ),
+        ],
+    ),
+    ModelEvalScenario(
+        slug="model_relationship_after_distraction",
+        title="Model Relationship After Distraction",
+        description="Can the runtime preserve the latest collaboration framing across distracting turns?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record relationship: key=collaboration_mode; value=task executor; "
+                    "summary=The collaboration mode is task executor.; "
+                    "themes=relationship,project-mode"
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The release checklist should stay alphabetized."
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The comparison chart needs a latency footnote."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record relationship: key=collaboration_mode; value=research partner; "
+                    "summary=The collaboration mode is research partner.; "
+                    "themes=relationship,research-mode"
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The citations page should preserve original DOI links."
+            ),
+            ModelEvalTurn(
+                prompt="What collaboration mode should define this project right now?",
+                expected_answer="research partner",
+                checkpoint="late_relationship",
+            ),
+        ],
+    ),
+    ModelEvalScenario(
+        slug="model_procedure_hint_consolidation",
+        title="Model Procedure Hint Consolidation",
+        description="Can the runtime consolidate repeated weak lessons into a reusable procedure after noisy turns?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record lesson hint: trigger=retry_release; action=check authentication; "
+                    "summary=Before retrying a release, confirm GitHub authentication first."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The release issue template still needs a severity field."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record lesson hint: trigger=retry_release; action=check authentication; "
+                    "summary=Before retrying a release, confirm GitHub authentication first."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The incident timeline should stay in UTC."
+            ),
+            ModelEvalTurn(
+                prompt="Before retrying the release, what should you do first?",
+                expected_answer="check authentication",
+                checkpoint="procedure_after_hints",
+            ),
+        ],
+    ),
+]
+
+MODEL_EVAL_SCENARIOS = STANDARD_MODEL_EVAL_SCENARIOS
+
+
+def get_model_eval_scenarios(scenario_pack: str = DEFAULT_SCENARIO_PACK) -> List[ModelEvalScenario]:
+    if scenario_pack == "standard":
+        return list(STANDARD_MODEL_EVAL_SCENARIOS)
+    if scenario_pack == "hard":
+        return list(HARD_MODEL_EVAL_SCENARIOS)
+    if scenario_pack == "all":
+        return list(STANDARD_MODEL_EVAL_SCENARIOS) + list(HARD_MODEL_EVAL_SCENARIOS)
+    raise ValueError(f"Unsupported model eval scenario pack: {scenario_pack}")
+
 
 class HeuristicBrainLayerEvalAdapter(LLMAdapter):
     """Deterministic adapter that behaves like a simple model over retrieved BrainLayer context."""
@@ -371,7 +518,9 @@ class HeuristicBrainLayerEvalAdapter(LLMAdapter):
             "correction",
             "goal",
             "relationship",
+            "lesson",
             "preference_hint",
+            "lesson_hint",
             "noise",
         }
         if normalized not in allowed:
@@ -391,6 +540,12 @@ class HeuristicBrainLayerEvalAdapter(LLMAdapter):
                 "value": fields["value"],
                 "summary": fields["summary"],
             }
+        if memory_type in {"lesson", "lesson_hint"}:
+            return {
+                "trigger": fields["trigger"],
+                "action": fields["action"],
+                "summary": fields["summary"],
+            }
         if memory_type == "relationship":
             return {
                 "key": fields["key"],
@@ -405,6 +560,8 @@ class HeuristicBrainLayerEvalAdapter(LLMAdapter):
     def _build_observation_text(self, memory_type: str, payload: Dict[str, str]) -> str:
         if memory_type in {"preference", "correction", "preference_hint"}:
             return payload["proposition"]
+        if memory_type in {"lesson", "lesson_hint"}:
+            return payload["summary"]
         if memory_type in {"goal", "relationship"}:
             return payload["summary"]
         if memory_type == "noise":
@@ -421,6 +578,8 @@ class HeuristicBrainLayerEvalAdapter(LLMAdapter):
             return 0.18
         if memory_type.endswith("_hint"):
             return 0.42
+        if memory_type in {"lesson", "lesson_hint"}:
+            return 0.88 if memory_type == "lesson" else 0.42
         if memory_type in {"correction", "goal", "relationship"}:
             return 0.95
         return 0.9
@@ -882,6 +1041,7 @@ def run_model_eval_scenario(
 def run_model_eval_suite(
     scenarios: Iterable[ModelEvalScenario] | None = None,
     *,
+    scenario_pack: str = DEFAULT_SCENARIO_PACK,
     include_ablations: bool = True,
     adapter: LLMAdapter | None = None,
     eval_mode: str = "heuristic",
@@ -891,7 +1051,7 @@ def run_model_eval_suite(
     behavior_scoring_mode: str = "judge",
     behavior_judge: BehaviorJudge | None = None,
 ) -> List[ModelEvalResult]:
-    active_scenarios = list(scenarios or MODEL_EVAL_SCENARIOS)
+    active_scenarios = list(scenarios or get_model_eval_scenarios(scenario_pack))
     results: List[ModelEvalResult] = []
     for scenario in active_scenarios:
         results.extend(
@@ -913,6 +1073,7 @@ def run_model_eval_suite(
 def run_live_model_eval_suite(
     scenarios: Iterable[ModelEvalScenario] | None = None,
     *,
+    scenario_pack: str = DEFAULT_SCENARIO_PACK,
     include_ablations: bool = True,
     provider_name: str = DEFAULT_LIVE_PROVIDER,
     requested_model: str = DEFAULT_LIVE_MODEL,
@@ -939,6 +1100,7 @@ def run_live_model_eval_suite(
     )
     return run_model_eval_suite(
         scenarios,
+        scenario_pack=scenario_pack,
         include_ablations=include_ablations,
         adapter=adapter,
         eval_mode="live",
@@ -1145,6 +1307,7 @@ def build_model_eval_metadata(
     *,
     include_ablations: bool,
     label: str | None,
+    scenario_pack: str = DEFAULT_SCENARIO_PACK,
 ) -> Dict[str, object]:
     timestamp = utc_now_compact()
     run_id = timestamp if not label else f"{timestamp}-{slugify_label(label)}"
@@ -1154,6 +1317,7 @@ def build_model_eval_metadata(
         "generated_at_utc": utc_now_iso(),
         "git_commit": get_git_commit(),
         "include_ablations": include_ablations,
+        "scenario_pack": scenario_pack,
         "label": label or "",
         "eval_mode": first.eval_mode if first else "",
         "provider_name": first.provider_name if first else "",
@@ -1225,12 +1389,14 @@ def export_model_eval_results(
     *,
     include_ablations: bool,
     label: str | None = None,
+    scenario_pack: str = DEFAULT_SCENARIO_PACK,
 ) -> Path:
     summaries = summarize_model_eval_results(results)
     metadata = build_model_eval_metadata(
         results,
         include_ablations=include_ablations,
         label=label,
+        scenario_pack=scenario_pack,
     )
     run_dir = export_root / str(metadata["run_id"])
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -1271,6 +1437,7 @@ def export_model_eval_results(
                 "git_commit": metadata["git_commit"],
                 "label": metadata["label"],
                 "include_ablations": metadata["include_ablations"],
+                "scenario_pack": metadata["scenario_pack"],
                 "eval_mode": metadata["eval_mode"],
                 "provider_name": metadata["provider_name"],
                 "requested_model": metadata["requested_model"],
@@ -1375,6 +1542,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="Run only the full model-backed BrainLayer runtime without ablations.",
     )
     parser.add_argument(
+        "--scenario-pack",
+        choices=("standard", "hard", "all"),
+        default=DEFAULT_SCENARIO_PACK,
+        help="Choose the standard eval set, the harder delayed/noisy set, or both together.",
+    )
+    parser.add_argument(
         "--score-exact",
         action="store_true",
         help="Disable judge-backed semantic behavior scoring and require exact normalized matches.",
@@ -1402,6 +1575,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     include_ablations = not args.core_only
     results = run_model_eval_suite(
+        scenario_pack=args.scenario_pack,
         include_ablations=include_ablations,
         adapter=adapter,
         eval_mode=args.mode,
@@ -1419,6 +1593,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             args.export_results,
             include_ablations=include_ablations,
             label=args.label,
+            scenario_pack=args.scenario_pack,
         )
         print("")
         print(f"Model-loop exports written to {run_dir}")
@@ -1427,7 +1602,10 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 __all__ = [
+    "DEFAULT_SCENARIO_PACK",
+    "HARD_MODEL_EVAL_SCENARIOS",
     "MODEL_EVAL_SCENARIOS",
+    "STANDARD_MODEL_EVAL_SCENARIOS",
     "HeuristicBrainLayerEvalAdapter",
     "ModelEvalResult",
     "ModelEvalScenario",
@@ -1437,6 +1615,7 @@ __all__ = [
     "default_model_eval_runtime_config",
     "dump_model_eval_states",
     "export_model_eval_results",
+    "get_model_eval_scenarios",
     "render_model_eval_report",
     "render_model_eval_x_post",
     "run_live_model_eval_suite",

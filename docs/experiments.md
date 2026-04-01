@@ -221,6 +221,15 @@ The next reporting layer is a matrix-history analyzer in `scripts/analyze_matrix
 
 The repo also includes a ready-to-run OpenAI live config in `examples/model_matrix.openai.live.json` with priced GPT-5.1, GPT-5 mini, and GPT-5 nano entries.
 
+The repo now also includes a hard-mode eval pack across contradiction and natural suites. It is designed to stress:
+
+- delayed recall after noisy intervening turns
+- long-horizon revisions instead of one-step corrections
+- implicit preference and collaboration updates under distraction
+- procedure formation from repeated hints rather than one direct instruction
+
+That pack is available through the shared `scenario_pack` switch in the model eval, natural eval, and matrix CLIs with values `standard`, `hard`, or `all`.
+
 ## What To Log
 
 For every run, log:

@@ -17,6 +17,7 @@ from .benchmark_harness import (
 from .eval_support import estimate_usage_cost_usd, write_case_artifact
 from .llm import LLMAdapter
 from .model_eval import (
+    DEFAULT_SCENARIO_PACK as DEFAULT_MODEL_SCENARIO_PACK,
     DEFAULT_HEURISTIC_MODEL,
     DEFAULT_HEURISTIC_PROVIDER,
     DEFAULT_LIVE_MODEL,
@@ -352,6 +353,7 @@ def _case_metrics(result: MatrixCaseResult) -> Dict[str, float]:
 def run_model_matrix(
     entries: Sequence[ModelMatrixEntry],
     *,
+    scenario_pack: str = DEFAULT_MODEL_SCENARIO_PACK,
     include_ablations: bool = False,
     suites: Sequence[str] = SUITE_NAMES,
     adapter_overrides: Mapping[tuple[str, str], LLMAdapter] | None = None,
@@ -366,6 +368,7 @@ def run_model_matrix(
             runtime_config = _suite_runtime_config(entry, suite_name)
             if suite_name == "contradiction":
                 suite_results = run_model_eval_suite(
+                    scenario_pack=scenario_pack,
                     include_ablations=include_ablations,
                     adapter=adapter,
                     eval_mode=entry.mode,
@@ -381,6 +384,7 @@ def run_model_matrix(
 
             if suite_name == "natural":
                 suite_results = run_natural_eval_suite(
+                    scenario_pack=scenario_pack,
                     include_ablations=include_ablations,
                     adapter=adapter,
                     eval_mode=entry.mode,
@@ -764,6 +768,7 @@ def serializable_matrix_leaderboard_row(row: MatrixLeaderboardRow) -> Dict[str, 
 def build_model_matrix_metadata(
     results: Sequence[MatrixCaseResult],
     *,
+    scenario_pack: str = DEFAULT_MODEL_SCENARIO_PACK,
     include_ablations: bool,
     label: str | None,
 ) -> Dict[str, object]:
@@ -773,6 +778,7 @@ def build_model_matrix_metadata(
         "run_id": run_id,
         "generated_at_utc": utc_now_iso(),
         "git_commit": get_git_commit(),
+        "scenario_pack": scenario_pack,
         "include_ablations": include_ablations,
         "label": label or "",
         "entry_count": len({result.entry_name for result in results}),
@@ -840,6 +846,7 @@ def export_model_matrix_results(
     results: Sequence[MatrixCaseResult],
     export_root: Path,
     *,
+    scenario_pack: str = DEFAULT_MODEL_SCENARIO_PACK,
     include_ablations: bool,
     label: str | None = None,
 ) -> Path:
@@ -847,6 +854,7 @@ def export_model_matrix_results(
     leaderboard = build_matrix_leaderboard(results)
     metadata = build_model_matrix_metadata(
         results,
+        scenario_pack=scenario_pack,
         include_ablations=include_ablations,
         label=label,
     )
@@ -890,6 +898,7 @@ def export_model_matrix_results(
                 "generated_at_utc": metadata["generated_at_utc"],
                 "git_commit": metadata["git_commit"],
                 "label": metadata["label"],
+                "scenario_pack": metadata["scenario_pack"],
                 "include_ablations": metadata["include_ablations"],
                 "score_methods": ",".join(metadata["score_methods"]),
                 **row,
@@ -929,6 +938,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="Include BrainLayer ablation variants for every matrix entry.",
     )
     parser.add_argument(
+        "--scenario-pack",
+        choices=("standard", "hard", "all"),
+        default=DEFAULT_MODEL_SCENARIO_PACK,
+        help="Choose the standard eval suites, the harder delayed/noisy suites, or both together.",
+    )
+    parser.add_argument(
         "--suite",
         choices=("all", "contradiction", "natural"),
         default="all",
@@ -959,6 +974,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     suites = SUITE_NAMES if args.suite == "all" else (args.suite,)
     results = run_model_matrix(
         entries,
+        scenario_pack=args.scenario_pack,
         include_ablations=args.with_ablations,
         suites=suites,
         behavior_scoring_mode="exact" if args.score_exact else "judge",
@@ -972,6 +988,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         run_dir = export_model_matrix_results(
             results,
             args.export_results,
+            scenario_pack=args.scenario_pack,
             include_ablations=args.with_ablations,
             label=args.label,
         )

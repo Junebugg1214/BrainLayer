@@ -205,6 +205,18 @@ Run only the full model-backed runtime without ablations:
 python3 scripts/run_model_evals.py --core-only
 ```
 
+Run the harder delayed/noisy contradiction pack:
+
+```bash
+python3 scripts/run_model_evals.py --scenario-pack hard
+```
+
+Run both the standard and hard packs together:
+
+```bash
+python3 scripts/run_model_evals.py --scenario-pack all
+```
+
 Force exact string-style scoring instead of the default judge-backed semantic scoring:
 
 ```bash
@@ -234,6 +246,13 @@ These model-loop evals focus on the cases where BrainLayer should matter most:
 - goal replacement when the active task changes
 - relationship reframing across turns
 - repeated weak hints that must consolidate before a later correction
+
+The hard pack adds tougher versions of those same skills:
+
+- delayed hint consolidation across noisy turns
+- long-horizon goal drift with distractions in between
+- relationship reframing after unrelated context growth
+- procedure formation from repeated hints instead of one direct lesson
 
 They use a deterministic adapter over the real runtime path, which means the eval exercises:
 
@@ -267,6 +286,18 @@ Run the natural-conversation eval suite:
 
 ```bash
 python3 scripts/run_natural_model_evals.py
+```
+
+Run the harder natural-conversation pack:
+
+```bash
+python3 scripts/run_natural_model_evals.py --scenario-pack hard
+```
+
+Run both the standard and hard natural packs together:
+
+```bash
+python3 scripts/run_natural_model_evals.py --scenario-pack all
 ```
 
 Export a natural-conversation run with extraction/behavior tracking:
@@ -303,6 +334,14 @@ Extraction checkpoints are scored structurally from the exported BrainLayer stat
 
 Natural-eval exports also write `case_artifacts/` per checkpoint with the prompt payload, retrieved memories, raw model output, judge decision, and final BrainLayer state.
 
+The hard natural pack adds longer-horizon and noisier cases for:
+
+- delayed preference revision
+- goal replacement after side turns
+- collaboration reframing after distraction
+- delayed hint accumulation
+- procedural lesson extraction spread across multiple turns
+
 Run both model-backed suites across a matrix of configs:
 
 ```bash
@@ -316,6 +355,14 @@ Add ablations across every config when you want the full comparison grid:
 python3 scripts/run_model_matrix.py \
   --config examples/model_matrix.sample.json \
   --with-ablations
+```
+
+Run the same matrix against the harder scenario pack:
+
+```bash
+python3 scripts/run_model_matrix.py \
+  --config examples/model_matrix.sample.json \
+  --scenario-pack hard
 ```
 
 Export a timestamped matrix run with case rows, suite summaries, a leaderboard, append-only history, and an X-ready post:
@@ -380,6 +427,8 @@ The matrix runner is the easiest way to compare multiple models or providers on 
 - judge-backed semantic scoring metadata like `score`, `score_method`, and average score
 - estimated cost columns like `estimated_cost_usd` and `estimated_total_cost_usd` when pricing is configured
 - reliability signals like parse failures, empty answers, latency, and token usage
+
+Every eval export now records a `scenario_pack` value, so standard, hard, and combined runs stay separable in history.
 
 The OpenAI-ready live config uses `max_completion_tokens` for chat completions, which is the current recommended field over deprecated `max_tokens`.
 

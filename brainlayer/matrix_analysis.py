@@ -129,6 +129,7 @@ def build_history_overview(runs: Sequence[MatrixHistoryRun]) -> List[Dict[str, o
                 "run_id": str(run.metadata.get("run_id", "")),
                 "generated_at_utc": str(run.metadata.get("generated_at_utc", "")),
                 "label": str(run.metadata.get("label", "")),
+                "scenario_pack": str(run.metadata.get("scenario_pack", "")),
                 "entry_count": int(run.metadata.get("entry_count", 0) or 0),
                 "case_count": int(run.metadata.get("case_count", 0) or 0),
                 "top_entry_name": str(top_row.get("entry_name", "")),
@@ -262,6 +263,7 @@ def render_matrix_analysis_markdown(analysis: Mapping[str, object]) -> str:
         f"- Generated: `{metadata.get('generated_at_utc', '')}`",
         f"- Commit: `{metadata.get('git_commit', '')}`",
         f"- Label: `{metadata.get('label', '')}`",
+        f"- Scenario pack: `{metadata.get('scenario_pack', '')}`",
         f"- Focus mode: `{analysis.get('focus_mode', '')}`",
         "",
     ]

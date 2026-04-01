@@ -74,6 +74,12 @@ class ModelEvalTests(unittest.TestCase):
         self.assertEqual(len(model_loop_results), 8)
         self.assertTrue(all(result.passed for result in model_loop_results))
 
+    def test_hard_model_loop_passes_contradiction_suite(self) -> None:
+        results = run_model_eval_suite(include_ablations=False, scenario_pack="hard")
+        model_loop_results = [result for result in results if result.runtime_name == "model_loop"]
+        self.assertEqual(len(model_loop_results), 4)
+        self.assertTrue(all(result.passed for result in model_loop_results))
+
     def test_ablations_show_targeted_runtime_regressions(self) -> None:
         results = run_model_eval_suite()
 
@@ -123,6 +129,48 @@ class ModelEvalTests(unittest.TestCase):
             ).passed
         )
 
+    def test_hard_scenario_pack_shows_targeted_runtime_regressions(self) -> None:
+        results = run_model_eval_suite(scenario_pack="hard")
+
+        def lookup(runtime_name: str, scenario_slug: str, checkpoint: str) -> object:
+            for result in results:
+                if (
+                    result.runtime_name == runtime_name
+                    and result.scenario_slug == scenario_slug
+                    and result.checkpoint == checkpoint
+                ):
+                    return result
+            self.fail(f"Missing result for {runtime_name} on {scenario_slug}/{checkpoint}")
+
+        self.assertFalse(
+            lookup(
+                "model_loop_no_consolidation",
+                "model_delayed_hint_consolidation",
+                "late_hint_consolidated",
+            ).passed
+        )
+        self.assertFalse(
+            lookup(
+                "model_loop_no_consolidation",
+                "model_procedure_hint_consolidation",
+                "procedure_after_hints",
+            ).passed
+        )
+        self.assertFalse(
+            lookup(
+                "model_loop_no_working_state",
+                "model_multihop_goal_drift",
+                "late_revised_goal",
+            ).passed
+        )
+        self.assertFalse(
+            lookup(
+                "model_loop_no_autobio",
+                "model_relationship_after_distraction",
+                "late_relationship",
+            ).passed
+        )
+
     def test_no_forgetting_retains_more_state_than_full_model_loop(self) -> None:
         results = run_model_eval_suite()
 
@@ -159,6 +207,23 @@ class ModelEvalTests(unittest.TestCase):
 
         self.assertIn("Model-Backed BrainLayer Eval Report", completed.stdout)
         self.assertIn("model_loop: 8/8", completed.stdout)
+
+    def test_model_eval_script_reports_hard_pack_summary(self) -> None:
+        completed = subprocess.run(
+            [
+                "python3",
+                str(ROOT / "scripts" / "run_model_evals.py"),
+                "--core-only",
+                "--scenario-pack",
+                "hard",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        self.assertIn("Model-Backed BrainLayer Eval Report", completed.stdout)
+        self.assertIn("model_loop: 4/4", completed.stdout)
 
     def test_export_model_eval_results_writes_csv_json_history_and_x_post(self) -> None:
         results = run_model_eval_suite(include_ablations=False)

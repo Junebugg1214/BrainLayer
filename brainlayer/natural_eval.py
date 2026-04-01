@@ -49,6 +49,7 @@ TASK_RE = re.compile(r"Task:\n(?P<task>.*?)\n\nReturn a JSON object", re.DOTALL)
 CONTEXT_RE = re.compile(r"BrainLayer context:\n(?P<context>.*?)\n\nTask:\n", re.DOTALL)
 SLOT_RE = re.compile(r"(?P<key>[a-z_]+)\s=\s(?P<value>[^.]+)\.")
 PROCEDURE_RE = re.compile(r"When (?P<trigger>[^,]+), (?P<step>[^.]+)\.")
+DEFAULT_SCENARIO_PACK = "standard"
 NATURAL_EVAL_SYSTEM_PROMPT = (
     "You are participating in a BrainLayer natural-conversation evaluation. "
     "When a normal user utterance reveals a stable preference, active goal, relationship framing, "
@@ -126,7 +127,7 @@ class NaturalEvalSummary:
     avg_metrics: Dict[str, float]
 
 
-NATURAL_EVAL_SCENARIOS: List[NaturalEvalScenario] = [
+STANDARD_NATURAL_EVAL_SCENARIOS: List[NaturalEvalScenario] = [
     NaturalEvalScenario(
         slug="natural_preference_sync",
         title="Natural Preference Sync",
@@ -248,6 +249,171 @@ NATURAL_EVAL_SCENARIOS: List[NaturalEvalScenario] = [
     ),
 ]
 
+HARD_NATURAL_EVAL_SCENARIOS: List[NaturalEvalScenario] = [
+    NaturalEvalScenario(
+        slug="natural_delayed_preference_revision",
+        title="Natural Delayed Preference Revision",
+        description="Can the agent revise a response-style preference after noise and later use the new default?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="I'm heading into calls, so default to short answers unless I say otherwise.",
+            ),
+            NaturalEvalTurn(
+                prompt="Also, the appendix captions still need a style pass.",
+            ),
+            NaturalEvalTurn(
+                prompt="For the methods memo though, I need the full reasoning spelled out.",
+                checkpoint="extract_revised_preference",
+                evaluation_type="extraction",
+                target_layer="beliefs",
+                target_key="response_style",
+                expected_value="detailed",
+            ),
+            NaturalEvalTurn(
+                prompt="The results table still needs the column widths cleaned up.",
+            ),
+            NaturalEvalTurn(
+                prompt="How should you answer by default right now?",
+                checkpoint="behavior_revised_preference",
+                evaluation_type="behavior",
+                expected_value="detailed",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="natural_long_horizon_goal_shift",
+        title="Natural Long Horizon Goal Shift",
+        description="Can the agent keep the latest goal after several ordinary project turns intervene?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="For now, every draft needs to preserve citations exactly.",
+            ),
+            NaturalEvalTurn(
+                prompt="The appendix legends still need a consistency pass.",
+            ),
+            NaturalEvalTurn(
+                prompt="The deadline jumped forward, so the top priority now is shipping the eval report tonight.",
+                checkpoint="extract_revised_goal",
+                evaluation_type="extraction",
+                target_layer="working_state",
+                target_key="primary_goal",
+                expected_value="ship eval report",
+            ),
+            NaturalEvalTurn(
+                prompt="The cover slide can wait until after the writeup is stable.",
+            ),
+            NaturalEvalTurn(
+                prompt="What is the main goal right now?",
+                checkpoint="behavior_goal",
+                evaluation_type="behavior",
+                expected_value="ship eval report",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="natural_collaboration_reframe_after_noise",
+        title="Natural Collaboration Reframe After Noise",
+        description="Can the agent preserve collaboration framing after unrelated turns intervene?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="Don't treat this like a ticket queue.",
+            ),
+            NaturalEvalTurn(
+                prompt="The latency chart still needs a better legend.",
+            ),
+            NaturalEvalTurn(
+                prompt="I want you thinking with me as a research partner on this study.",
+                checkpoint="extract_relationship",
+                evaluation_type="extraction",
+                target_layer="autobiographical_state",
+                target_key="collaboration_mode",
+                expected_value="research partner",
+            ),
+            NaturalEvalTurn(
+                prompt="The benchmark labels can be cleaned up later.",
+            ),
+            NaturalEvalTurn(
+                prompt="What collaboration mode should define this project right now?",
+                checkpoint="behavior_relationship",
+                evaluation_type="behavior",
+                expected_value="research partner",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="natural_delayed_hint_accumulation",
+        title="Natural Delayed Hint Accumulation",
+        description="Can the agent consolidate repeated indirect style hints across intervening turns?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="You can compress this a lot; I just need the gist.",
+            ),
+            NaturalEvalTurn(
+                prompt="The references page still needs DOI cleanup.",
+            ),
+            NaturalEvalTurn(
+                prompt="Still too long for me. Shorter is better.",
+                checkpoint="extract_hint_consolidation",
+                evaluation_type="extraction",
+                target_layer="beliefs",
+                target_key="response_style",
+                expected_value="concise",
+            ),
+            NaturalEvalTurn(
+                prompt="The appendix ordering can change after the main draft lands.",
+            ),
+            NaturalEvalTurn(
+                prompt="How should you answer by default right now?",
+                checkpoint="behavior_hint_consolidation",
+                evaluation_type="behavior",
+                expected_value="concise",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="natural_retrospective_lesson_after_noise",
+        title="Natural Retrospective Lesson After Noise",
+        description="Can the agent infer and reuse a procedural lesson when the signal is spread across multiple turns?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="The last release went sideways because we retried before logging back into GitHub.",
+            ),
+            NaturalEvalTurn(
+                prompt="The release notes can wait until the benchmark numbers are frozen.",
+            ),
+            NaturalEvalTurn(
+                prompt="Next time, verify auth first and only then rerun the release.",
+                checkpoint="extract_lesson",
+                evaluation_type="extraction",
+                target_layer="procedures",
+                target_key="retry_release",
+                expected_value="check authentication",
+            ),
+            NaturalEvalTurn(
+                prompt="The footer copy still needs legal review.",
+            ),
+            NaturalEvalTurn(
+                prompt="Before retrying the release, what should you do first?",
+                checkpoint="behavior_lesson",
+                evaluation_type="behavior",
+                expected_value="check authentication",
+            ),
+        ],
+    ),
+]
+
+NATURAL_EVAL_SCENARIOS = STANDARD_NATURAL_EVAL_SCENARIOS
+
+
+def get_natural_eval_scenarios(scenario_pack: str = DEFAULT_SCENARIO_PACK) -> List[NaturalEvalScenario]:
+    if scenario_pack == "standard":
+        return list(STANDARD_NATURAL_EVAL_SCENARIOS)
+    if scenario_pack == "hard":
+        return list(HARD_NATURAL_EVAL_SCENARIOS)
+    if scenario_pack == "all":
+        return list(STANDARD_NATURAL_EVAL_SCENARIOS) + list(HARD_NATURAL_EVAL_SCENARIOS)
+    raise ValueError(f"Unsupported natural eval scenario pack: {scenario_pack}")
+
 
 class HeuristicNaturalConversationAdapter(LLMAdapter):
     """Deterministic adapter for natural-conversation BrainLayer evals."""
@@ -350,11 +516,36 @@ class HeuristicNaturalConversationAdapter(LLMAdapter):
                 },
             }
 
+        if "ticket queue" in lowered or "thinking with me as a research partner" in lowered:
+            return {
+                "text": "The collaboration mode is research partner.",
+                "memory_type": "relationship",
+                "salience": 0.95,
+                "payload": {
+                    "key": "collaboration_mode",
+                    "value": "research partner",
+                    "summary": "The collaboration mode is research partner.",
+                    "themes": "relationship,research-mode",
+                },
+            }
+
         if "last time the release failed" in lowered or "check auth first" in lowered:
             return {
                 "text": "Before retrying a release, check authentication first.",
                 "memory_type": "lesson",
                 "salience": 0.92,
+                "payload": {
+                    "trigger": "retry_release",
+                    "action": "check authentication",
+                    "summary": "Before retrying a release, confirm GitHub authentication first.",
+                },
+            }
+
+        if "logging back into github" in lowered or "verify auth first" in lowered:
+            return {
+                "text": "Before retrying a release, check authentication first.",
+                "memory_type": "lesson",
+                "salience": 0.93,
                 "payload": {
                     "trigger": "retry_release",
                     "action": "check authentication",
@@ -374,11 +565,35 @@ class HeuristicNaturalConversationAdapter(LLMAdapter):
                 },
             }
 
+        if "top priority now is" in lowered or "shipping the eval report tonight" in lowered:
+            return {
+                "text": "The current primary goal is to ship the eval report.",
+                "memory_type": "goal",
+                "salience": 0.96,
+                "payload": {
+                    "key": "primary_goal",
+                    "value": "ship eval report",
+                    "summary": "The current primary goal is to ship the eval report.",
+                },
+            }
+
         if "before anything else" in lowered or "citations intact" in lowered:
             return {
                 "text": "The current primary goal is to preserve citations.",
                 "memory_type": "goal",
                 "salience": 0.9,
+                "payload": {
+                    "key": "primary_goal",
+                    "value": "preserve citations",
+                    "summary": "The current primary goal is to preserve citations.",
+                },
+            }
+
+        if "preserve citations exactly" in lowered or "every draft needs to preserve citations" in lowered:
+            return {
+                "text": "The current primary goal is to preserve citations.",
+                "memory_type": "goal",
+                "salience": 0.92,
                 "payload": {
                     "key": "primary_goal",
                     "value": "preserve citations",
@@ -398,7 +613,31 @@ class HeuristicNaturalConversationAdapter(LLMAdapter):
                 },
             }
 
+        if "still too long" in lowered or "shorter is better" in lowered:
+            return {
+                "text": "The user likely prefers concise replies.",
+                "memory_type": "preference_hint",
+                "salience": 0.43,
+                "payload": {
+                    "key": "response_style",
+                    "value": "concise",
+                    "proposition": "The user likely prefers concise replies.",
+                },
+            }
+
         if "trim that down" in lowered or "only need the gist" in lowered:
+            return {
+                "text": "The user likely prefers concise replies.",
+                "memory_type": "preference_hint",
+                "salience": 0.41,
+                "payload": {
+                    "key": "response_style",
+                    "value": "concise",
+                    "proposition": "The user likely prefers concise replies.",
+                },
+            }
+
+        if "compress this a lot" in lowered or "just need the gist" in lowered:
             return {
                 "text": "The user likely prefers concise replies.",
                 "memory_type": "preference_hint",
@@ -420,6 +659,34 @@ class HeuristicNaturalConversationAdapter(LLMAdapter):
                 "payload": {
                     "key": "response_style",
                     "value": "brief",
+                    "proposition": proposition,
+                },
+            }
+
+        if "default to short answers" in lowered or "heading into calls" in lowered:
+            memory_type = "correction" if "response_style" in slots else "preference"
+            proposition = "The user prefers brief replies."
+            return {
+                "text": proposition,
+                "memory_type": memory_type,
+                "salience": 0.93,
+                "payload": {
+                    "key": "response_style",
+                    "value": "brief",
+                    "proposition": proposition,
+                },
+            }
+
+        if "full reasoning spelled out" in lowered or "methods memo" in lowered:
+            memory_type = "correction" if "response_style" in slots else "preference"
+            proposition = "The user prefers detailed replies."
+            return {
+                "text": proposition,
+                "memory_type": memory_type,
+                "salience": 0.95,
+                "payload": {
+                    "key": "response_style",
+                    "value": "detailed",
                     "proposition": proposition,
                 },
             }
@@ -836,6 +1103,7 @@ def run_natural_eval_scenario(
 def run_natural_eval_suite(
     scenarios: Iterable[NaturalEvalScenario] | None = None,
     *,
+    scenario_pack: str = DEFAULT_SCENARIO_PACK,
     include_ablations: bool = True,
     adapter: LLMAdapter | None = None,
     eval_mode: str = "heuristic",
@@ -845,7 +1113,7 @@ def run_natural_eval_suite(
     behavior_scoring_mode: str = "judge",
     behavior_judge: BehaviorJudge | None = None,
 ) -> List[NaturalEvalResult]:
-    active_scenarios = list(scenarios or NATURAL_EVAL_SCENARIOS)
+    active_scenarios = list(scenarios or get_natural_eval_scenarios(scenario_pack))
     results: List[NaturalEvalResult] = []
     for scenario in active_scenarios:
         results.extend(
@@ -867,6 +1135,7 @@ def run_natural_eval_suite(
 def run_live_natural_eval_suite(
     scenarios: Iterable[NaturalEvalScenario] | None = None,
     *,
+    scenario_pack: str = DEFAULT_SCENARIO_PACK,
     include_ablations: bool = True,
     provider_name: str = DEFAULT_LIVE_PROVIDER,
     requested_model: str = DEFAULT_LIVE_MODEL,
@@ -893,6 +1162,7 @@ def run_live_natural_eval_suite(
     )
     return run_natural_eval_suite(
         scenarios,
+        scenario_pack=scenario_pack,
         include_ablations=include_ablations,
         adapter=adapter,
         eval_mode="live",
@@ -1107,6 +1377,7 @@ def build_natural_eval_metadata(
     *,
     include_ablations: bool,
     label: str | None,
+    scenario_pack: str = DEFAULT_SCENARIO_PACK,
 ) -> Dict[str, object]:
     timestamp = utc_now_compact()
     run_id = timestamp if not label else f"{timestamp}-{slugify_label(label)}"
@@ -1116,6 +1387,7 @@ def build_natural_eval_metadata(
         "generated_at_utc": utc_now_iso(),
         "git_commit": get_git_commit(),
         "include_ablations": include_ablations,
+        "scenario_pack": scenario_pack,
         "label": label or "",
         "eval_mode": first.eval_mode if first else "",
         "provider_name": first.provider_name if first else "",
@@ -1176,12 +1448,14 @@ def export_natural_eval_results(
     *,
     include_ablations: bool,
     label: str | None = None,
+    scenario_pack: str = DEFAULT_SCENARIO_PACK,
 ) -> Path:
     summaries = summarize_natural_eval_results(results)
     metadata = build_natural_eval_metadata(
         results,
         include_ablations=include_ablations,
         label=label,
+        scenario_pack=scenario_pack,
     )
     run_dir = export_root / str(metadata["run_id"])
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -1222,6 +1496,7 @@ def export_natural_eval_results(
                 "git_commit": metadata["git_commit"],
                 "label": metadata["label"],
                 "include_ablations": metadata["include_ablations"],
+                "scenario_pack": metadata["scenario_pack"],
                 "eval_mode": metadata["eval_mode"],
                 "provider_name": metadata["provider_name"],
                 "requested_model": metadata["requested_model"],
@@ -1330,6 +1605,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="Run only the full BrainLayer runtime without ablations.",
     )
     parser.add_argument(
+        "--scenario-pack",
+        choices=("standard", "hard", "all"),
+        default=DEFAULT_SCENARIO_PACK,
+        help="Choose the standard natural suite, the harder delayed/noisy set, or both together.",
+    )
+    parser.add_argument(
         "--score-exact",
         action="store_true",
         help="Disable judge-backed semantic behavior scoring and require exact normalized matches.",
@@ -1357,6 +1638,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     include_ablations = not args.core_only
     results = run_natural_eval_suite(
+        scenario_pack=args.scenario_pack,
         include_ablations=include_ablations,
         adapter=adapter,
         eval_mode=args.mode,
@@ -1375,6 +1657,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             args.export_results,
             include_ablations=include_ablations,
             label=args.label,
+            scenario_pack=args.scenario_pack,
         )
         print("")
         print(f"Natural-eval exports written to {run_dir}")
@@ -1383,7 +1666,10 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 __all__ = [
+    "DEFAULT_SCENARIO_PACK",
+    "HARD_NATURAL_EVAL_SCENARIOS",
     "NATURAL_EVAL_SCENARIOS",
+    "STANDARD_NATURAL_EVAL_SCENARIOS",
     "HeuristicNaturalConversationAdapter",
     "NaturalEvalResult",
     "NaturalEvalScenario",
@@ -1392,6 +1678,7 @@ __all__ = [
     "default_natural_eval_runtime_config",
     "dump_natural_eval_states",
     "export_natural_eval_results",
+    "get_natural_eval_scenarios",
     "lookup_state_value",
     "render_natural_eval_report",
     "render_natural_eval_x_post",
