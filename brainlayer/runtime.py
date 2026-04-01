@@ -104,6 +104,7 @@ class ParsedModelOutput:
 @dataclass
 class ModelTurnResult:
     assistant_response: str
+    episodic_summary: str
     raw_model_output: str
     prompt_messages: List[ModelMessage]
     retrieved_memories: List[RetrievedMemory]
@@ -197,6 +198,7 @@ class BrainLayerRuntime:
 
         return ModelTurnResult(
             assistant_response=parsed_output.assistant_response,
+            episodic_summary=parsed_output.episodic_summary,
             raw_model_output=model_response.content,
             prompt_messages=prompt_messages,
             retrieved_memories=retrieved,

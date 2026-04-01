@@ -161,6 +161,7 @@ class NaturalEvalTests(unittest.TestCase):
             self.assertTrue((run_dir / "results.csv").exists())
             self.assertTrue((run_dir / "summary.csv").exists())
             self.assertTrue((run_dir / "x_post.txt").exists())
+            self.assertTrue((run_dir / "case_artifacts").exists())
             self.assertTrue((export_root / "natural_eval_history.csv").exists())
             self.assertTrue((export_root / "natural_eval_history.jsonl").exists())
 
@@ -170,6 +171,14 @@ class NaturalEvalTests(unittest.TestCase):
             self.assertIn("BrainLayer natural eval", payload["x_post"])
             self.assertIn("score", payload["results"][0])
             self.assertIn("score_method", payload["results"][0])
+            self.assertIn("artifact_path", payload["results"][0])
+
+            artifact = json.loads((run_dir / payload["results"][0]["artifact_path"]).read_text())
+            self.assertIn("prompt_messages", artifact)
+            self.assertIn("retrieved_memories", artifact)
+            self.assertIn("raw_model_output", artifact)
+            self.assertIn("judge", artifact)
+            self.assertIn("exported_state", artifact)
 
     def test_judge_backed_scoring_handles_structural_and_behavior_paraphrases(self) -> None:
         scenario = NaturalEvalScenario(

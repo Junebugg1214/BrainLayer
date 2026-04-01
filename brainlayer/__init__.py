@@ -3,6 +3,7 @@
 from .benchmark_harness import run_suite
 from .consolidation import ConsolidationConfig, ConsolidationEngine, ConsolidationReport
 from .agents import BrainLayerFeatureConfig
+from .eval_support import estimate_usage_cost_usd
 from .judging import BehaviorJudge, ExactMatchJudge, HeuristicBehaviorJudge, score_structured_value
 from .llm import LLMAdapter, LLMError, ModelMessage, ModelResponse, OpenAICompatibleChatAdapter
 from .model_eval import (
@@ -58,6 +59,7 @@ __all__ = [
     "build_live_model_eval_adapter",
     "default_model_eval_runtime_config",
     "default_natural_eval_runtime_config",
+    "estimate_usage_cost_usd",
     "export_model_eval_results",
     "export_model_matrix_results",
     "export_natural_eval_results",

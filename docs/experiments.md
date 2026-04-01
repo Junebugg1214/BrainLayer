@@ -204,9 +204,11 @@ Those runtime evals now use judge-backed semantic scoring for behavior checkpoin
 The next comparison layer is a matrix runner in `scripts/run_model_matrix.py`, which executes both suites across multiple model/provider configs and exports:
 
 - case-level CSV/JSON results
+- per-case artifact bundles with prompt, retrieval, raw output, judge decision, and exported state
 - per-suite summaries
 - a cross-suite leaderboard
 - score metadata such as `score`, `score_method`, and average score
+- estimated cost columns when entry pricing is configured
 - append-only history files for tracking progress over time
 - an X-ready summary post for sharing results
 

@@ -14,6 +14,7 @@ from .benchmark_harness import (
     utc_now_iso,
     write_csv,
 )
+from .eval_support import estimate_usage_cost_usd, write_case_artifact
 from .llm import LLMAdapter
 from .model_eval import (
     DEFAULT_HEURISTIC_MODEL,
@@ -51,6 +52,9 @@ class ModelMatrixEntry:
     max_output_tokens_field: str | None = "max_tokens"
     temperature: float = 0.0
     max_output_tokens: int = 700
+    input_cost_per_1k_tokens: float = 0.0
+    output_cost_per_1k_tokens: float = 0.0
+    total_cost_per_1k_tokens: float = 0.0
     enabled: bool = True
 
     @classmethod
@@ -90,6 +94,9 @@ class ModelMatrixEntry:
             max_output_tokens_field=max_output_tokens_field,
             temperature=float(payload.get("temperature", 0.0)),
             max_output_tokens=int(payload.get("max_output_tokens", 700)),
+            input_cost_per_1k_tokens=float(payload.get("input_cost_per_1k_tokens", 0.0)),
+            output_cost_per_1k_tokens=float(payload.get("output_cost_per_1k_tokens", 0.0)),
+            total_cost_per_1k_tokens=float(payload.get("total_cost_per_1k_tokens", 0.0)),
             enabled=bool(payload.get("enabled", True)),
         )
 
@@ -121,9 +128,11 @@ class MatrixCaseResult:
     parse_failure: bool
     empty_answer: bool
     applied_observation_count: int
+    estimated_cost_usd: float
     error: str
     skipped: bool
     retrieved_layers: List[str]
+    case_artifact: Dict[str, object]
     exported_state: Dict[str, object]
     state_metrics: Dict[str, float]
     usage_metrics: Dict[str, float]
@@ -148,6 +157,7 @@ class MatrixSuiteSummary:
     empty_answers: int
     errors: int
     skipped: int
+    estimated_total_cost_usd: float
     avg_metrics: Dict[str, float]
 
 
@@ -173,6 +183,7 @@ class MatrixLeaderboardRow:
     empty_answers: int
     errors: int
     skipped: int
+    estimated_total_cost_usd: float
     avg_metrics: Dict[str, float]
 
 
@@ -223,9 +234,23 @@ def _build_suite_adapter(entry: ModelMatrixEntry, suite_name: str) -> LLMAdapter
     )
 
 
-def _convert_model_eval_result(entry_name: str, result: ModelEvalResult) -> MatrixCaseResult:
+def _convert_model_eval_result(entry: ModelMatrixEntry, result: ModelEvalResult) -> MatrixCaseResult:
+    estimated_cost_usd = estimate_usage_cost_usd(
+        result.usage_metrics,
+        input_cost_per_1k_tokens=entry.input_cost_per_1k_tokens,
+        output_cost_per_1k_tokens=entry.output_cost_per_1k_tokens,
+        total_cost_per_1k_tokens=entry.total_cost_per_1k_tokens,
+    )
+    case_artifact = dict(result.case_artifact)
+    case_artifact["matrix_entry"] = {
+        "name": entry.name,
+        "mode": entry.mode,
+        "provider_name": entry.provider_name,
+        "requested_model": entry.requested_model,
+        "estimated_cost_usd": estimated_cost_usd,
+    }
     return MatrixCaseResult(
-        entry_name=entry_name,
+        entry_name=entry.name,
         suite_name="contradiction",
         runtime_name=result.runtime_name,
         scenario_slug=result.scenario_slug,
@@ -250,18 +275,34 @@ def _convert_model_eval_result(entry_name: str, result: ModelEvalResult) -> Matr
         parse_failure=result.parse_failure,
         empty_answer=result.empty_answer,
         applied_observation_count=result.applied_observation_count,
+        estimated_cost_usd=estimated_cost_usd,
         error=result.error,
         skipped=result.skipped,
         retrieved_layers=list(result.retrieved_layers),
+        case_artifact=case_artifact,
         exported_state=dict(result.exported_state),
         state_metrics=dict(result.state_metrics),
         usage_metrics=dict(result.usage_metrics),
     )
 
 
-def _convert_natural_eval_result(entry_name: str, result: NaturalEvalResult) -> MatrixCaseResult:
+def _convert_natural_eval_result(entry: ModelMatrixEntry, result: NaturalEvalResult) -> MatrixCaseResult:
+    estimated_cost_usd = estimate_usage_cost_usd(
+        result.usage_metrics,
+        input_cost_per_1k_tokens=entry.input_cost_per_1k_tokens,
+        output_cost_per_1k_tokens=entry.output_cost_per_1k_tokens,
+        total_cost_per_1k_tokens=entry.total_cost_per_1k_tokens,
+    )
+    case_artifact = dict(result.case_artifact)
+    case_artifact["matrix_entry"] = {
+        "name": entry.name,
+        "mode": entry.mode,
+        "provider_name": entry.provider_name,
+        "requested_model": entry.requested_model,
+        "estimated_cost_usd": estimated_cost_usd,
+    }
     return MatrixCaseResult(
-        entry_name=entry_name,
+        entry_name=entry.name,
         suite_name="natural",
         runtime_name=result.runtime_name,
         scenario_slug=result.scenario_slug,
@@ -286,9 +327,11 @@ def _convert_natural_eval_result(entry_name: str, result: NaturalEvalResult) -> 
         parse_failure=result.parse_failure,
         empty_answer=result.empty_answer,
         applied_observation_count=result.applied_observation_count,
+        estimated_cost_usd=estimated_cost_usd,
         error=result.error,
         skipped=result.skipped,
         retrieved_layers=list(result.retrieved_layers),
+        case_artifact=case_artifact,
         exported_state=dict(result.exported_state),
         state_metrics=dict(result.state_metrics),
         usage_metrics=dict(result.usage_metrics),
@@ -298,6 +341,7 @@ def _convert_natural_eval_result(entry_name: str, result: NaturalEvalResult) -> 
 def _case_metrics(result: MatrixCaseResult) -> Dict[str, float]:
     metrics = dict(result.state_metrics)
     metrics["score"] = result.score
+    metrics["estimated_cost_usd"] = result.estimated_cost_usd
     metrics["latency_ms"] = result.latency_ms
     metrics["applied_observation_count"] = float(result.applied_observation_count)
     for key, value in result.usage_metrics.items():
@@ -331,7 +375,7 @@ def run_model_matrix(
                     behavior_scoring_mode=behavior_scoring_mode,
                 )
                 results.extend(
-                    _convert_model_eval_result(entry.name, result) for result in suite_results
+                    _convert_model_eval_result(entry, result) for result in suite_results
                 )
                 continue
 
@@ -346,7 +390,7 @@ def run_model_matrix(
                     behavior_scoring_mode=behavior_scoring_mode,
                 )
                 results.extend(
-                    _convert_natural_eval_result(entry.name, result) for result in suite_results
+                    _convert_natural_eval_result(entry, result) for result in suite_results
                 )
                 continue
 
@@ -382,6 +426,7 @@ def summarize_matrix_results_by_suite(
                 "empty_answers": 0,
                 "errors": 0,
                 "skipped": 0,
+                "estimated_total_cost_usd": 0.0,
                 "metric_totals": {},
             },
         )
@@ -397,6 +442,7 @@ def summarize_matrix_results_by_suite(
         group["empty_answers"] = int(group["empty_answers"]) + int(result.empty_answer)
         group["errors"] = int(group["errors"]) + int(bool(result.error))
         group["skipped"] = int(group["skipped"]) + int(result.skipped)
+        group["estimated_total_cost_usd"] = float(group["estimated_total_cost_usd"]) + result.estimated_cost_usd
 
         metric_totals = group["metric_totals"]
         assert isinstance(metric_totals, dict)
@@ -432,6 +478,7 @@ def summarize_matrix_results_by_suite(
                 empty_answers=int(group["empty_answers"]),
                 errors=int(group["errors"]),
                 skipped=int(group["skipped"]),
+                estimated_total_cost_usd=float(group["estimated_total_cost_usd"]),
                 avg_metrics=avg_metrics,
             )
         )
@@ -467,6 +514,7 @@ def build_matrix_leaderboard(results: Sequence[MatrixCaseResult]) -> List[Matrix
                 "empty_answers": 0,
                 "errors": 0,
                 "skipped": 0,
+                "estimated_total_cost_usd": 0.0,
                 "weighted_metric_totals": {},
             },
         )
@@ -476,6 +524,7 @@ def build_matrix_leaderboard(results: Sequence[MatrixCaseResult]) -> List[Matrix
         row["empty_answers"] = int(row["empty_answers"]) + summary.empty_answers
         row["errors"] = int(row["errors"]) + summary.errors
         row["skipped"] = int(row["skipped"]) + summary.skipped
+        row["estimated_total_cost_usd"] = float(row["estimated_total_cost_usd"]) + summary.estimated_total_cost_usd
         if summary.suite_name == "contradiction":
             row["contradiction_passed"] = summary.passed
             row["contradiction_total"] = summary.total
@@ -528,6 +577,7 @@ def build_matrix_leaderboard(results: Sequence[MatrixCaseResult]) -> List[Matrix
                 empty_answers=int(row["empty_answers"]),
                 errors=int(row["errors"]),
                 skipped=int(row["skipped"]),
+                estimated_total_cost_usd=float(row["estimated_total_cost_usd"]),
                 avg_metrics=avg_metrics,
             )
         )
@@ -569,6 +619,8 @@ def render_model_matrix_report(results: Sequence[MatrixCaseResult]) -> str:
             f"parse_failures={summary.parse_failures}",
             f"errors={summary.errors}",
         ]
+        if summary.estimated_total_cost_usd:
+            extras.append(f"est_cost_usd={summary.estimated_total_cost_usd:.4f}")
         if summary.suite_name == "natural":
             extras.insert(
                 1,
@@ -599,6 +651,8 @@ def render_model_matrix_report(results: Sequence[MatrixCaseResult]) -> str:
             f"avg_latency_ms={row.avg_metrics.get('latency_ms', 0.0):.1f}",
             f"errors={row.errors}",
         ]
+        if row.estimated_total_cost_usd:
+            extras.append(f"est_cost_usd={row.estimated_total_cost_usd:.4f}")
         avg_total_tokens = row.avg_metrics.get("usage_total_tokens", 0.0)
         if avg_total_tokens:
             extras.append(f"avg_total_tokens={avg_total_tokens:.1f}")
@@ -607,7 +661,11 @@ def render_model_matrix_report(results: Sequence[MatrixCaseResult]) -> str:
     return "\n".join(lines)
 
 
-def serializable_matrix_case_result(result: MatrixCaseResult) -> Dict[str, object]:
+def serializable_matrix_case_result(
+    result: MatrixCaseResult,
+    *,
+    artifact_path: str = "",
+) -> Dict[str, object]:
     payload: Dict[str, object] = {
         "entry_name": result.entry_name,
         "suite_name": result.suite_name,
@@ -634,10 +692,13 @@ def serializable_matrix_case_result(result: MatrixCaseResult) -> Dict[str, objec
         "parse_failure": result.parse_failure,
         "empty_answer": result.empty_answer,
         "applied_observation_count": result.applied_observation_count,
+        "estimated_cost_usd": result.estimated_cost_usd,
         "error": result.error,
         "skipped": result.skipped,
         "retrieved_layers": ",".join(result.retrieved_layers),
     }
+    if artifact_path:
+        payload["artifact_path"] = artifact_path
     for key, value in sorted(result.state_metrics.items()):
         payload[f"metric_{key}"] = value
     for key, value in sorted(result.usage_metrics.items()):
@@ -664,6 +725,7 @@ def serializable_matrix_suite_summary(summary: MatrixSuiteSummary) -> Dict[str, 
         "empty_answers": summary.empty_answers,
         "errors": summary.errors,
         "skipped": summary.skipped,
+        "estimated_total_cost_usd": summary.estimated_total_cost_usd,
     }
     for key, value in sorted(summary.avg_metrics.items()):
         payload[f"avg_{key}"] = value
@@ -692,6 +754,7 @@ def serializable_matrix_leaderboard_row(row: MatrixLeaderboardRow) -> Dict[str, 
         "empty_answers": row.empty_answers,
         "errors": row.errors,
         "skipped": row.skipped,
+        "estimated_total_cost_usd": row.estimated_total_cost_usd,
     }
     for key, value in sorted(row.avg_metrics.items()):
         payload[f"avg_{key}"] = value
@@ -716,6 +779,7 @@ def build_model_matrix_metadata(
         "suite_count": len({result.suite_name for result in results}),
         "runtime_count": len({(result.entry_name, result.runtime_name) for result in results}),
         "case_count": len(results),
+        "artifacts_subdir": "case_artifacts",
         "score_methods": sorted({result.score_method for result in results}),
     }
 
@@ -752,14 +816,24 @@ def render_model_matrix_x_post(
             -row.avg_metrics.get("latency_ms", 0.0),
         ),
     )
-    return (
+    parts = [
         f"{prefix}: {len(full_runtime_rows)} configs across contradiction + natural suites. "
         f"Top full runtimes: {', '.join(top_bits)}. "
         f"Best natural extraction: {best_extraction.entry_name} "
         f"{best_extraction.natural_extraction_passed}/{best_extraction.natural_extraction_total}. "
         f"Fastest avg latency: {fastest.entry_name} "
         f"{fastest.avg_metrics.get('latency_ms', 0.0):.1f}ms."
-    )
+    ]
+    priced_rows = [row for row in full_runtime_rows if row.estimated_total_cost_usd > 0.0]
+    if priced_rows:
+        cheapest = min(
+            priced_rows,
+            key=lambda row: (row.estimated_total_cost_usd, row.entry_name),
+        )
+        parts.append(
+            f"Cheapest estimated run cost: {cheapest.entry_name} ${cheapest.estimated_total_cost_usd:.4f}."
+        )
+    return " ".join(parts)
 
 
 def export_model_matrix_results(
@@ -779,7 +853,15 @@ def export_model_matrix_results(
     run_dir = export_root / str(metadata["run_id"])
     run_dir.mkdir(parents=True, exist_ok=True)
 
-    result_rows = [serializable_matrix_case_result(result) for result in results]
+    artifact_root = run_dir / str(metadata["artifacts_subdir"])
+    result_rows = []
+    for result in results:
+        artifact_filename = (
+            f"{result.entry_name}__{result.suite_name}__{result.runtime_name}"
+            f"__{result.scenario_slug}__{result.checkpoint}.json"
+        )
+        artifact_path = write_case_artifact(artifact_root, artifact_filename, result.case_artifact)
+        result_rows.append(serializable_matrix_case_result(result, artifact_path=artifact_path))
     summary_rows = [serializable_matrix_suite_summary(summary) for summary in suite_summaries]
     leaderboard_rows = [
         serializable_matrix_leaderboard_row(row) for row in leaderboard

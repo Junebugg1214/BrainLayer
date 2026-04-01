@@ -248,6 +248,7 @@ Model-loop eval exports produce:
 - `results.json`
 - `results.csv`
 - `summary.csv`
+- `case_artifacts/` with prompt, retrieval, raw output, judge decision, and final state per checkpoint
 - `x_post.txt`
 - append-only `model_eval_history.csv` and `model_eval_history.jsonl` for cross-run tracking
 
@@ -300,6 +301,8 @@ The natural suite is aimed at the more realistic research question: can a model 
 
 Extraction checkpoints are scored structurally from the exported BrainLayer state, while behavior checkpoints now use judge-backed semantic scoring by default.
 
+Natural-eval exports also write `case_artifacts/` per checkpoint with the prompt payload, retrieved memories, raw model output, judge decision, and final BrainLayer state.
+
 Run both model-backed suites across a matrix of configs:
 
 ```bash
@@ -342,12 +345,19 @@ python3 scripts/run_model_matrix.py \
 
 The sample config includes enabled heuristic entries plus a disabled live example you can turn on by setting `enabled` to `true` and exporting `OPENAI_API_KEY`.
 
+For priced live comparisons, add one or more of these optional fields to a matrix entry using your current provider rates:
+
+- `input_cost_per_1k_tokens`
+- `output_cost_per_1k_tokens`
+- `total_cost_per_1k_tokens`
+
 Matrix exports produce:
 
 - `results.json`
 - `results.csv`
 - `summary.csv`
 - `leaderboard.csv`
+- `case_artifacts/` with per-case prompt, retrieval, raw output, judge decision, and final state
 - `x_post.txt`
 - append-only `matrix_history.csv` and `matrix_history.jsonl`
 
@@ -357,4 +367,5 @@ The matrix runner is the easiest way to compare multiple models or providers on 
 - natural-conversation extraction
 - later behavior grounded in BrainLayer state
 - judge-backed semantic scoring metadata like `score`, `score_method`, and average score
+- estimated cost columns like `estimated_cost_usd` and `estimated_total_cost_usd` when pricing is configured
 - reliability signals like parse failures, empty answers, latency, and token usage

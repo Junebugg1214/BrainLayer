@@ -16,6 +16,13 @@ from .benchmark_harness import (
     utc_now_iso,
     write_csv,
 )
+from .eval_support import (
+    serialize_consolidation_report,
+    serialize_observations,
+    serialize_prompt_messages,
+    serialize_retrieved_memories,
+    write_case_artifact,
+)
 from .judging import (
     BehaviorJudge,
     BehaviorJudgeInput,
@@ -84,6 +91,7 @@ class NaturalEvalResult:
     score_method: str
     score_reason: str
     retrieved_layers: List[str]
+    case_artifact: Dict[str, object]
     state_metrics: Dict[str, float]
     exported_state: Dict[str, object]
     eval_mode: str
@@ -557,6 +565,50 @@ def _build_result_from_turn(
         )
 
     response_model = turn_result.model_response.model or requested_model
+    case_artifact = {
+        "suite_name": "natural",
+        "scenario": {
+            "slug": scenario_slug,
+            "title": scenario_title,
+            "description": scenario_description,
+            "checkpoint": turn.checkpoint,
+            "prompt": turn.prompt,
+            "expected": turn.expected_value,
+            "evaluation_type": turn.evaluation_type,
+            "target_layer": turn.target_layer,
+            "target_key": turn.target_key,
+        },
+        "judge": {
+            "passed": score_decision.passed,
+            "score": score_decision.score,
+            "method": score_decision.method,
+            "reason": score_decision.reason,
+        },
+        "runtime": {
+            "runtime_name": runtime_name,
+            "eval_mode": eval_mode,
+            "provider_name": provider_name,
+            "requested_model": requested_model,
+            "response_model": response_model,
+            "finish_reason": turn_result.model_response.finish_reason,
+            "latency_ms": latency_ms,
+            "used_json": turn_result.used_json,
+            "parse_failure": not turn_result.used_json,
+            "empty_answer": turn_result.empty_answer,
+            "interaction_episode_id": turn_result.interaction_episode_id,
+            "usage_metrics": normalize_usage_metrics(turn_result.model_response.usage),
+        },
+        "prompt_messages": serialize_prompt_messages(turn_result.prompt_messages),
+        "retrieved_memories": serialize_retrieved_memories(turn_result.retrieved_memories),
+        "raw_model_output": turn_result.raw_model_output,
+        "parsed_output": {
+            "assistant_response": turn_result.assistant_response,
+            "episodic_summary": turn_result.episodic_summary,
+            "memory_observations": serialize_observations(turn_result.applied_observations),
+        },
+        "consolidation_report": serialize_consolidation_report(turn_result.consolidation_report),
+        "exported_state": turn_result.exported_state,
+    }
     return NaturalEvalResult(
         scenario_slug=scenario_slug,
         checkpoint=turn.checkpoint,
@@ -571,6 +623,7 @@ def _build_result_from_turn(
         score_method=score_decision.method,
         score_reason=score_decision.reason,
         retrieved_layers=[memory.layer for memory in turn_result.retrieved_memories],
+        case_artifact=case_artifact,
         state_metrics=collect_state_metrics(turn_result.exported_state),
         exported_state=turn_result.exported_state,
         eval_mode=eval_mode,
@@ -600,6 +653,43 @@ def _build_error_result(
     latency_ms: float,
     skipped: bool,
 ) -> NaturalEvalResult:
+    case_artifact = {
+        "suite_name": "natural",
+        "scenario": {
+            "slug": scenario_slug,
+            "checkpoint": turn.checkpoint,
+            "expected": turn.expected_value,
+            "evaluation_type": turn.evaluation_type,
+            "target_layer": turn.target_layer,
+            "target_key": turn.target_key,
+        },
+        "judge": {
+            "passed": False,
+            "score": 0.0,
+            "method": "runtime_error",
+            "reason": error,
+        },
+        "runtime": {
+            "runtime_name": runtime_name,
+            "eval_mode": eval_mode,
+            "provider_name": provider_name,
+            "requested_model": requested_model,
+            "response_model": requested_model,
+            "latency_ms": latency_ms,
+            "error": error,
+            "skipped": skipped,
+        },
+        "prompt_messages": [],
+        "retrieved_memories": [],
+        "raw_model_output": "",
+        "parsed_output": {
+            "assistant_response": "skipped" if skipped else "error",
+            "episodic_summary": "",
+            "memory_observations": [],
+        },
+        "consolidation_report": None,
+        "exported_state": exported_state,
+    }
     return NaturalEvalResult(
         scenario_slug=scenario_slug,
         checkpoint=turn.checkpoint,
@@ -614,6 +704,7 @@ def _build_error_result(
         score_method="runtime_error",
         score_reason=error,
         retrieved_layers=[],
+        case_artifact=case_artifact,
         state_metrics=collect_state_metrics(exported_state),
         exported_state=exported_state,
         eval_mode=eval_mode,
@@ -949,7 +1040,11 @@ def render_natural_eval_report(results: Sequence[NaturalEvalResult]) -> str:
     return "\n".join(lines)
 
 
-def serializable_natural_eval_result(result: NaturalEvalResult) -> Dict[str, object]:
+def serializable_natural_eval_result(
+    result: NaturalEvalResult,
+    *,
+    artifact_path: str = "",
+) -> Dict[str, object]:
     payload: Dict[str, object] = {
         "scenario_slug": result.scenario_slug,
         "checkpoint": result.checkpoint,
@@ -978,6 +1073,8 @@ def serializable_natural_eval_result(result: NaturalEvalResult) -> Dict[str, obj
         "skipped": result.skipped,
         "retrieved_layers": ",".join(result.retrieved_layers),
     }
+    if artifact_path:
+        payload["artifact_path"] = artifact_path
     for key, value in sorted(result.state_metrics.items()):
         payload[f"metric_{key}"] = value
     for key, value in sorted(result.usage_metrics.items()):
@@ -1023,6 +1120,7 @@ def build_natural_eval_metadata(
         "eval_mode": first.eval_mode if first else "",
         "provider_name": first.provider_name if first else "",
         "requested_model": first.requested_model if first else "",
+        "artifacts_subdir": "case_artifacts",
         "scenario_count": len({result.scenario_slug for result in results}),
         "checkpoint_count": len({(result.scenario_slug, result.checkpoint) for result in results}),
         "runtime_count": len({result.runtime_name for result in results}),
@@ -1088,7 +1186,12 @@ def export_natural_eval_results(
     run_dir = export_root / str(metadata["run_id"])
     run_dir.mkdir(parents=True, exist_ok=True)
 
-    result_rows = [serializable_natural_eval_result(result) for result in results]
+    artifact_root = run_dir / str(metadata["artifacts_subdir"])
+    result_rows = []
+    for result in results:
+        artifact_filename = f"{result.runtime_name}__{result.scenario_slug}__{result.checkpoint}.json"
+        artifact_path = write_case_artifact(artifact_root, artifact_filename, result.case_artifact)
+        result_rows.append(serializable_natural_eval_result(result, artifact_path=artifact_path))
     summary_rows = [serializable_natural_eval_summary(summary) for summary in summaries]
     x_post = render_natural_eval_x_post(
         summaries,

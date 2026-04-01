@@ -81,6 +81,7 @@ class ModelMatrixTests(unittest.TestCase):
             self.assertTrue((run_dir / "summary.csv").exists())
             self.assertTrue((run_dir / "leaderboard.csv").exists())
             self.assertTrue((run_dir / "x_post.txt").exists())
+            self.assertTrue((run_dir / "case_artifacts").exists())
             self.assertTrue((export_root / "matrix_history.csv").exists())
             self.assertTrue((export_root / "matrix_history.jsonl").exists())
 
@@ -90,6 +91,12 @@ class ModelMatrixTests(unittest.TestCase):
             self.assertIn("BrainLayer matrix", payload["x_post"])
             self.assertIn("score", payload["results"][0])
             self.assertIn("score_method", payload["results"][0])
+            self.assertIn("artifact_path", payload["results"][0])
+
+            artifact = json.loads((run_dir / payload["results"][0]["artifact_path"]).read_text())
+            self.assertIn("prompt_messages", artifact)
+            self.assertIn("judge", artifact)
+            self.assertIn("exported_state", artifact)
 
     def test_matrix_cli_reports_leaderboard(self) -> None:
         completed = subprocess.run(
@@ -159,6 +166,42 @@ class ModelMatrixTests(unittest.TestCase):
         self.assertTrue(all(result.eval_mode == "live" for result in results))
         self.assertTrue(all(result.provider_name == "test_provider" for result in results))
         self.assertTrue(all(result.response_model == "test-live-model" for result in results))
+
+    def test_matrix_pricing_estimates_cost_when_entry_rates_are_present(self) -> None:
+        live_entry_payload = [
+            {
+                "name": "live-priced",
+                "mode": "live",
+                "provider_name": "test_provider",
+                "model": "test-live-model",
+                "input_cost_per_1k_tokens": 0.001,
+                "output_cost_per_1k_tokens": 0.002,
+                "enabled": True,
+            }
+        ]
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "matrix.json"
+            config_path.write_text(json.dumps({"entries": live_entry_payload}, indent=2) + "\n")
+            entries = load_model_matrix_entries(config_path)
+
+            results = run_model_matrix(
+                entries,
+                include_ablations=False,
+                adapter_overrides={
+                    ("live-priced", "contradiction"): make_live_like_override_map()[
+                        ("live-like", "contradiction")
+                    ],
+                    ("live-priced", "natural"): make_live_like_override_map()[
+                        ("live-like", "natural")
+                    ],
+                },
+            )
+            leaderboard = build_matrix_leaderboard(results)
+
+        self.assertTrue(all(result.estimated_cost_usd > 0.0 for result in results))
+        self.assertEqual(len(leaderboard), 1)
+        self.assertGreater(leaderboard[0].estimated_total_cost_usd, 0.0)
+        self.assertGreater(leaderboard[0].avg_metrics.get("estimated_cost_usd", 0.0), 0.0)
 
 
 if __name__ == "__main__":
