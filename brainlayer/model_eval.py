@@ -18,6 +18,14 @@ from .benchmark_harness import (
     utc_now_iso,
     write_csv,
 )
+from .judging import (
+    BehaviorJudge,
+    BehaviorJudgeInput,
+    ExactMatchJudge,
+    HeuristicBehaviorJudge,
+    ScoreDecision,
+    normalize_answer_text,
+)
 from .llm import (
     LLMAdapter,
     LLMError,
@@ -80,6 +88,9 @@ class ModelEvalResult:
     expected: str
     actual: str
     passed: bool
+    score: float
+    score_method: str
+    score_reason: str
     retrieved_layers: List[str]
     state_metrics: Dict[str, float]
     exported_state: Dict[str, object]
@@ -522,10 +533,6 @@ def collect_state_metrics(exported_state: Dict[str, object]) -> Dict[str, float]
     }
 
 
-def normalize_answer_text(value: str) -> str:
-    return " ".join(TOKEN_RE.findall(value.lower()))
-
-
 def answers_match(expected: str, actual: str) -> bool:
     normalized_expected = normalize_answer_text(expected)
     normalized_actual = normalize_answer_text(actual)
@@ -548,6 +555,7 @@ def normalize_usage_metrics(payload: Dict[str, object]) -> Dict[str, float]:
 
 def _combined_metrics(result: ModelEvalResult) -> Dict[str, float]:
     metrics = dict(result.state_metrics)
+    metrics["score"] = result.score
     metrics["latency_ms"] = result.latency_ms
     metrics["applied_observation_count"] = float(result.applied_observation_count)
     for key, value in result.usage_metrics.items():
@@ -581,6 +589,7 @@ def _build_result_from_turn(
     requested_model: str,
     turn_result: object,
     latency_ms: float,
+    score_decision: ScoreDecision,
 ) -> ModelEvalResult:
     actual = turn_result.assistant_response
     response_model = turn_result.model_response.model or requested_model
@@ -590,7 +599,10 @@ def _build_result_from_turn(
         runtime_name=runtime_name,
         expected=expected,
         actual=actual,
-        passed=answers_match(expected, actual),
+        passed=score_decision.passed,
+        score=score_decision.score,
+        score_method=score_decision.method,
+        score_reason=score_decision.reason,
         retrieved_layers=[memory.layer for memory in turn_result.retrieved_memories],
         state_metrics=collect_state_metrics(turn_result.exported_state),
         exported_state=turn_result.exported_state,
@@ -629,6 +641,9 @@ def _build_error_result(
         expected=expected,
         actual="skipped" if skipped else "error",
         passed=False,
+        score=0.0,
+        score_method="runtime_error",
+        score_reason=error,
         retrieved_layers=[],
         state_metrics=collect_state_metrics(exported_state),
         exported_state=exported_state,
@@ -657,12 +672,15 @@ def run_model_eval_scenario(
     provider_name: str | None = None,
     requested_model: str | None = None,
     runtime_config: BrainLayerRuntimeConfig | None = None,
+    behavior_scoring_mode: str = "judge",
+    behavior_judge: BehaviorJudge | None = None,
 ) -> List[ModelEvalResult]:
     active_adapter = adapter or HeuristicBrainLayerEvalAdapter()
     active_eval_mode = eval_mode
     active_provider_name = provider_name or DEFAULT_HEURISTIC_PROVIDER
     active_requested_model = requested_model or DEFAULT_HEURISTIC_MODEL
     active_runtime_config = runtime_config or default_model_eval_runtime_config()
+    active_behavior_judge = behavior_judge or _build_behavior_judge(behavior_scoring_mode)
 
     results: List[ModelEvalResult] = []
     for runtime_name, features in build_runtime_variants(include_ablations=include_ablations):
@@ -741,6 +759,18 @@ def run_model_eval_scenario(
             if not turn.checkpoint:
                 continue
 
+            score_decision = active_behavior_judge.score(
+                BehaviorJudgeInput(
+                    scenario_slug=scenario.slug,
+                    scenario_title=scenario.title,
+                    scenario_description=scenario.description,
+                    checkpoint=turn.checkpoint,
+                    prompt=turn.prompt,
+                    expected=turn.expected_answer,
+                    actual=turn_result.assistant_response,
+                )
+            )
+
             results.append(
                 _build_result_from_turn(
                     scenario_slug=scenario.slug,
@@ -752,6 +782,7 @@ def run_model_eval_scenario(
                     requested_model=active_requested_model,
                     turn_result=turn_result,
                     latency_ms=latency_ms,
+                    score_decision=score_decision,
                 )
             )
     return results
@@ -766,6 +797,8 @@ def run_model_eval_suite(
     provider_name: str | None = None,
     requested_model: str | None = None,
     runtime_config: BrainLayerRuntimeConfig | None = None,
+    behavior_scoring_mode: str = "judge",
+    behavior_judge: BehaviorJudge | None = None,
 ) -> List[ModelEvalResult]:
     active_scenarios = list(scenarios or MODEL_EVAL_SCENARIOS)
     results: List[ModelEvalResult] = []
@@ -779,6 +812,8 @@ def run_model_eval_suite(
                 provider_name=provider_name,
                 requested_model=requested_model,
                 runtime_config=runtime_config,
+                behavior_scoring_mode=behavior_scoring_mode,
+                behavior_judge=behavior_judge,
             )
         )
     return results
@@ -797,6 +832,8 @@ def run_live_model_eval_suite(
     max_output_tokens_field: str | None = "max_tokens",
     temperature: float = 0.0,
     max_output_tokens: int = 700,
+    behavior_scoring_mode: str = "judge",
+    behavior_judge: BehaviorJudge | None = None,
 ) -> List[ModelEvalResult]:
     adapter = build_live_model_eval_adapter(
         api_key_env=api_key_env,
@@ -817,7 +854,17 @@ def run_live_model_eval_suite(
         provider_name=provider_name,
         requested_model=requested_model,
         runtime_config=runtime_config,
+        behavior_scoring_mode=behavior_scoring_mode,
+        behavior_judge=behavior_judge,
     )
+
+
+def _build_behavior_judge(behavior_scoring_mode: str) -> BehaviorJudge:
+    if behavior_scoring_mode == "exact":
+        return ExactMatchJudge()
+    if behavior_scoring_mode == "judge":
+        return HeuristicBehaviorJudge()
+    raise ValueError(f"Unsupported behavior scoring mode: {behavior_scoring_mode}")
 
 
 def summarize_model_eval_results(results: Sequence[ModelEvalResult]) -> List[ModelEvalSummary]:
@@ -902,6 +949,8 @@ def render_model_eval_report(results: Sequence[ModelEvalResult]) -> str:
         case_label = f"{result.scenario_slug}/{result.checkpoint}"
         layers = ",".join(result.retrieved_layers) or "-"
         extras = [
+            f"score={result.score:.2f}",
+            f"scoring={result.score_method}",
             f"latency_ms={result.latency_ms:.1f}",
             f"json={str(result.used_json).lower()}",
         ]
@@ -911,6 +960,8 @@ def render_model_eval_report(results: Sequence[ModelEvalResult]) -> str:
             extras.append("empty_answer=true")
         if result.error:
             extras.append(f"error={result.error}")
+        elif not result.passed:
+            extras.append(f"score_reason={result.score_reason}")
         lines.append(
             f"[{status}] {result.runtime_name} on {case_label}: "
             f"expected={result.expected!r}, actual={result.actual!r}, "
@@ -927,6 +978,7 @@ def render_model_eval_report(results: Sequence[ModelEvalResult]) -> str:
         extras = [
             f"avg_records={avg_records:.1f}",
             f"avg_episodes={avg_episodes:.1f}",
+            f"avg_score={summary.avg_metrics.get('score', 0.0):.2f}",
             f"avg_latency_ms={avg_latency:.1f}",
             f"parse_failures={summary.parse_failures}",
             f"empty_answers={summary.empty_answers}",
@@ -951,6 +1003,9 @@ def serializable_model_eval_result(result: ModelEvalResult) -> Dict[str, object]
         "expected": result.expected,
         "actual": result.actual,
         "passed": result.passed,
+        "score": result.score,
+        "score_method": result.score_method,
+        "score_reason": result.score_reason,
         "eval_mode": result.eval_mode,
         "provider_name": result.provider_name,
         "requested_model": result.requested_model,
@@ -1010,6 +1065,7 @@ def build_model_eval_metadata(
         "checkpoint_count": len({(result.scenario_slug, result.checkpoint) for result in results}),
         "runtime_count": len({result.runtime_name for result in results}),
         "response_model_count": len({result.response_model for result in results if result.response_model}),
+        "score_methods": sorted({result.score_method for result in results}),
     }
 
 
@@ -1115,6 +1171,7 @@ def export_model_eval_results(
                 "eval_mode": metadata["eval_mode"],
                 "provider_name": metadata["provider_name"],
                 "requested_model": metadata["requested_model"],
+                "score_methods": ",".join(metadata["score_methods"]),
                 **row,
             }
         )
@@ -1215,6 +1272,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="Run only the full model-backed BrainLayer runtime without ablations.",
     )
     parser.add_argument(
+        "--score-exact",
+        action="store_true",
+        help="Disable judge-backed semantic behavior scoring and require exact normalized matches.",
+    )
+    parser.add_argument(
         "--dump-states",
         type=Path,
         help="Optional directory for writing state snapshots at each checkpoint.",
@@ -1243,6 +1305,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         provider_name=provider_name,
         requested_model=requested_model,
         runtime_config=runtime_config,
+        behavior_scoring_mode="exact" if args.score_exact else "judge",
     )
     if args.dump_states:
         dump_model_eval_states(results, args.dump_states)

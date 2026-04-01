@@ -199,11 +199,14 @@ The next realism step is a natural-conversation suite where signals are implicit
 - extraction accuracy: whether the right BrainLayer state update was inferred
 - behavior accuracy: whether later answers reflect that inferred state
 
+Those runtime evals now use judge-backed semantic scoring for behavior checkpoints by default, while extraction checkpoints are scored structurally from the exported BrainLayer state. That makes the live suites less brittle than exact string matching while still preserving inspectable, deterministic scoring paths when needed.
+
 The next comparison layer is a matrix runner in `scripts/run_model_matrix.py`, which executes both suites across multiple model/provider configs and exports:
 
 - case-level CSV/JSON results
 - per-suite summaries
 - a cross-suite leaderboard
+- score metadata such as `score`, `score_method`, and average score
 - append-only history files for tracking progress over time
 - an X-ready summary post for sharing results
 

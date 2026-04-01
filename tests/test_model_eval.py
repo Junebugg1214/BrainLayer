@@ -32,6 +32,28 @@ def make_live_like_adapter() -> StaticLLMAdapter:
     return StaticLLMAdapter(handler=handler)
 
 
+def make_behavior_paraphrase_adapter() -> StaticLLMAdapter:
+    heuristic = HeuristicBrainLayerEvalAdapter()
+
+    def handler(messages: list[ModelMessage]) -> ModelResponse:
+        user_message = messages[-1].content if messages else ""
+        if "What response style should you use right now?" in user_message:
+            return ModelResponse(
+                content=json.dumps(
+                    {
+                        "assistant_response": "concise",
+                        "episodic_summary": "Answered the style question with a semantic paraphrase.",
+                        "memory_observations": [],
+                    }
+                ),
+                model="test-paraphrase-model",
+                finish_reason="stop",
+            )
+        return heuristic.generate(messages, model="ignored")
+
+    return StaticLLMAdapter(handler=handler)
+
+
 class FailingAdapter(LLMAdapter):
     def generate(
         self,
@@ -161,6 +183,46 @@ class ModelEvalTests(unittest.TestCase):
             self.assertEqual(payload["metadata"]["label"], "smoke")
             self.assertFalse(payload["metadata"]["include_ablations"])
             self.assertIn("BrainLayer model-loop eval", payload["x_post"])
+            self.assertIn("score", payload["results"][0])
+            self.assertIn("score_method", payload["results"][0])
+
+    def test_judge_backed_scoring_accepts_semantic_behavior_paraphrases(self) -> None:
+        scenario = ModelEvalScenario(
+            slug="judge_paraphrase",
+            title="Judge Paraphrase",
+            description="Behavior scoring should accept concise as a semantic match for brief.",
+            turns=[
+                ModelEvalTurn(
+                    prompt=(
+                        "Record preference: key=response_style; value=brief; "
+                        "proposition=The user prefers brief replies."
+                    )
+                ),
+                ModelEvalTurn(
+                    prompt="What response style should you use right now?",
+                    expected_answer="brief",
+                    checkpoint="semantic_match",
+                ),
+            ],
+        )
+
+        judged_results = run_model_eval_suite(
+            [scenario],
+            include_ablations=False,
+            adapter=make_behavior_paraphrase_adapter(),
+            behavior_scoring_mode="judge",
+        )
+        exact_results = run_model_eval_suite(
+            [scenario],
+            include_ablations=False,
+            adapter=make_behavior_paraphrase_adapter(),
+            behavior_scoring_mode="exact",
+        )
+
+        self.assertTrue(judged_results[0].passed)
+        self.assertEqual(judged_results[0].score_method, "heuristic_semantic_judge")
+        self.assertFalse(exact_results[0].passed)
+        self.assertEqual(exact_results[0].score_method, "exact_match")
 
     def test_live_like_mode_records_metadata_and_usage(self) -> None:
         results = run_model_eval_suite(

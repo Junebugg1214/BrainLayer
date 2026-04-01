@@ -32,6 +32,53 @@ def make_live_like_adapter() -> StaticLLMAdapter:
     return StaticLLMAdapter(handler=handler)
 
 
+def make_semantic_natural_adapter() -> StaticLLMAdapter:
+    def handler(messages: list[ModelMessage]) -> ModelResponse:
+        user_message = messages[-1].content if messages else ""
+        if "I'm skimming between meetings" in user_message:
+            return ModelResponse(
+                content=json.dumps(
+                    {
+                        "assistant_response": "I'll keep it concise.",
+                        "episodic_summary": "The user signaled a short-answer preference.",
+                        "memory_observations": [
+                            {
+                                "text": "The user prefers concise replies.",
+                                "memory_type": "preference",
+                                "payload": {
+                                    "key": "response_style",
+                                    "value": "concise",
+                                    "proposition": "The user prefers concise replies.",
+                                },
+                                "salience": 0.95,
+                            }
+                        ],
+                    }
+                ),
+                model="test-semantic-natural-model",
+                finish_reason="stop",
+            )
+        if "How should you answer by default right now?" in user_message:
+            return ModelResponse(
+                content=json.dumps(
+                    {
+                        "assistant_response": "concise",
+                        "episodic_summary": "Answered with a semantic paraphrase of brief.",
+                        "memory_observations": [],
+                    }
+                ),
+                model="test-semantic-natural-model",
+                finish_reason="stop",
+            )
+        return ModelResponse(
+            content='{"assistant_response":"unknown","episodic_summary":"unknown","memory_observations":[]}',
+            model="test-semantic-natural-model",
+            finish_reason="stop",
+        )
+
+    return StaticLLMAdapter(handler=handler)
+
+
 class FailingAdapter(LLMAdapter):
     def generate(
         self,
@@ -121,6 +168,61 @@ class NaturalEvalTests(unittest.TestCase):
             self.assertEqual(payload["metadata"]["label"], "smoke")
             self.assertFalse(payload["metadata"]["include_ablations"])
             self.assertIn("BrainLayer natural eval", payload["x_post"])
+            self.assertIn("score", payload["results"][0])
+            self.assertIn("score_method", payload["results"][0])
+
+    def test_judge_backed_scoring_handles_structural_and_behavior_paraphrases(self) -> None:
+        scenario = NaturalEvalScenario(
+            slug="natural_semantic_preference",
+            title="Natural Semantic Preference",
+            description="Extraction and behavior scoring should accept semantic paraphrases.",
+            turns=[
+                NaturalEvalTurn(
+                    prompt="I'm skimming between meetings, so please keep this really brief.",
+                    checkpoint="extract_preference",
+                    evaluation_type="extraction",
+                    target_layer="beliefs",
+                    target_key="response_style",
+                    expected_value="brief",
+                ),
+                NaturalEvalTurn(
+                    prompt="How should you answer by default right now?",
+                    checkpoint="behavior_preference",
+                    evaluation_type="behavior",
+                    expected_value="brief",
+                ),
+            ],
+        )
+
+        judged_results = run_natural_eval_suite(
+            [scenario],
+            include_ablations=False,
+            adapter=make_semantic_natural_adapter(),
+            behavior_scoring_mode="judge",
+        )
+        exact_results = run_natural_eval_suite(
+            [scenario],
+            include_ablations=False,
+            adapter=make_semantic_natural_adapter(),
+            behavior_scoring_mode="exact",
+        )
+
+        extraction_result = next(
+            result for result in judged_results if result.evaluation_type == "extraction"
+        )
+        behavior_result = next(
+            result for result in judged_results if result.evaluation_type == "behavior"
+        )
+        exact_behavior_result = next(
+            result for result in exact_results if result.evaluation_type == "behavior"
+        )
+
+        self.assertTrue(extraction_result.passed)
+        self.assertEqual(extraction_result.score_method, "structural_semantic_match")
+        self.assertTrue(behavior_result.passed)
+        self.assertEqual(behavior_result.score_method, "heuristic_semantic_judge")
+        self.assertFalse(exact_behavior_result.passed)
+        self.assertEqual(exact_behavior_result.score_method, "exact_match")
 
     def test_live_like_natural_mode_records_metadata_and_usage(self) -> None:
         results = run_natural_eval_suite(

@@ -88,6 +88,8 @@ class ModelMatrixTests(unittest.TestCase):
             self.assertEqual(payload["metadata"]["label"], "smoke")
             self.assertFalse(payload["metadata"]["include_ablations"])
             self.assertIn("BrainLayer matrix", payload["x_post"])
+            self.assertIn("score", payload["results"][0])
+            self.assertIn("score_method", payload["results"][0])
 
     def test_matrix_cli_reports_leaderboard(self) -> None:
         completed = subprocess.run(

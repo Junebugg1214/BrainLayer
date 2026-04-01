@@ -3,6 +3,7 @@
 from .benchmark_harness import run_suite
 from .consolidation import ConsolidationConfig, ConsolidationEngine, ConsolidationReport
 from .agents import BrainLayerFeatureConfig
+from .judging import BehaviorJudge, ExactMatchJudge, HeuristicBehaviorJudge, score_structured_value
 from .llm import LLMAdapter, LLMError, ModelMessage, ModelResponse, OpenAICompatibleChatAdapter
 from .model_eval import (
     build_live_model_eval_adapter,
@@ -39,9 +40,12 @@ __all__ = [
     "BrainLayerSession",
     "BrainLayerValidationError",
     "BrainLayerFeatureConfig",
+    "BehaviorJudge",
     "ConsolidationConfig",
     "ConsolidationEngine",
     "ConsolidationReport",
+    "ExactMatchJudge",
+    "HeuristicBehaviorJudge",
     "LLMAdapter",
     "LLMError",
     "load_state",
@@ -68,6 +72,7 @@ __all__ = [
     "run_natural_eval_suite",
     "run_suite",
     "run_model_eval_suite",
+    "score_structured_value",
     "save_state",
     "validate_state_dict",
 ]

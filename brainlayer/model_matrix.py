@@ -108,6 +108,9 @@ class MatrixCaseResult:
     expected: str
     actual: str
     passed: bool
+    score: float
+    score_method: str
+    score_reason: str
     eval_mode: str
     provider_name: str
     requested_model: str
@@ -234,6 +237,9 @@ def _convert_model_eval_result(entry_name: str, result: ModelEvalResult) -> Matr
         expected=result.expected,
         actual=result.actual,
         passed=result.passed,
+        score=result.score,
+        score_method=result.score_method,
+        score_reason=result.score_reason,
         eval_mode=result.eval_mode,
         provider_name=result.provider_name,
         requested_model=result.requested_model,
@@ -267,6 +273,9 @@ def _convert_natural_eval_result(entry_name: str, result: NaturalEvalResult) -> 
         expected=result.expected,
         actual=result.actual,
         passed=result.passed,
+        score=result.score,
+        score_method=result.score_method,
+        score_reason=result.score_reason,
         eval_mode=result.eval_mode,
         provider_name=result.provider_name,
         requested_model=result.requested_model,
@@ -288,6 +297,7 @@ def _convert_natural_eval_result(entry_name: str, result: NaturalEvalResult) -> 
 
 def _case_metrics(result: MatrixCaseResult) -> Dict[str, float]:
     metrics = dict(result.state_metrics)
+    metrics["score"] = result.score
     metrics["latency_ms"] = result.latency_ms
     metrics["applied_observation_count"] = float(result.applied_observation_count)
     for key, value in result.usage_metrics.items():
@@ -301,6 +311,7 @@ def run_model_matrix(
     include_ablations: bool = False,
     suites: Sequence[str] = SUITE_NAMES,
     adapter_overrides: Mapping[tuple[str, str], LLMAdapter] | None = None,
+    behavior_scoring_mode: str = "judge",
 ) -> List[MatrixCaseResult]:
     results: List[MatrixCaseResult] = []
     overrides = dict(adapter_overrides or {})
@@ -317,6 +328,7 @@ def run_model_matrix(
                     provider_name=entry.provider_name,
                     requested_model=entry.requested_model,
                     runtime_config=runtime_config,
+                    behavior_scoring_mode=behavior_scoring_mode,
                 )
                 results.extend(
                     _convert_model_eval_result(entry.name, result) for result in suite_results
@@ -331,6 +343,7 @@ def run_model_matrix(
                     provider_name=entry.provider_name,
                     requested_model=entry.requested_model,
                     runtime_config=runtime_config,
+                    behavior_scoring_mode=behavior_scoring_mode,
                 )
                 results.extend(
                     _convert_natural_eval_result(entry.name, result) for result in suite_results
@@ -551,6 +564,7 @@ def render_model_matrix_report(results: Sequence[MatrixCaseResult]) -> str:
     for summary in suite_summaries:
         extras = [
             f"{summary.passed}/{summary.total}",
+            f"avg_score={summary.avg_metrics.get('score', 0.0):.2f}",
             f"avg_latency_ms={summary.avg_metrics.get('latency_ms', 0.0):.1f}",
             f"parse_failures={summary.parse_failures}",
             f"errors={summary.errors}",
@@ -581,6 +595,7 @@ def render_model_matrix_report(results: Sequence[MatrixCaseResult]) -> str:
                 f"natural_extraction={row.natural_extraction_passed}/{row.natural_extraction_total}"
             ),
             f"natural_behavior={row.natural_behavior_passed}/{row.natural_behavior_total}",
+            f"avg_score={row.avg_metrics.get('score', 0.0):.2f}",
             f"avg_latency_ms={row.avg_metrics.get('latency_ms', 0.0):.1f}",
             f"errors={row.errors}",
         ]
@@ -606,6 +621,9 @@ def serializable_matrix_case_result(result: MatrixCaseResult) -> Dict[str, objec
         "expected": result.expected,
         "actual": result.actual,
         "passed": result.passed,
+        "score": result.score,
+        "score_method": result.score_method,
+        "score_reason": result.score_reason,
         "eval_mode": result.eval_mode,
         "provider_name": result.provider_name,
         "requested_model": result.requested_model,
@@ -698,6 +716,7 @@ def build_model_matrix_metadata(
         "suite_count": len({result.suite_name for result in results}),
         "runtime_count": len({(result.entry_name, result.runtime_name) for result in results}),
         "case_count": len(results),
+        "score_methods": sorted({result.score_method for result in results}),
     }
 
 
@@ -790,6 +809,7 @@ def export_model_matrix_results(
                 "git_commit": metadata["git_commit"],
                 "label": metadata["label"],
                 "include_ablations": metadata["include_ablations"],
+                "score_methods": ",".join(metadata["score_methods"]),
                 **row,
             }
         )
@@ -833,6 +853,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="Run both eval suites or restrict the matrix to one suite.",
     )
     parser.add_argument(
+        "--score-exact",
+        action="store_true",
+        help="Disable judge-backed semantic behavior scoring and require exact normalized matches.",
+    )
+    parser.add_argument(
         "--dump-states",
         type=Path,
         help="Optional directory for writing exported state snapshots for each case.",
@@ -854,6 +879,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         entries,
         include_ablations=args.with_ablations,
         suites=suites,
+        behavior_scoring_mode="exact" if args.score_exact else "judge",
     )
     print(render_model_matrix_report(results))
     if args.dump_states:

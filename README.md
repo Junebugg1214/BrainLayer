@@ -205,6 +205,12 @@ Run only the full model-backed runtime without ablations:
 python3 scripts/run_model_evals.py --core-only
 ```
 
+Force exact string-style scoring instead of the default judge-backed semantic scoring:
+
+```bash
+python3 scripts/run_model_evals.py --score-exact
+```
+
 Export a timestamped model-loop eval run with CSV, JSON, append-only history, and an X-ready post:
 
 ```bash
@@ -254,6 +260,8 @@ The live runner also records model-facing reliability signals per checkpoint:
 - provider/model metadata
 - token usage when the provider returns it
 
+Behavior checkpoints now use judge-backed semantic scoring by default, so paraphrases like `concise` for `brief` can still pass when the meaning is right. Use `--score-exact` when you want the older normalized exact-match behavior for debugging or ablation.
+
 Run the natural-conversation eval suite:
 
 ```bash
@@ -266,6 +274,12 @@ Export a natural-conversation run with extraction/behavior tracking:
 python3 scripts/run_natural_model_evals.py \
   --export-results artifacts/natural_eval_runs \
   --label natural-v1
+```
+
+Force exact behavior scoring while keeping structural extraction scoring:
+
+```bash
+python3 scripts/run_natural_model_evals.py --score-exact
 ```
 
 Run the same natural suite against a live model:
@@ -283,6 +297,8 @@ The natural suite is aimed at the more realistic research question: can a model 
 
 - `extraction`: did the runtime store the right belief, goal, relationship note, or procedure?
 - `behavior`: did the later answer reflect the right state?
+
+Extraction checkpoints are scored structurally from the exported BrainLayer state, while behavior checkpoints now use judge-backed semantic scoring by default.
 
 Run both model-backed suites across a matrix of configs:
 
@@ -306,6 +322,14 @@ python3 scripts/run_model_matrix.py \
   --config examples/model_matrix.sample.json \
   --export-results artifacts/matrix_runs \
   --label matrix-v1
+```
+
+Run the same matrix with exact behavior scoring:
+
+```bash
+python3 scripts/run_model_matrix.py \
+  --config examples/model_matrix.sample.json \
+  --score-exact
 ```
 
 Dump the exported BrainLayer state for each matrix case:
@@ -332,4 +356,5 @@ The matrix runner is the easiest way to compare multiple models or providers on 
 - contradiction and revision
 - natural-conversation extraction
 - later behavior grounded in BrainLayer state
+- judge-backed semantic scoring metadata like `score`, `score_method`, and average score
 - reliability signals like parse failures, empty answers, latency, and token usage

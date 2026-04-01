@@ -16,13 +16,19 @@ from .benchmark_harness import (
     utc_now_iso,
     write_csv,
 )
+from .judging import (
+    BehaviorJudge,
+    BehaviorJudgeInput,
+    ExactMatchJudge,
+    HeuristicBehaviorJudge,
+    score_structured_value,
+)
 from .llm import LLMAdapter, LLMError, ModelMessage, ModelResponse
 from .model_eval import (
     DEFAULT_HEURISTIC_MODEL,
     DEFAULT_HEURISTIC_PROVIDER,
     DEFAULT_LIVE_MODEL,
     DEFAULT_LIVE_PROVIDER,
-    answers_match,
     build_live_model_eval_adapter,
     build_runtime_variants,
     collect_state_metrics,
@@ -74,6 +80,9 @@ class NaturalEvalResult:
     expected: str
     actual: str
     passed: bool
+    score: float
+    score_method: str
+    score_reason: str
     retrieved_layers: List[str]
     state_metrics: Dict[str, float]
     exported_state: Dict[str, object]
@@ -458,6 +467,7 @@ def default_natural_eval_runtime_config(
 
 def _combined_metrics(result: NaturalEvalResult) -> Dict[str, float]:
     metrics = dict(result.state_metrics)
+    metrics["score"] = result.score
     metrics["latency_ms"] = result.latency_ms
     metrics["applied_observation_count"] = float(result.applied_observation_count)
     for key, value in result.usage_metrics.items():
@@ -520,11 +530,31 @@ def _build_result_from_turn(
     requested_model: str,
     turn_result: object,
     latency_ms: float,
+    behavior_judge: BehaviorJudge,
+    scenario_title: str,
+    scenario_description: str,
 ) -> NaturalEvalResult:
     if turn.evaluation_type == "behavior":
         actual = turn_result.assistant_response
+        score_decision = behavior_judge.score(
+            BehaviorJudgeInput(
+                scenario_slug=scenario_slug,
+                scenario_title=scenario_title,
+                scenario_description=scenario_description,
+                checkpoint=turn.checkpoint,
+                prompt=turn.prompt,
+                expected=turn.expected_value,
+                actual=actual,
+            )
+        )
     else:
         actual = lookup_state_value(turn_result.exported_state, turn.target_layer, turn.target_key)
+        score_decision = score_structured_value(
+            turn.expected_value,
+            actual,
+            target_layer=turn.target_layer,
+            target_key=turn.target_key,
+        )
 
     response_model = turn_result.model_response.model or requested_model
     return NaturalEvalResult(
@@ -536,7 +566,10 @@ def _build_result_from_turn(
         target_key=turn.target_key,
         expected=turn.expected_value,
         actual=actual,
-        passed=answers_match(turn.expected_value, actual),
+        passed=score_decision.passed,
+        score=score_decision.score,
+        score_method=score_decision.method,
+        score_reason=score_decision.reason,
         retrieved_layers=[memory.layer for memory in turn_result.retrieved_memories],
         state_metrics=collect_state_metrics(turn_result.exported_state),
         exported_state=turn_result.exported_state,
@@ -577,6 +610,9 @@ def _build_error_result(
         expected=turn.expected_value,
         actual="skipped" if skipped else "error",
         passed=False,
+        score=0.0,
+        score_method="runtime_error",
+        score_reason=error,
         retrieved_layers=[],
         state_metrics=collect_state_metrics(exported_state),
         exported_state=exported_state,
@@ -605,11 +641,14 @@ def run_natural_eval_scenario(
     provider_name: str | None = None,
     requested_model: str | None = None,
     runtime_config: BrainLayerRuntimeConfig | None = None,
+    behavior_scoring_mode: str = "judge",
+    behavior_judge: BehaviorJudge | None = None,
 ) -> List[NaturalEvalResult]:
     active_adapter = adapter or HeuristicNaturalConversationAdapter()
     active_provider_name = provider_name or DEFAULT_HEURISTIC_PROVIDER
     active_requested_model = requested_model or DEFAULT_HEURISTIC_MODEL
     active_runtime_config = runtime_config or default_natural_eval_runtime_config()
+    active_behavior_judge = behavior_judge or _build_behavior_judge(behavior_scoring_mode)
 
     results: List[NaturalEvalResult] = []
     for runtime_name, features in build_runtime_variants(include_ablations=include_ablations):
@@ -695,6 +734,9 @@ def run_natural_eval_scenario(
                     requested_model=active_requested_model,
                     turn_result=turn_result,
                     latency_ms=latency_ms,
+                    behavior_judge=active_behavior_judge,
+                    scenario_title=scenario.title,
+                    scenario_description=scenario.description,
                 )
             )
     return results
@@ -709,6 +751,8 @@ def run_natural_eval_suite(
     provider_name: str | None = None,
     requested_model: str | None = None,
     runtime_config: BrainLayerRuntimeConfig | None = None,
+    behavior_scoring_mode: str = "judge",
+    behavior_judge: BehaviorJudge | None = None,
 ) -> List[NaturalEvalResult]:
     active_scenarios = list(scenarios or NATURAL_EVAL_SCENARIOS)
     results: List[NaturalEvalResult] = []
@@ -722,6 +766,8 @@ def run_natural_eval_suite(
                 provider_name=provider_name,
                 requested_model=requested_model,
                 runtime_config=runtime_config,
+                behavior_scoring_mode=behavior_scoring_mode,
+                behavior_judge=behavior_judge,
             )
         )
     return results
@@ -740,6 +786,8 @@ def run_live_natural_eval_suite(
     max_output_tokens_field: str | None = "max_tokens",
     temperature: float = 0.0,
     max_output_tokens: int = 700,
+    behavior_scoring_mode: str = "judge",
+    behavior_judge: BehaviorJudge | None = None,
 ) -> List[NaturalEvalResult]:
     adapter = build_live_model_eval_adapter(
         api_key_env=api_key_env,
@@ -760,7 +808,17 @@ def run_live_natural_eval_suite(
         provider_name=provider_name,
         requested_model=requested_model,
         runtime_config=runtime_config,
+        behavior_scoring_mode=behavior_scoring_mode,
+        behavior_judge=behavior_judge,
     )
+
+
+def _build_behavior_judge(behavior_scoring_mode: str) -> BehaviorJudge:
+    if behavior_scoring_mode == "exact":
+        return ExactMatchJudge()
+    if behavior_scoring_mode == "judge":
+        return HeuristicBehaviorJudge()
+    raise ValueError(f"Unsupported behavior scoring mode: {behavior_scoring_mode}")
 
 
 def summarize_natural_eval_results(results: Sequence[NaturalEvalResult]) -> List[NaturalEvalSummary]:
@@ -854,11 +912,15 @@ def render_natural_eval_report(results: Sequence[NaturalEvalResult]) -> str:
         )
         extras = [
             f"target={target}",
+            f"score={result.score:.2f}",
+            f"scoring={result.score_method}",
             f"latency_ms={result.latency_ms:.1f}",
             f"json={str(result.used_json).lower()}",
         ]
         if result.error:
             extras.append(f"error={result.error}")
+        elif not result.passed:
+            extras.append(f"score_reason={result.score_reason}")
         lines.append(
             f"[{status}] {result.runtime_name} on {case_label}: "
             f"expected={result.expected!r}, actual={result.actual!r}, "
@@ -872,6 +934,7 @@ def render_natural_eval_report(results: Sequence[NaturalEvalResult]) -> str:
         extras = [
             f"extraction={summary.extraction_passed}/{summary.extraction_total}",
             f"behavior={summary.behavior_passed}/{summary.behavior_total}",
+            f"avg_score={summary.avg_metrics.get('score', 0.0):.2f}",
             f"avg_records={summary.avg_metrics.get('total_records', 0.0):.1f}",
             f"avg_latency_ms={summary.avg_metrics.get('latency_ms', 0.0):.1f}",
             f"parse_failures={summary.parse_failures}",
@@ -898,6 +961,9 @@ def serializable_natural_eval_result(result: NaturalEvalResult) -> Dict[str, obj
         "expected": result.expected,
         "actual": result.actual,
         "passed": result.passed,
+        "score": result.score,
+        "score_method": result.score_method,
+        "score_reason": result.score_reason,
         "eval_mode": result.eval_mode,
         "provider_name": result.provider_name,
         "requested_model": result.requested_model,
@@ -962,6 +1028,7 @@ def build_natural_eval_metadata(
         "runtime_count": len({result.runtime_name for result in results}),
         "extraction_count": len([result for result in results if result.evaluation_type == "extraction"]),
         "behavior_count": len([result for result in results if result.evaluation_type == "behavior"]),
+        "score_methods": sorted({result.score_method for result in results}),
     }
 
 
@@ -1055,6 +1122,7 @@ def export_natural_eval_results(
                 "eval_mode": metadata["eval_mode"],
                 "provider_name": metadata["provider_name"],
                 "requested_model": metadata["requested_model"],
+                "score_methods": ",".join(metadata["score_methods"]),
                 **row,
             }
         )
@@ -1159,6 +1227,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="Run only the full BrainLayer runtime without ablations.",
     )
     parser.add_argument(
+        "--score-exact",
+        action="store_true",
+        help="Disable judge-backed semantic behavior scoring and require exact normalized matches.",
+    )
+    parser.add_argument(
         "--dump-states",
         type=Path,
         help="Optional directory for writing state snapshots at each checkpoint.",
@@ -1187,6 +1260,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         provider_name=provider_name,
         requested_model=requested_model,
         runtime_config=runtime_config,
+        behavior_scoring_mode="exact" if args.score_exact else "judge",
     )
 
     if args.dump_states:
