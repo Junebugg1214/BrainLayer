@@ -222,10 +222,10 @@ Run the same eval suite against a live chat-completions-compatible model:
 ```bash
 OPENAI_API_KEY=... python3 scripts/run_model_evals.py \
   --mode live \
-  --model gpt-4.1-mini \
+  --model gpt-5-mini \
   --provider-name openai_compatible \
   --export-results artifacts/model_eval_runs \
-  --label live-gpt41
+  --label live-gpt5
 ```
 
 These model-loop evals focus on the cases where BrainLayer should matter most:
@@ -288,10 +288,10 @@ Run the same natural suite against a live model:
 ```bash
 OPENAI_API_KEY=... python3 scripts/run_natural_model_evals.py \
   --mode live \
-  --model gpt-4.1-mini \
+  --model gpt-5-mini \
   --provider-name openai_compatible \
   --export-results artifacts/natural_eval_runs \
-  --label natural-live-gpt41
+  --label natural-live-gpt5
 ```
 
 The natural suite is aimed at the more realistic research question: can a model infer BrainLayer updates from ordinary dialogue, not just explicit `Record ...` instructions? It scores two things separately:
@@ -345,6 +345,17 @@ python3 scripts/run_model_matrix.py \
 
 The sample config includes enabled heuristic entries plus a disabled live example you can turn on by setting `enabled` to `true` and exporting `OPENAI_API_KEY`.
 
+There is also a ready-to-run OpenAI live matrix config with current priced entries in `examples/model_matrix.openai.live.json`.
+
+Run it directly:
+
+```bash
+OPENAI_API_KEY=... python3 scripts/run_model_matrix.py \
+  --config examples/model_matrix.openai.live.json \
+  --export-results artifacts/matrix_runs \
+  --label openai-live
+```
+
 For priced live comparisons, add one or more of these optional fields to a matrix entry using your current provider rates:
 
 - `input_cost_per_1k_tokens`
@@ -369,3 +380,26 @@ The matrix runner is the easiest way to compare multiple models or providers on 
 - judge-backed semantic scoring metadata like `score`, `score_method`, and average score
 - estimated cost columns like `estimated_cost_usd` and `estimated_total_cost_usd` when pricing is configured
 - reliability signals like parse failures, empty answers, latency, and token usage
+
+The OpenAI-ready live config uses `max_completion_tokens` for chat completions, which is the current recommended field over deprecated `max_tokens`.
+
+Analyze matrix history into a publication-friendly cost/quality/latency report:
+
+```bash
+python3 scripts/analyze_matrix_history.py \
+  --history artifacts/matrix_runs/matrix_history.jsonl \
+  --output-root artifacts/matrix_analysis
+```
+
+That analysis export writes:
+
+- `report.json`
+- `report.md`
+- `leaderboard.csv`
+- `pareto_frontier.csv`
+- `suite_summary.csv`
+- `run_history.csv`
+- `cost_vs_quality.svg`
+- `x_post.txt`
+
+The analyzer reads `matrix_history.jsonl` instead of the append-only CSV so it stays stable even when exported column sets grow over time.

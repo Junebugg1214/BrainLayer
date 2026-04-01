@@ -1,0 +1,40 @@
+{
+  "entries": [
+    {
+      "name": "openai-gpt-5.1",
+      "mode": "live",
+      "provider_name": "openai_compatible",
+      "base_url": "https://api.openai.com/v1",
+      "api_key_env": "OPENAI_API_KEY",
+      "max_output_tokens_field": "max_completion_tokens",
+      "model": "gpt-5.1",
+      "input_cost_per_1k_tokens": 0.00125,
+      "output_cost_per_1k_tokens": 0.01,
+      "enabled": true
+    },
+    {
+      "name": "openai-gpt-5-mini",
+      "mode": "live",
+      "provider_name": "openai_compatible",
+      "base_url": "https://api.openai.com/v1",
+      "api_key_env": "OPENAI_API_KEY",
+      "max_output_tokens_field": "max_completion_tokens",
+      "model": "gpt-5-mini",
+      "input_cost_per_1k_tokens": 0.00025,
+      "output_cost_per_1k_tokens": 0.002,
+      "enabled": true
+    },
+    {
+      "name": "openai-gpt-5-nano",
+      "mode": "live",
+      "provider_name": "openai_compatible",
+      "base_url": "https://api.openai.com/v1",
+      "api_key_env": "OPENAI_API_KEY",
+      "max_output_tokens_field": "max_completion_tokens",
+      "model": "gpt-5-nano",
+      "input_cost_per_1k_tokens": 0.00005,
+      "output_cost_per_1k_tokens": 0.0004,
+      "enabled": true
+    }
+  ]
+}

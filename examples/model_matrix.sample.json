@@ -11,12 +11,13 @@
       "enabled": true
     },
     {
-      "name": "live-gpt41-mini",
+      "name": "live-gpt5-mini",
       "mode": "live",
       "provider_name": "openai_compatible",
-      "model": "gpt-4.1-mini",
-      "input_cost_per_1k_tokens": 0.0,
-      "output_cost_per_1k_tokens": 0.0,
+      "max_output_tokens_field": "max_completion_tokens",
+      "model": "gpt-5-mini",
+      "input_cost_per_1k_tokens": 0.00025,
+      "output_cost_per_1k_tokens": 0.002,
       "enabled": false
     }
   ]

@@ -212,6 +212,15 @@ The next comparison layer is a matrix runner in `scripts/run_model_matrix.py`, w
 - append-only history files for tracking progress over time
 - an X-ready summary post for sharing results
 
+The next reporting layer is a matrix-history analyzer in `scripts/analyze_matrix_history.py`, which reads `matrix_history.jsonl` and turns a selected run into:
+
+- a publication-friendly Markdown/JSON report
+- a Pareto-style cost/quality frontier
+- a compact leaderboard and suite summary export
+- a simple cost-vs-quality SVG for quick sharing
+
+The repo also includes a ready-to-run OpenAI live config in `examples/model_matrix.openai.live.json` with priced GPT-5.1, GPT-5 mini, and GPT-5 nano entries.
+
 ## What To Log
 
 For every run, log:

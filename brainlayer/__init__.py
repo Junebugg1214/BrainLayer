@@ -30,6 +30,15 @@ from .model_matrix import (
     render_model_matrix_x_post,
     run_model_matrix,
 )
+from .matrix_analysis import (
+    build_cost_quality_frontier,
+    build_matrix_analysis,
+    export_matrix_analysis,
+    load_matrix_history,
+    render_matrix_analysis_markdown,
+    render_matrix_analysis_x_post,
+    select_matrix_history_run,
+)
 from .runtime import BrainLayerRuntime, BrainLayerRuntimeConfig, ModelTurnResult
 from .session import BrainLayerSession
 from .storage import load_state, save_state
@@ -56,17 +65,23 @@ __all__ = [
     "ModelMatrixEntry",
     "OpenAICompatibleChatAdapter",
     "build_matrix_leaderboard",
+    "build_cost_quality_frontier",
+    "build_matrix_analysis",
     "build_live_model_eval_adapter",
     "default_model_eval_runtime_config",
     "default_natural_eval_runtime_config",
     "estimate_usage_cost_usd",
+    "export_matrix_analysis",
     "export_model_eval_results",
     "export_model_matrix_results",
     "export_natural_eval_results",
+    "load_matrix_history",
     "load_model_matrix_entries",
     "render_model_eval_report",
+    "render_matrix_analysis_markdown",
     "render_model_matrix_report",
     "render_model_matrix_x_post",
+    "render_matrix_analysis_x_post",
     "render_natural_eval_report",
     "run_live_model_eval_suite",
     "run_live_natural_eval_suite",
@@ -75,6 +90,7 @@ __all__ = [
     "run_suite",
     "run_model_eval_suite",
     "score_structured_value",
+    "select_matrix_history_run",
     "save_state",
     "validate_state_dict",
 ]
