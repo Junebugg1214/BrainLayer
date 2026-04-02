@@ -219,6 +219,17 @@ The next reporting layer is a matrix-history analyzer in `scripts/analyze_matrix
 - a compact leaderboard and suite summary export
 - a simple cost-vs-quality SVG for quick sharing
 
+## Frozen Baseline
+
+The current frozen baseline is `study-v1-gemini-core` at `artifacts/study_runs/20260402T175429Z-study-v1-gemini-core`, using `examples/model_matrix.gemini.chat.core.live.json`.
+
+Headline scores:
+
+- `gemini-2.5-flash`: `43/47`
+- `gemini-2.5-flash-lite`: `39/47`
+
+This baseline is intentionally frozen before mapping held-out phone-briefing wording like `punchy` onto `brief`, so the remaining held-out misses remain visible as a real generalization boundary rather than a tuned-away benchmark artifact.
+
 The repo also includes a ready-to-run OpenAI live config in `examples/model_matrix.openai.live.json` with priced GPT-5.1, GPT-5 mini, and GPT-5 nano entries.
 
 The repo now also includes a hard-mode eval pack across contradiction and natural suites. It is designed to stress:

@@ -140,3 +140,22 @@ Each study bundle should contain:
 ## Notes
 
 If a bug in scoring, parsing, or export invalidates a run, fix the bug, start a new study label, and rerun the full frozen protocol instead of patching the old bundle.
+
+## Frozen Baseline Marker
+
+As of April 2, 2026, the current frozen baseline is:
+
+- baseline id: `study-v1-gemini-core`
+- bundle: `artifacts/study_runs/20260402T175429Z-study-v1-gemini-core`
+- config: `examples/model_matrix.gemini.chat.core.live.json`
+
+Headline results:
+
+- `gemini-2.5-flash`: `43/47`
+- `gemini-2.5-flash-lite`: `39/47`
+
+Interpretation:
+
+- `standard` and `hard` are strong enough to treat the architecture as operational.
+- `held_out` remains the real generalization check.
+- Remaining held-out misses in the phone-briefing wording family are intentionally left unfixed for this baseline to avoid tuning on held-out phrasing.
