@@ -56,6 +56,38 @@ REQUIRED_PAYLOAD_KEYS = {
     "relationship": {"key", "value", "summary", "themes"},
     "relationship_hint": {"key", "value", "summary", "themes"},
 }
+OBSERVATION_RESERVED_KEYS = {"memory_type", "text", "salience", "payload"}
+KEY_ALIASES = {
+    "response style": "response_style",
+    "response_style": "response_style",
+    "response-length": "response_style",
+    "response_length": "response_style",
+    "response verbosity": "response_style",
+    "response_verbosity": "response_style",
+    "verbosity": "response_style",
+    "detail level": "response_style",
+    "detail_level": "response_style",
+    "answer length": "response_style",
+    "answer_length": "response_style",
+    "citation integrity": "primary_goal",
+    "citation_integrity": "primary_goal",
+    "citation preservation": "primary_goal",
+    "citation_preservation": "primary_goal",
+    "main goal": "primary_goal",
+    "main_goal": "primary_goal",
+    "current goal": "primary_goal",
+    "current_goal": "primary_goal",
+    "project goal": "primary_goal",
+    "project_goal": "primary_goal",
+    "delivery priority": "primary_goal",
+    "delivery_priority": "primary_goal",
+    "collaboration style": "collaboration_mode",
+    "collaboration_style": "collaboration_mode",
+    "partner mode": "collaboration_mode",
+    "partner_mode": "collaboration_mode",
+    "working relationship": "collaboration_mode",
+    "working_relationship": "collaboration_mode",
+}
 DEFAULT_SYSTEM_PROMPT = (
     "You are a helpful AI agent using BrainLayer as a layered cognitive state. "
     "Use the retrieved state when it is relevant, prefer the latest explicit corrections "
@@ -363,20 +395,18 @@ class BrainLayerRuntime:
         if memory_type not in VALID_MEMORY_TYPES:
             return None
 
-        raw_payload = payload.get("payload", {})
-        if not isinstance(raw_payload, dict):
-            return None
-        normalized_payload = {
-            str(key): str(value)
-            for key, value in raw_payload.items()
-            if value is not None
-        }
+        text = str(payload.get("text") or "").strip()
+        normalized_payload = _extract_observation_payload(payload)
+        memory_type, normalized_payload = _normalize_observation_payload(
+            memory_type,
+            normalized_payload,
+            text,
+        )
 
         required_keys = REQUIRED_PAYLOAD_KEYS.get(memory_type, set())
         if not required_keys.issubset(normalized_payload):
             return None
 
-        text = str(payload.get("text") or "").strip()
         if not text:
             text = self._default_observation_text(memory_type, normalized_payload)
 
@@ -546,3 +576,232 @@ def _truncate_text(value: str, limit: int) -> str:
     if len(value) <= limit:
         return value
     return value[: limit - 3].rstrip() + "..."
+
+
+def _extract_observation_payload(payload: Dict[str, object]) -> Dict[str, str]:
+    normalized_payload: Dict[str, str] = {}
+
+    raw_payload = payload.get("payload", {})
+    if isinstance(raw_payload, dict):
+        for key, value in raw_payload.items():
+            stringified = _stringify_payload_value(value)
+            if stringified:
+                normalized_payload[str(key).strip()] = stringified
+
+    for key, value in payload.items():
+        if key in OBSERVATION_RESERVED_KEYS:
+            continue
+        stringified = _stringify_payload_value(value)
+        if stringified and str(key).strip() not in normalized_payload:
+            normalized_payload[str(key).strip()] = stringified
+
+    return normalized_payload
+
+
+def _normalize_observation_payload(
+    memory_type: str,
+    payload: Dict[str, str],
+    text: str,
+) -> tuple[str, Dict[str, str]]:
+    normalized_payload = {
+        str(key).strip(): str(value).strip()
+        for key, value in payload.items()
+        if str(value).strip()
+    }
+
+    if "key" in normalized_payload:
+        normalized_payload["key"] = _normalize_slot_key(normalized_payload["key"])
+        memory_type = _normalize_memory_type(memory_type, normalized_payload["key"])
+
+    if memory_type == "noise":
+        if "value" not in normalized_payload and text:
+            normalized_payload["value"] = text
+        return memory_type, normalized_payload
+
+    if memory_type in {"preference", "correction", "preference_hint"}:
+        key = normalized_payload.get("key", "")
+        if key:
+            normalized_payload["value"] = _normalize_slot_value(
+                key,
+                normalized_payload.get("value", ""),
+                normalized_payload,
+                text,
+            )
+        if key and normalized_payload.get("value") and "proposition" not in normalized_payload:
+            normalized_payload["proposition"] = _default_proposition(
+                key,
+                normalized_payload["value"],
+                text,
+            )
+        return memory_type, normalized_payload
+
+    if memory_type in {"goal", "goal_hint"}:
+        key = normalized_payload.get("key", "")
+        if key:
+            normalized_payload["value"] = _normalize_slot_value(
+                key,
+                normalized_payload.get("value", ""),
+                normalized_payload,
+                text,
+            )
+        if key and normalized_payload.get("value") and "summary" not in normalized_payload:
+            normalized_payload["summary"] = _default_summary(
+                key,
+                normalized_payload["value"],
+                text,
+            )
+        return memory_type, normalized_payload
+
+    if memory_type in {"relationship", "relationship_hint"}:
+        key = normalized_payload.get("key", "")
+        if key:
+            normalized_payload["value"] = _normalize_slot_value(
+                key,
+                normalized_payload.get("value", ""),
+                normalized_payload,
+                text,
+            )
+        if key and normalized_payload.get("value") and "summary" not in normalized_payload:
+            normalized_payload["summary"] = _default_summary(
+                key,
+                normalized_payload["value"],
+                text,
+            )
+        normalized_payload.setdefault("themes", "relationship")
+        return memory_type, normalized_payload
+
+    if memory_type in {"lesson", "lesson_hint"}:
+        normalized_payload["trigger"] = _normalize_trigger(
+            normalized_payload.get("trigger", ""),
+            normalized_payload,
+            text,
+        )
+        normalized_payload["action"] = _normalize_action(
+            normalized_payload.get("action", ""),
+            normalized_payload,
+            text,
+        )
+        if (
+            normalized_payload.get("trigger")
+            and normalized_payload.get("action")
+            and "summary" not in normalized_payload
+        ):
+            normalized_payload["summary"] = text or (
+                f"When {normalized_payload['trigger']}, {normalized_payload['action']}."
+            )
+        return memory_type, normalized_payload
+
+    return memory_type, normalized_payload
+
+
+def _normalize_memory_type(memory_type: str, key: str) -> str:
+    if key == "primary_goal":
+        return "goal_hint" if memory_type.endswith("_hint") else "goal"
+    if key == "collaboration_mode":
+        return "relationship_hint" if memory_type.endswith("_hint") else "relationship"
+    if key == "response_style" and memory_type not in {
+        "preference",
+        "correction",
+        "preference_hint",
+    }:
+        return "preference_hint" if memory_type.endswith("_hint") else "preference"
+    return memory_type
+
+
+def _normalize_slot_key(key: str) -> str:
+    lowered = key.strip().lower()
+    normalized = re.sub(r"[\s\-]+", "_", lowered)
+    return KEY_ALIASES.get(lowered, KEY_ALIASES.get(normalized, normalized))
+
+
+def _normalize_slot_value(
+    key: str,
+    value: str,
+    payload: Dict[str, str],
+    text: str,
+) -> str:
+    combined = " ".join(
+        part
+        for part in (
+            value,
+            payload.get("summary", ""),
+            payload.get("proposition", ""),
+            text,
+        )
+        if part
+    ).strip()
+    lowered = combined.lower()
+
+    if key == "response_style":
+        if any(phrase in lowered for phrase in ("full reasoning", "detailed", "step-by-step", "step by step")):
+            return "detailed"
+        if "concise" in lowered:
+            return "concise"
+        if any(token in lowered for token in ("brief", "short", "succinct")):
+            return "brief"
+        return value.strip().lower()
+
+    if key == "primary_goal":
+        if "citation" in lowered:
+            return "preserve citations"
+        if "eval summary" in lowered or "evaluation summary" in lowered:
+            return "ship eval summary"
+        if "eval report" in lowered or "evaluation report" in lowered:
+            return "ship eval report"
+        return value.strip().lower()
+
+    if key == "collaboration_mode":
+        if "research partner" in lowered:
+            return "research partner"
+        if "task executor" in lowered or "task runner" in lowered:
+            return "task executor"
+        return value.strip().lower()
+
+    return value.strip()
+
+
+def _normalize_trigger(trigger: str, payload: Dict[str, str], text: str) -> str:
+    combined = " ".join(part for part in (trigger, payload.get("summary", ""), text) if part).lower()
+    if "retry" in combined and "release" in combined:
+        return "retry_release"
+    normalized = re.sub(r"[\s\-]+", "_", trigger.strip().lower())
+    return normalized
+
+
+def _normalize_action(action: str, payload: Dict[str, str], text: str) -> str:
+    combined = " ".join(part for part in (action, payload.get("summary", ""), text) if part).lower()
+    if (
+        "auth" in combined
+        or "authentication" in combined
+        or "log into github" in combined
+        or "login to github" in combined
+        or "logging back into github" in combined
+    ):
+        return "check authentication"
+    return action.strip().lower()
+
+
+def _default_proposition(key: str, value: str, text: str) -> str:
+    if text:
+        return text
+    if key == "response_style":
+        return f"The user prefers {value} replies."
+    return f"{key} is currently {value}."
+
+
+def _default_summary(key: str, value: str, text: str) -> str:
+    if text:
+        return text
+    if key == "primary_goal":
+        return f"The current primary goal is to {value}."
+    if key == "collaboration_mode":
+        return f"The collaboration mode is {value}."
+    return f"{key} is currently {value}."
+
+
+def _stringify_payload_value(value: object) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, (list, tuple, set)):
+        return ", ".join(str(item).strip() for item in value if str(item).strip())
+    return str(value).strip()

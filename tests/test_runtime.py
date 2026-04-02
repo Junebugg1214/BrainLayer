@@ -158,6 +158,112 @@ class BrainLayerRuntimeTests(unittest.TestCase):
         self.assertEqual(len(result.applied_observations), 0)
         self.assertFalse(session.state.beliefs)
 
+    def test_runtime_normalizes_flattened_preference_observations(self) -> None:
+        session = BrainLayerSession()
+        runtime = BrainLayerRuntime(
+            StaticLLMAdapter(
+                response=json.dumps(
+                    {
+                        "assistant_response": "Got it.",
+                        "episodic_summary": "The assistant inferred a brief style preference.",
+                        "memory_observations": [
+                            {
+                                "memory_type": "preference",
+                                "key": "response_style",
+                                "value": "very brief",
+                                "proposition": "User prefers very brief answers when multitasking between meetings.",
+                            }
+                        ],
+                    }
+                )
+            ),
+            session=session,
+        )
+
+        result = runtime.run_turn("I'm skimming between meetings, so please keep this really brief.")
+
+        self.assertEqual(len(result.applied_observations), 1)
+        self.assertEqual(result.applied_observations[0].payload["value"], "brief")
+        self.assertTrue(
+            any(
+                belief.key == "response_style" and belief.value == "brief"
+                for belief in session.state.beliefs
+            )
+        )
+
+    def test_runtime_normalizes_goal_aliases_into_primary_goal(self) -> None:
+        session = BrainLayerSession()
+        runtime = BrainLayerRuntime(
+            StaticLLMAdapter(
+                response=json.dumps(
+                    {
+                        "assistant_response": "Understood.",
+                        "episodic_summary": "The assistant inferred a citation-preservation goal.",
+                        "memory_observations": [
+                            {
+                                "memory_type": "goal",
+                                "key": "citation_integrity",
+                                "value": "preserve",
+                                "summary": "User wants all answers to keep citations intact.",
+                            }
+                        ],
+                    }
+                )
+            ),
+            session=session,
+        )
+
+        result = runtime.run_turn(
+            "Before anything else, let's make sure every answer keeps the citations intact."
+        )
+
+        self.assertEqual(len(result.applied_observations), 1)
+        self.assertEqual(result.applied_observations[0].payload["key"], "primary_goal")
+        self.assertEqual(result.applied_observations[0].payload["value"], "preserve citations")
+        self.assertTrue(
+            any(
+                item.key == "primary_goal" and item.value == "preserve citations"
+                for item in session.state.working_state
+            )
+        )
+
+    def test_runtime_normalizes_relationship_key_aliases(self) -> None:
+        session = BrainLayerSession()
+        runtime = BrainLayerRuntime(
+            StaticLLMAdapter(
+                response=json.dumps(
+                    {
+                        "assistant_response": "Understood.",
+                        "episodic_summary": "The assistant inferred the collaboration framing.",
+                        "memory_observations": [
+                            {
+                                "memory_type": "relationship",
+                                "key": "collaboration_style",
+                                "value": "research partner",
+                                "summary": "The user wants a research partner, not a task runner.",
+                                "themes": ["relationship", "research-mode"],
+                            }
+                        ],
+                    }
+                )
+            ),
+            session=session,
+        )
+
+        result = runtime.run_turn(
+            "I don't just need a task runner here; think with me like a research partner on this."
+        )
+
+        self.assertEqual(len(result.applied_observations), 1)
+        self.assertEqual(result.applied_observations[0].payload["key"], "collaboration_mode")
+        self.assertEqual(result.applied_observations[0].payload["value"], "research partner")
+        self.assertTrue(
+            any(
+                note.key == "collaboration_mode" and note.value == "research partner"
+                for note in session.state.autobiographical_state
+            )
+        )
+
     def test_runtime_falls_back_to_plain_text_model_output(self) -> None:
         runtime = BrainLayerRuntime(StaticLLMAdapter(response="Plain text answer."))
 
