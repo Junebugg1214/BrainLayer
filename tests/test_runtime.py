@@ -191,6 +191,72 @@ class BrainLayerRuntimeTests(unittest.TestCase):
             )
         )
 
+    def test_runtime_infers_missing_memory_type_from_flattened_preference(self) -> None:
+        session = BrainLayerSession()
+        runtime = BrainLayerRuntime(
+            StaticLLMAdapter(
+                response=json.dumps(
+                    {
+                        "assistant_response": "Understood! I'll keep it brief.",
+                        "episodic_summary": "User prefers brief responses while skimming between meetings.",
+                        "memory_observations": [
+                            {
+                                "key": "response_style",
+                                "value": "brief",
+                                "proposition": "User prefers brief responses.",
+                            }
+                        ],
+                    }
+                )
+            ),
+            session=session,
+        )
+
+        result = runtime.run_turn("I'm skimming between meetings, so please keep this really brief.")
+
+        self.assertEqual(len(result.applied_observations), 1)
+        self.assertEqual(result.applied_observations[0].memory_type, "preference")
+        self.assertTrue(
+            any(
+                belief.key == "response_style" and belief.value == "brief"
+                for belief in session.state.beliefs
+            )
+        )
+
+    def test_runtime_infers_missing_memory_type_from_flattened_lesson(self) -> None:
+        session = BrainLayerSession()
+        runtime = BrainLayerRuntime(
+            StaticLLMAdapter(
+                response=json.dumps(
+                    {
+                        "assistant_response": "Next time, I'll check GitHub authentication before retrying the release.",
+                        "episodic_summary": "User emphasized checking GitHub auth before retrying a release.",
+                        "memory_observations": [
+                            {
+                                "trigger": "retry_release",
+                                "action": "check authentication",
+                                "summary": "User wants to ensure GitHub authentication is checked before retrying a release.",
+                            }
+                        ],
+                    }
+                )
+            ),
+            session=session,
+        )
+
+        result = runtime.run_turn(
+            "Last time the release failed because we retried before checking GitHub auth. Next time, check auth first."
+        )
+
+        self.assertEqual(len(result.applied_observations), 1)
+        self.assertEqual(result.applied_observations[0].memory_type, "lesson")
+        self.assertTrue(
+            any(
+                procedure.trigger == "retry_release" and procedure.steps[0] == "check authentication"
+                for procedure in session.state.procedures
+            )
+        )
+
     def test_runtime_normalizes_goal_aliases_into_primary_goal(self) -> None:
         session = BrainLayerSession()
         runtime = BrainLayerRuntime(
@@ -224,6 +290,47 @@ class BrainLayerRuntimeTests(unittest.TestCase):
             any(
                 item.key == "primary_goal" and item.value == "preserve citations"
                 for item in session.state.working_state
+            )
+        )
+
+    def test_runtime_recovers_missing_preference_observation_from_turn_content(self) -> None:
+        session = BrainLayerSession()
+        session.observe(
+            text="The user prefers brief replies.",
+            memory_type="preference",
+            payload={
+                "key": "response_style",
+                "value": "brief",
+                "proposition": "The user prefers brief replies.",
+            },
+            salience=0.9,
+        )
+        runtime = BrainLayerRuntime(
+            StaticLLMAdapter(
+                response=json.dumps(
+                    {
+                        "assistant_response": (
+                            "For the methods memo, I will provide a detailed explanation of the reasoning "
+                            "behind each method and the rationale for its selection."
+                        ),
+                        "episodic_summary": "User requested full reasoning for methods memo.",
+                        "memory_observations": [],
+                    }
+                )
+            ),
+            session=session,
+        )
+
+        result = runtime.run_turn(
+            "For the methods memo though, I need the full reasoning spelled out."
+        )
+
+        self.assertEqual(len(result.applied_observations), 1)
+        self.assertEqual(result.applied_observations[0].payload["value"], "detailed")
+        self.assertTrue(
+            any(
+                belief.key == "response_style" and belief.value == "detailed"
+                for belief in session.state.beliefs
             )
         )
 

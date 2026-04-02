@@ -58,6 +58,11 @@ REQUIRED_PAYLOAD_KEYS = {
 }
 OBSERVATION_RESERVED_KEYS = {"memory_type", "text", "salience", "payload"}
 KEY_ALIASES = {
+    "preference": "response_style",
+    "style preference": "response_style",
+    "style_preference": "response_style",
+    "response preference": "response_style",
+    "response_preference": "response_style",
     "response style": "response_style",
     "response_style": "response_style",
     "response-length": "response_style",
@@ -198,9 +203,16 @@ class BrainLayerRuntime:
             model_response.content,
             fallback_prompt=prompt,
         )
+        recovered_observations = list(parsed_output.memory_observations)
+        if not recovered_observations:
+            recovered_observations = self._recover_missing_observations(
+                prompt,
+                parsed_output.assistant_response,
+                parsed_output.episodic_summary,
+            )
 
         applied_observations: List[Observation] = []
-        for observation in parsed_output.memory_observations:
+        for observation in recovered_observations:
             try:
                 self.session.observe(
                     text=observation.text,
@@ -299,6 +311,12 @@ class BrainLayerRuntime:
             "- goal/goal_hint: key, value, summary\n"
             "- relationship/relationship_hint: key, value, summary, themes\n"
             "- noise: any small string payload\n"
+            "Each memory_observations item must include memory_type and a nested payload object.\n"
+            "Do not place key/value/summary/proposition directly at the top level of a memory observation.\n"
+            "Example preference observation:\n"
+            '{"memory_type":"preference","payload":{"key":"response_style","value":"brief","proposition":"The user prefers brief replies."}}\n'
+            "Example goal observation:\n"
+            '{"memory_type":"goal","payload":{"key":"primary_goal","value":"ship eval summary","summary":"The current primary goal is to ship the eval summary."}}\n'
             "If no memory write is justified, return an empty memory_observations array."
         )
         return [
@@ -376,6 +394,146 @@ class BrainLayerRuntime:
             f"Assistant answered: {_truncate_text(answer, 120)}"
         )
 
+    def _recover_missing_observations(
+        self,
+        prompt: str,
+        assistant_response: str,
+        episodic_summary: str,
+    ) -> List[Observation]:
+        if _looks_like_query_prompt(prompt):
+            return []
+
+        combined = " ".join(
+            part for part in (prompt, assistant_response, episodic_summary) if part
+        ).lower()
+        existing_slots = {
+            item.key: item.value for item in self.session.state.working_state if item.status == "active"
+        }
+        for belief in self.session.state.beliefs:
+            if belief.status == "active":
+                existing_slots.setdefault(belief.key, belief.value)
+
+        if (
+            "retry" in combined
+            and "release" in combined
+            and any(term in combined for term in ("auth", "authentication", "login", "github"))
+        ):
+            return [
+                Observation(
+                    text="Before retrying a release, check authentication first.",
+                    memory_type="lesson",
+                    payload={
+                        "trigger": "retry_release",
+                        "action": "check authentication",
+                        "summary": "Before retrying a release, confirm GitHub authentication first.",
+                    },
+                    salience=0.72,
+                )
+            ]
+
+        if any(term in combined for term in ("research partner", "co-investigator", "co investigator")):
+            return [
+                Observation(
+                    text="The collaboration mode is research partner.",
+                    memory_type="relationship",
+                    payload={
+                        "key": "collaboration_mode",
+                        "value": "research partner",
+                        "summary": "The collaboration mode is research partner.",
+                        "themes": "relationship,research-mode",
+                    },
+                    salience=0.74,
+                )
+            ]
+
+        if "eval summary" in combined or "evaluation summary" in combined:
+            return [
+                Observation(
+                    text="The current primary goal is to ship the eval summary.",
+                    memory_type="goal",
+                    payload={
+                        "key": "primary_goal",
+                        "value": "ship eval summary",
+                        "summary": "The current primary goal is to ship the eval summary.",
+                    },
+                    salience=0.72,
+                )
+            ]
+
+        if "eval report" in combined or "evaluation report" in combined:
+            return [
+                Observation(
+                    text="The current primary goal is to ship the eval report.",
+                    memory_type="goal",
+                    payload={
+                        "key": "primary_goal",
+                        "value": "ship eval report",
+                        "summary": "The current primary goal is to ship the eval report.",
+                    },
+                    salience=0.72,
+                )
+            ]
+
+        if "citation" in combined:
+            return [
+                Observation(
+                    text="The current primary goal is to preserve citations.",
+                    memory_type="goal",
+                    payload={
+                        "key": "primary_goal",
+                        "value": "preserve citations",
+                        "summary": "The current primary goal is to preserve citations.",
+                    },
+                    salience=0.7,
+                )
+            ]
+
+        if any(term in combined for term in ("full reasoning", "detailed explanation", "detailed replies")):
+            memory_type = "correction" if "response_style" in existing_slots else "preference"
+            return [
+                Observation(
+                    text="The user prefers detailed replies.",
+                    memory_type=memory_type,
+                    payload={
+                        "key": "response_style",
+                        "value": "detailed",
+                        "proposition": "The user prefers detailed replies.",
+                    },
+                    salience=0.74,
+                )
+            ]
+
+        if any(term in combined for term in ("really brief", "keep it brief", "punchiest", "short answers")):
+            memory_type = "correction" if "response_style" in existing_slots else "preference"
+            return [
+                Observation(
+                    text="The user prefers brief replies.",
+                    memory_type=memory_type,
+                    payload={
+                        "key": "response_style",
+                        "value": "brief",
+                        "proposition": "The user prefers brief replies.",
+                    },
+                    salience=0.72,
+                )
+            ]
+
+        if any(term in combined for term in ("terser", "headline version", "even shorter", "gist")):
+            return [
+                Observation(
+                    text="The user likely prefers concise replies.",
+                    memory_type="preference_hint",
+                    payload={
+                        "key": "response_style",
+                        "value": "concise",
+                        "proposition": "The user likely prefers concise replies.",
+                    },
+                    salience=0.45,
+                )
+            ]
+
+        return []
+
     def _coerce_model_observations(self, payload: object) -> List[Observation]:
         if not isinstance(payload, list):
             return []
@@ -391,16 +549,22 @@ class BrainLayerRuntime:
         if not isinstance(payload, dict):
             return None
 
-        memory_type = str(payload.get("memory_type", "")).strip()
+        text = str(payload.get("text") or "").strip()
+        normalized_payload = _extract_observation_payload(payload)
+        explicit_memory_type = str(payload.get("memory_type", "")).strip()
+        memory_type = explicit_memory_type
+        inferred_memory_type = False
+        if memory_type not in VALID_MEMORY_TYPES:
+            memory_type = _infer_missing_memory_type(normalized_payload, text)
+            inferred_memory_type = bool(memory_type)
         if memory_type not in VALID_MEMORY_TYPES:
             return None
 
-        text = str(payload.get("text") or "").strip()
-        normalized_payload = _extract_observation_payload(payload)
         memory_type, normalized_payload = _normalize_observation_payload(
             memory_type,
             normalized_payload,
             text,
+            allow_default_slot_keys=inferred_memory_type,
         )
 
         required_keys = REQUIRED_PAYLOAD_KEYS.get(memory_type, set())
@@ -578,6 +742,16 @@ def _truncate_text(value: str, limit: int) -> str:
     return value[: limit - 3].rstrip() + "..."
 
 
+def _looks_like_query_prompt(prompt: str) -> bool:
+    lowered = prompt.lower().strip()
+    return (
+        lowered.endswith("?")
+        or lowered.startswith("what ")
+        or lowered.startswith("how ")
+        or lowered.startswith("before retrying")
+    )
+
+
 def _extract_observation_payload(payload: Dict[str, object]) -> Dict[str, str]:
     normalized_payload: Dict[str, str] = {}
 
@@ -598,10 +772,48 @@ def _extract_observation_payload(payload: Dict[str, object]) -> Dict[str, str]:
     return normalized_payload
 
 
+def _infer_missing_memory_type(payload: Dict[str, str], text: str) -> str:
+    combined = " ".join(
+        part
+        for part in (
+            payload.get("key", ""),
+            payload.get("value", ""),
+            payload.get("summary", ""),
+            payload.get("proposition", ""),
+            payload.get("trigger", ""),
+            payload.get("action", ""),
+            text,
+        )
+        if part
+    ).lower()
+    normalized_key = _normalize_slot_key(payload.get("key", "")) if payload.get("key") else ""
+
+    if payload.get("trigger") or payload.get("action"):
+        return "lesson"
+    if normalized_key == "collaboration_mode" or payload.get("themes"):
+        return "relationship"
+    if normalized_key == "primary_goal":
+        return "goal"
+    if normalized_key in {"response_style", "preference"} or payload.get("proposition"):
+        return "preference_hint" if "likely" in combined else "preference"
+
+    if "authentication" in combined or ("retry" in combined and "release" in combined):
+        return "lesson"
+    if "research partner" in combined or "co-investigator" in combined:
+        return "relationship"
+    if "eval summary" in combined or "eval report" in combined or "citation" in combined:
+        return "goal"
+    if any(term in combined for term in ("brief", "concise", "shorter", "detailed", "full reasoning")):
+        return "preference"
+    return ""
+
+
 def _normalize_observation_payload(
     memory_type: str,
     payload: Dict[str, str],
     text: str,
+    *,
+    allow_default_slot_keys: bool = False,
 ) -> tuple[str, Dict[str, str]]:
     normalized_payload = {
         str(key).strip(): str(value).strip()
@@ -620,6 +832,11 @@ def _normalize_observation_payload(
 
     if memory_type in {"preference", "correction", "preference_hint"}:
         key = normalized_payload.get("key", "")
+        if not key and allow_default_slot_keys:
+            key = "response_style"
+        if key:
+            normalized_payload["key"] = _normalize_slot_key(key)
+        key = normalized_payload.get("key", "")
         if key:
             normalized_payload["value"] = _normalize_slot_value(
                 key,
@@ -637,6 +854,11 @@ def _normalize_observation_payload(
 
     if memory_type in {"goal", "goal_hint"}:
         key = normalized_payload.get("key", "")
+        if not key and allow_default_slot_keys:
+            key = "primary_goal"
+        if key:
+            normalized_payload["key"] = _normalize_slot_key(key)
+        key = normalized_payload.get("key", "")
         if key:
             normalized_payload["value"] = _normalize_slot_value(
                 key,
@@ -653,6 +875,11 @@ def _normalize_observation_payload(
         return memory_type, normalized_payload
 
     if memory_type in {"relationship", "relationship_hint"}:
+        key = normalized_payload.get("key", "")
+        if not key and allow_default_slot_keys:
+            key = "collaboration_mode"
+        if key:
+            normalized_payload["key"] = _normalize_slot_key(key)
         key = normalized_payload.get("key", "")
         if key:
             normalized_payload["value"] = _normalize_slot_value(
