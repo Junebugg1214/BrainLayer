@@ -411,6 +411,126 @@ HARD_NATURAL_EVAL_SCENARIOS: List[NaturalEvalScenario] = [
     ),
 ]
 
+HELD_OUT_NATURAL_EVAL_SCENARIOS: List[NaturalEvalScenario] = [
+    NaturalEvalScenario(
+        slug="natural_phone_briefing",
+        title="Natural Phone Briefing",
+        description="Can the agent infer a brief-response preference from a different everyday framing?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="I'm reading this on my phone between sessions, so give me the punchiest version you can.",
+                checkpoint="extract_preference",
+                evaluation_type="extraction",
+                target_layer="beliefs",
+                target_key="response_style",
+                expected_value="brief",
+            ),
+            NaturalEvalTurn(
+                prompt="How should you answer by default right now?",
+                checkpoint="behavior_preference",
+                evaluation_type="behavior",
+                expected_value="brief",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="natural_priority_reframe",
+        title="Natural Priority Reframe",
+        description="Can the agent move from a citation-preserving goal to a deadline-driven eval summary goal?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="For the first pass, do not drop the citations.",
+            ),
+            NaturalEvalTurn(
+                prompt="The deadline just got tighter, so what matters most now is getting the eval summary out today.",
+                checkpoint="extract_revised_goal",
+                evaluation_type="extraction",
+                target_layer="working_state",
+                target_key="primary_goal",
+                expected_value="ship eval summary",
+            ),
+            NaturalEvalTurn(
+                prompt="What is the main goal right now?",
+                checkpoint="behavior_goal",
+                evaluation_type="behavior",
+                expected_value="ship eval summary",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="natural_coinvestigator_reframe",
+        title="Natural Coinvestigator Reframe",
+        description="Can the agent infer a partnership framing from a different collaboration wording?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="Don't behave like a contractor taking tickets. I need a co-investigator on the memory study.",
+                checkpoint="extract_relationship",
+                evaluation_type="extraction",
+                target_layer="autobiographical_state",
+                target_key="collaboration_mode",
+                expected_value="research partner",
+            ),
+            NaturalEvalTurn(
+                prompt="What collaboration mode should define this project right now?",
+                checkpoint="behavior_relationship",
+                evaluation_type="behavior",
+                expected_value="research partner",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="natural_rollout_auth_lesson",
+        title="Natural Rollout Auth Lesson",
+        description="Can the agent infer a reusable release lesson from a different retrospective phrasing?",
+        turns=[
+            NaturalEvalTurn(
+                prompt=(
+                    "The last rollout slipped because we reran before checking whether GitHub auth had expired. "
+                    "Next time verify the login first."
+                ),
+                checkpoint="extract_lesson",
+                evaluation_type="extraction",
+                target_layer="procedures",
+                target_key="retry_release",
+                expected_value="check authentication",
+            ),
+            NaturalEvalTurn(
+                prompt="Before retrying the release, what should you do first?",
+                checkpoint="behavior_lesson",
+                evaluation_type="behavior",
+                expected_value="check authentication",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="natural_headline_hint_stack",
+        title="Natural Headline Hint Stack",
+        description="Can the agent consolidate new indirect brevity hints from unseen wording?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="Just give me the headline version.",
+            ),
+            NaturalEvalTurn(
+                prompt="The appendix figure labels can wait until tomorrow.",
+            ),
+            NaturalEvalTurn(
+                prompt="You can make it even terser than that.",
+                checkpoint="extract_hint_consolidation",
+                evaluation_type="extraction",
+                target_layer="beliefs",
+                target_key="response_style",
+                expected_value="concise",
+            ),
+            NaturalEvalTurn(
+                prompt="How should you answer by default right now?",
+                checkpoint="behavior_hint_consolidation",
+                evaluation_type="behavior",
+                expected_value="concise",
+            ),
+        ],
+    ),
+]
+
 NATURAL_EVAL_SCENARIOS = STANDARD_NATURAL_EVAL_SCENARIOS
 
 
@@ -419,8 +539,14 @@ def get_natural_eval_scenarios(scenario_pack: str = DEFAULT_SCENARIO_PACK) -> Li
         return list(STANDARD_NATURAL_EVAL_SCENARIOS)
     if scenario_pack == "hard":
         return list(HARD_NATURAL_EVAL_SCENARIOS)
+    if scenario_pack == "held_out":
+        return list(HELD_OUT_NATURAL_EVAL_SCENARIOS)
     if scenario_pack == "all":
-        return list(STANDARD_NATURAL_EVAL_SCENARIOS) + list(HARD_NATURAL_EVAL_SCENARIOS)
+        return (
+            list(STANDARD_NATURAL_EVAL_SCENARIOS)
+            + list(HARD_NATURAL_EVAL_SCENARIOS)
+            + list(HELD_OUT_NATURAL_EVAL_SCENARIOS)
+        )
     raise ValueError(f"Unsupported natural eval scenario pack: {scenario_pack}")
 
 
@@ -538,6 +664,19 @@ class HeuristicNaturalConversationAdapter(LLMAdapter):
                 },
             }
 
+        if "contractor taking tickets" in lowered or "co-investigator" in lowered:
+            return {
+                "text": "The collaboration mode is research partner.",
+                "memory_type": "relationship",
+                "salience": 0.95,
+                "payload": {
+                    "key": "collaboration_mode",
+                    "value": "research partner",
+                    "summary": "The collaboration mode is research partner.",
+                    "themes": "relationship,research-mode",
+                },
+            }
+
         if "last time the release failed" in lowered or "check auth first" in lowered:
             return {
                 "text": "Before retrying a release, check authentication first.",
@@ -551,6 +690,18 @@ class HeuristicNaturalConversationAdapter(LLMAdapter):
             }
 
         if "logging back into github" in lowered or "verify auth first" in lowered:
+            return {
+                "text": "Before retrying a release, check authentication first.",
+                "memory_type": "lesson",
+                "salience": 0.93,
+                "payload": {
+                    "trigger": "retry_release",
+                    "action": "check authentication",
+                    "summary": "Before retrying a release, confirm GitHub authentication first.",
+                },
+            }
+
+        if "auth had expired" in lowered or "verify the login first" in lowered:
             return {
                 "text": "Before retrying a release, check authentication first.",
                 "memory_type": "lesson",
@@ -586,6 +737,18 @@ class HeuristicNaturalConversationAdapter(LLMAdapter):
                 },
             }
 
+        if "what matters most now is getting the eval summary out today" in lowered:
+            return {
+                "text": "The current primary goal is to ship the eval summary.",
+                "memory_type": "goal",
+                "salience": 0.96,
+                "payload": {
+                    "key": "primary_goal",
+                    "value": "ship eval summary",
+                    "summary": "The current primary goal is to ship the eval summary.",
+                },
+            }
+
         if "before anything else" in lowered or "citations intact" in lowered:
             return {
                 "text": "The current primary goal is to preserve citations.",
@@ -603,6 +766,18 @@ class HeuristicNaturalConversationAdapter(LLMAdapter):
                 "text": "The current primary goal is to preserve citations.",
                 "memory_type": "goal",
                 "salience": 0.92,
+                "payload": {
+                    "key": "primary_goal",
+                    "value": "preserve citations",
+                    "summary": "The current primary goal is to preserve citations.",
+                },
+            }
+
+        if "do not drop the citations" in lowered:
+            return {
+                "text": "The current primary goal is to preserve citations.",
+                "memory_type": "goal",
+                "salience": 0.9,
                 "payload": {
                     "key": "primary_goal",
                     "value": "preserve citations",
@@ -658,7 +833,33 @@ class HeuristicNaturalConversationAdapter(LLMAdapter):
                 },
             }
 
+        if "headline version" in lowered or "even terser than that" in lowered:
+            return {
+                "text": "The user likely prefers concise replies.",
+                "memory_type": "preference_hint",
+                "salience": 0.42,
+                "payload": {
+                    "key": "response_style",
+                    "value": "concise",
+                    "proposition": "The user likely prefers concise replies.",
+                },
+            }
+
         if "keep this really brief" in lowered or "skimming between meetings" in lowered:
+            memory_type = "correction" if "response_style" in slots else "preference"
+            proposition = "The user prefers brief replies."
+            return {
+                "text": proposition,
+                "memory_type": memory_type,
+                "salience": 0.94,
+                "payload": {
+                    "key": "response_style",
+                    "value": "brief",
+                    "proposition": proposition,
+                },
+            }
+
+        if "on my phone between sessions" in lowered or "punchiest version" in lowered:
             memory_type = "correction" if "response_style" in slots else "preference"
             proposition = "The user prefers brief replies."
             return {
@@ -1615,9 +1816,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument(
         "--scenario-pack",
-        choices=("standard", "hard", "all"),
+        choices=("standard", "hard", "held_out", "all"),
         default=DEFAULT_SCENARIO_PACK,
-        help="Choose the standard natural suite, the harder delayed/noisy set, or both together.",
+        help="Choose the standard natural suite, the harder delayed/noisy set, the held-out generalization set, or all packs together.",
     )
     parser.add_argument(
         "--score-exact",

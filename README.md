@@ -211,7 +211,13 @@ Run the harder delayed/noisy contradiction pack:
 python3 scripts/run_model_evals.py --scenario-pack hard
 ```
 
-Run both the standard and hard packs together:
+Run the held-out contradiction pack for generalization checks:
+
+```bash
+python3 scripts/run_model_evals.py --scenario-pack held_out
+```
+
+Run the standard, hard, and held-out packs together:
 
 ```bash
 python3 scripts/run_model_evals.py --scenario-pack all
@@ -254,6 +260,8 @@ The hard pack adds tougher versions of those same skills:
 - relationship reframing after unrelated context growth
 - procedure formation from repeated hints instead of one direct lesson
 
+The held-out pack uses fresh phrasings and new scenario compositions for the same underlying capabilities so you can check whether a BrainLayer change generalizes beyond the packs you tuned against.
+
 They use a deterministic adapter over the real runtime path, which means the eval exercises:
 
 - retrieval from the layered BrainLayer state
@@ -294,7 +302,13 @@ Run the harder natural-conversation pack:
 python3 scripts/run_natural_model_evals.py --scenario-pack hard
 ```
 
-Run both the standard and hard natural packs together:
+Run the held-out natural-conversation pack:
+
+```bash
+python3 scripts/run_natural_model_evals.py --scenario-pack held_out
+```
+
+Run the standard, hard, and held-out natural packs together:
 
 ```bash
 python3 scripts/run_natural_model_evals.py --scenario-pack all
@@ -342,6 +356,8 @@ The hard natural pack adds longer-horizon and noisier cases for:
 - delayed hint accumulation
 - procedural lesson extraction spread across multiple turns
 
+The held-out natural pack is meant for generalization checks. It reuses the same target capabilities with different everyday wording so it is easier to spot overfitting to the authored benchmark text.
+
 Run both model-backed suites across a matrix of configs:
 
 ```bash
@@ -363,6 +379,14 @@ Run the same matrix against the harder scenario pack:
 python3 scripts/run_model_matrix.py \
   --config examples/model_matrix.sample.json \
   --scenario-pack hard
+```
+
+Run the same matrix against the held-out generalization pack:
+
+```bash
+python3 scripts/run_model_matrix.py \
+  --config examples/model_matrix.sample.json \
+  --scenario-pack held_out
 ```
 
 Export a timestamped matrix run with case rows, suite summaries, a leaderboard, append-only history, and an X-ready post:
@@ -428,7 +452,7 @@ The matrix runner is the easiest way to compare multiple models or providers on 
 - estimated cost columns like `estimated_cost_usd` and `estimated_total_cost_usd` when pricing is configured
 - reliability signals like parse failures, empty answers, latency, and token usage
 
-Every eval export now records a `scenario_pack` value, so standard, hard, and combined runs stay separable in history.
+Every eval export now records a `scenario_pack` value, so standard, hard, held-out, and combined runs stay separable in history.
 
 The OpenAI-ready live config uses `max_completion_tokens` for chat completions, which is the current recommended field over deprecated `max_tokens`.
 

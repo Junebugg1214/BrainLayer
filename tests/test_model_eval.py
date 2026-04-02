@@ -80,6 +80,12 @@ class ModelEvalTests(unittest.TestCase):
         self.assertEqual(len(model_loop_results), 4)
         self.assertTrue(all(result.passed for result in model_loop_results))
 
+    def test_held_out_model_loop_passes_contradiction_suite(self) -> None:
+        results = run_model_eval_suite(include_ablations=False, scenario_pack="held_out")
+        model_loop_results = [result for result in results if result.runtime_name == "model_loop"]
+        self.assertEqual(len(model_loop_results), 4)
+        self.assertTrue(all(result.passed for result in model_loop_results))
+
     def test_ablations_show_targeted_runtime_regressions(self) -> None:
         results = run_model_eval_suite()
 
@@ -216,6 +222,23 @@ class ModelEvalTests(unittest.TestCase):
                 "--core-only",
                 "--scenario-pack",
                 "hard",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        self.assertIn("Model-Backed BrainLayer Eval Report", completed.stdout)
+        self.assertIn("model_loop: 4/4", completed.stdout)
+
+    def test_model_eval_script_reports_held_out_pack_summary(self) -> None:
+        completed = subprocess.run(
+            [
+                "python3",
+                str(ROOT / "scripts" / "run_model_evals.py"),
+                "--core-only",
+                "--scenario-pack",
+                "held_out",
             ],
             check=True,
             capture_output=True,

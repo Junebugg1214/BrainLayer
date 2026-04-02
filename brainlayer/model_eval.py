@@ -401,6 +401,113 @@ HARD_MODEL_EVAL_SCENARIOS: List[ModelEvalScenario] = [
     ),
 ]
 
+HELD_OUT_MODEL_EVAL_SCENARIOS: List[ModelEvalScenario] = [
+    ModelEvalScenario(
+        slug="model_preference_appendix_override",
+        title="Model Preference Appendix Override",
+        description="Can the runtime honor a later appendix-specific preference after an earlier default style?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record preference: key=response_style; value=brief; "
+                    "proposition=The user generally prefers brief replies."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The appendix caption style still needs a consistency pass."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record correction: key=response_style; value=detailed; "
+                    "proposition=For the appendix walkthrough, the user now wants detailed replies."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="What response style should you use right now?",
+                expected_answer="detailed",
+                checkpoint="appendix_override",
+            ),
+        ],
+    ),
+    ModelEvalScenario(
+        slug="model_goal_summary_deadline",
+        title="Model Goal Summary Deadline",
+        description="Can the runtime preserve the newest project goal after a deadline-driven change?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=primary_goal; value=preserve citations; "
+                    "summary=The current primary goal is to preserve citations in every draft."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The appendix typography should stay consistent across pages."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=primary_goal; value=ship eval summary; "
+                    "summary=The current primary goal is to ship the eval summary before the deadline."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="What is the current primary goal for this task?",
+                expected_answer="ship eval summary",
+                checkpoint="deadline_goal",
+            ),
+        ],
+    ),
+    ModelEvalScenario(
+        slug="model_relationship_coauthor_mode",
+        title="Model Relationship Coauthor Mode",
+        description="Can the runtime keep a collaboration reframing toward partnership after a prior executor mode?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record relationship: key=collaboration_mode; value=task executor; "
+                    "summary=The collaboration mode is task executor.; "
+                    "themes=relationship,delivery-mode"
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The latency appendix still needs a final footnote."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record relationship: key=collaboration_mode; value=research partner; "
+                    "summary=The collaboration mode is research partner.; "
+                    "themes=relationship,coauthor-mode"
+                )
+            ),
+            ModelEvalTurn(
+                prompt="What collaboration mode should define this project right now?",
+                expected_answer="research partner",
+                checkpoint="coauthor_mode",
+            ),
+        ],
+    ),
+    ModelEvalScenario(
+        slug="model_release_lesson_reminder",
+        title="Model Release Lesson Reminder",
+        description="Can the runtime retain a direct procedural lesson for later release retries?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record lesson: trigger=retry_release; action=check authentication; "
+                    "summary=Before rerunning a stalled release, confirm GitHub authentication first."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The incident template still needs an owner field."
+            ),
+            ModelEvalTurn(
+                prompt="Before retrying the release, what should you do first?",
+                expected_answer="check authentication",
+                checkpoint="release_reminder",
+            ),
+        ],
+    ),
+]
+
 MODEL_EVAL_SCENARIOS = STANDARD_MODEL_EVAL_SCENARIOS
 
 
@@ -409,8 +516,14 @@ def get_model_eval_scenarios(scenario_pack: str = DEFAULT_SCENARIO_PACK) -> List
         return list(STANDARD_MODEL_EVAL_SCENARIOS)
     if scenario_pack == "hard":
         return list(HARD_MODEL_EVAL_SCENARIOS)
+    if scenario_pack == "held_out":
+        return list(HELD_OUT_MODEL_EVAL_SCENARIOS)
     if scenario_pack == "all":
-        return list(STANDARD_MODEL_EVAL_SCENARIOS) + list(HARD_MODEL_EVAL_SCENARIOS)
+        return (
+            list(STANDARD_MODEL_EVAL_SCENARIOS)
+            + list(HARD_MODEL_EVAL_SCENARIOS)
+            + list(HELD_OUT_MODEL_EVAL_SCENARIOS)
+        )
     raise ValueError(f"Unsupported model eval scenario pack: {scenario_pack}")
 
 
@@ -1543,9 +1656,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument(
         "--scenario-pack",
-        choices=("standard", "hard", "all"),
+        choices=("standard", "hard", "held_out", "all"),
         default=DEFAULT_SCENARIO_PACK,
-        help="Choose the standard eval set, the harder delayed/noisy set, or both together.",
+        help="Choose the standard eval set, the harder delayed/noisy set, the held-out generalization set, or all packs together.",
     )
     parser.add_argument(
         "--score-exact",

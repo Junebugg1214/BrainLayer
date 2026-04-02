@@ -228,7 +228,9 @@ The repo now also includes a hard-mode eval pack across contradiction and natura
 - implicit preference and collaboration updates under distraction
 - procedure formation from repeated hints rather than one direct instruction
 
-That pack is available through the shared `scenario_pack` switch in the model eval, natural eval, and matrix CLIs with values `standard`, `hard`, or `all`.
+There is also a held-out generalization pack across both suites. It targets the same underlying BrainLayer capabilities with fresh scenario wording and alternate turn structure so you can check whether a change generalizes beyond the tuned benchmark text.
+
+Those packs are available through the shared `scenario_pack` switch in the model eval, natural eval, and matrix CLIs with values `standard`, `hard`, `held_out`, or `all`.
 
 ## What To Log
 

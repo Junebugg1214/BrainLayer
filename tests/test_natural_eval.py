@@ -115,6 +115,12 @@ class NaturalEvalTests(unittest.TestCase):
         self.assertEqual(len(model_loop_results), 10)
         self.assertTrue(all(result.passed for result in model_loop_results))
 
+    def test_held_out_natural_suite_passes_with_heuristic_adapter(self) -> None:
+        results = run_natural_eval_suite(include_ablations=False, scenario_pack="held_out")
+        model_loop_results = [result for result in results if result.runtime_name == "model_loop"]
+        self.assertEqual(len(model_loop_results), 10)
+        self.assertTrue(all(result.passed for result in model_loop_results))
+
     def test_natural_ablations_show_targeted_regressions(self) -> None:
         results = run_natural_eval_suite()
 
@@ -204,6 +210,23 @@ class NaturalEvalTests(unittest.TestCase):
                 "--core-only",
                 "--scenario-pack",
                 "hard",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        self.assertIn("Natural Conversation BrainLayer Eval Report", completed.stdout)
+        self.assertIn("model_loop: 10/10", completed.stdout)
+
+    def test_natural_eval_script_reports_held_out_pack_summary(self) -> None:
+        completed = subprocess.run(
+            [
+                "python3",
+                str(ROOT / "scripts" / "run_natural_model_evals.py"),
+                "--core-only",
+                "--scenario-pack",
+                "held_out",
             ],
             check=True,
             capture_output=True,
