@@ -49,6 +49,32 @@ class JudgingTests(unittest.TestCase):
         self.assertTrue(decision.passed)
         self.assertEqual(decision.method, "structural_semantic_match")
 
+    def test_structured_value_accepts_coinvestigator_as_research_partner(self) -> None:
+        decision = score_structured_value(
+            "research partner",
+            "co-investigator",
+            target_layer="autobiographical_state",
+            target_key="collaboration_mode",
+        )
+
+        self.assertTrue(decision.passed)
+        self.assertEqual(decision.method, "structural_semantic_match")
+
+    def test_behavior_judge_accepts_terser_as_concise(self) -> None:
+        decision = HeuristicBehaviorJudge().score(
+            BehaviorJudgeInput(
+                scenario_slug="",
+                scenario_title="",
+                scenario_description="",
+                checkpoint="",
+                prompt="",
+                expected="concise",
+                actual="Terser.",
+            )
+        )
+
+        self.assertTrue(decision.passed)
+
 
 if __name__ == "__main__":
     unittest.main()

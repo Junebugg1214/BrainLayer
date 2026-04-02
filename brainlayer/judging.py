@@ -61,6 +61,8 @@ PHRASE_ALIASES = (
     ("verify your authentication before retrying the release", "check authentication"),
     ("task runner", "task executor"),
     ("research partnership", "research partner"),
+    ("co-investigator", "research partner"),
+    ("co investigator", "research partner"),
 )
 TOKEN_ALIASES = {
     "briefly": "brief",
@@ -68,6 +70,8 @@ TOKEN_ALIASES = {
     "succinct": "brief",
     "short": "brief",
     "shorter": "brief",
+    "terser": "brief",
+    "terse": "brief",
     "detailed": "detailed",
     "thorough": "detailed",
     "shipping": "ship",

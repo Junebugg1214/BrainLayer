@@ -293,6 +293,120 @@ class BrainLayerRuntimeTests(unittest.TestCase):
             )
         )
 
+    def test_runtime_normalizes_coinvestigator_relationship_value(self) -> None:
+        session = BrainLayerSession()
+        runtime = BrainLayerRuntime(
+            StaticLLMAdapter(
+                response=json.dumps(
+                    {
+                        "assistant_response": "I'll work with you as a co-investigator.",
+                        "episodic_summary": "The user wants a co-investigator instead of a contractor.",
+                        "memory_observations": [
+                            {
+                                "memory_type": "relationship",
+                                "payload": {
+                                    "key": "collaboration_mode",
+                                    "value": "co-investigator",
+                                    "summary": "The user wants a co-investigator on the memory study.",
+                                    "themes": ["collaboration", "investigation"],
+                                },
+                            }
+                        ],
+                    }
+                )
+            ),
+            session=session,
+        )
+
+        result = runtime.run_turn(
+            "Don't behave like a contractor taking tickets. I need a co-investigator on the memory study."
+        )
+
+        self.assertEqual(len(result.applied_observations), 1)
+        self.assertEqual(result.applied_observations[0].payload["value"], "research partner")
+        self.assertTrue(
+            any(
+                note.key == "collaboration_mode" and note.value == "research partner"
+                for note in session.state.autobiographical_state
+            )
+        )
+
+    def test_runtime_normalizes_terser_preference_value(self) -> None:
+        session = BrainLayerSession()
+        runtime = BrainLayerRuntime(
+            StaticLLMAdapter(
+                response=json.dumps(
+                    {
+                        "assistant_response": "Understood.",
+                        "episodic_summary": "The user wants an even terser response style.",
+                        "memory_observations": [
+                            {
+                                "memory_type": "preference",
+                                "payload": {
+                                    "key": "response_style",
+                                    "value": "terser",
+                                    "proposition": "The user wants responses to be even terser.",
+                                },
+                            }
+                        ],
+                    }
+                )
+            ),
+            session=session,
+        )
+
+        result = runtime.run_turn("You can make it even terser than that.")
+
+        self.assertEqual(len(result.applied_observations), 1)
+        self.assertEqual(result.applied_observations[0].payload["value"], "concise")
+        self.assertTrue(
+            any(
+                belief.key == "response_style" and belief.value == "concise"
+                for belief in session.state.beliefs
+            )
+        )
+
+    def test_runtime_normalizes_rollout_auth_lesson_trigger(self) -> None:
+        session = BrainLayerSession()
+        runtime = BrainLayerRuntime(
+            StaticLLMAdapter(
+                response=json.dumps(
+                    {
+                        "assistant_response": "I'll verify the login before rerunning rollouts.",
+                        "episodic_summary": "The user explained that a rollout slipped because auth expired.",
+                        "memory_observations": [
+                            {
+                                "memory_type": "lesson",
+                                "payload": {
+                                    "trigger": "rollout slipped",
+                                    "action": "check authentication",
+                                    "summary": (
+                                        "The last rollout slipped because GitHub auth had expired. "
+                                        "Next time, verify the login first."
+                                    ),
+                                },
+                            }
+                        ],
+                    }
+                )
+            ),
+            session=session,
+        )
+
+        result = runtime.run_turn(
+            "The last rollout slipped because we reran before checking whether GitHub auth had expired. "
+            "Next time verify the login first."
+        )
+
+        self.assertEqual(len(result.applied_observations), 1)
+        self.assertEqual(result.applied_observations[0].payload["trigger"], "retry_release")
+        self.assertTrue(
+            any(
+                procedure.trigger == "retry_release" and procedure.steps[0] == "check authentication"
+                for procedure in session.state.procedures
+            )
+        )
+
     def test_runtime_recovers_missing_preference_observation_from_turn_content(self) -> None:
         session = BrainLayerSession()
         session.observe(

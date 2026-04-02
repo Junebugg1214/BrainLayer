@@ -964,6 +964,8 @@ def _normalize_slot_value(
             return "detailed"
         if "concise" in lowered:
             return "concise"
+        if any(term in lowered for term in ("terser", "terse", "headline version", "headline", "gist", "even shorter")):
+            return "concise"
         if any(token in lowered for token in ("brief", "short", "succinct")):
             return "brief"
         return value.strip().lower()
@@ -978,7 +980,7 @@ def _normalize_slot_value(
         return value.strip().lower()
 
     if key == "collaboration_mode":
-        if "research partner" in lowered:
+        if "research partner" in lowered or "co-investigator" in lowered or "co investigator" in lowered:
             return "research partner"
         if "task executor" in lowered or "task runner" in lowered:
             return "task executor"
@@ -990,6 +992,16 @@ def _normalize_slot_value(
 def _normalize_trigger(trigger: str, payload: Dict[str, str], text: str) -> str:
     combined = " ".join(part for part in (trigger, payload.get("summary", ""), text) if part).lower()
     if "retry" in combined and "release" in combined:
+        return "retry_release"
+    if (
+        ("rollout" in combined or "release" in combined or "reran" in combined or "rerun" in combined)
+        and (
+            "auth" in combined
+            or "authentication" in combined
+            or "login" in combined
+            or "log in" in combined
+        )
+    ):
         return "retry_release"
     normalized = re.sub(r"[\s\-]+", "_", trigger.strip().lower())
     return normalized
