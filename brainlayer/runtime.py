@@ -742,12 +742,12 @@ def _normalize_slot_value(
         return value.strip().lower()
 
     if key == "primary_goal":
-        if "citation" in lowered:
-            return "preserve citations"
         if "eval summary" in lowered or "evaluation summary" in lowered:
             return "ship eval summary"
         if "eval report" in lowered or "evaluation report" in lowered:
             return "ship eval report"
+        if "citation" in lowered:
+            return "preserve citations"
         return value.strip().lower()
 
     if key == "collaboration_mode":

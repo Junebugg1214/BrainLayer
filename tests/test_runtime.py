@@ -227,6 +227,41 @@ class BrainLayerRuntimeTests(unittest.TestCase):
             )
         )
 
+    def test_runtime_prefers_revised_goal_when_summary_mentions_old_and_new_goal(self) -> None:
+        session = BrainLayerSession()
+        runtime = BrainLayerRuntime(
+            StaticLLMAdapter(
+                response=json.dumps(
+                    {
+                        "assistant_response": "Understood. The primary goal is now to ship the evaluation summary today.",
+                        "episodic_summary": "User updated primary goal to prioritize shipping the evaluation summary today.",
+                        "memory_observations": [
+                            {
+                                "memory_type": "goal",
+                                "key": "primary_goal",
+                                "value": "ship evaluation summary today",
+                                "summary": "User changed main goal from preserving citations to shipping the eval summary today.",
+                            }
+                        ],
+                    }
+                )
+            ),
+            session=session,
+        )
+
+        result = runtime.run_turn(
+            "Actually the deadline moved up, so the main thing now is shipping the eval summary today."
+        )
+
+        self.assertEqual(len(result.applied_observations), 1)
+        self.assertEqual(result.applied_observations[0].payload["value"], "ship eval summary")
+        self.assertTrue(
+            any(
+                item.key == "primary_goal" and item.value == "ship eval summary"
+                for item in session.state.working_state
+            )
+        )
+
     def test_runtime_normalizes_relationship_key_aliases(self) -> None:
         session = BrainLayerSession()
         runtime = BrainLayerRuntime(
