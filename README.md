@@ -476,3 +476,29 @@ That analysis export writes:
 - `x_post.txt`
 
 The analyzer reads `matrix_history.jsonl` instead of the append-only CSV so it stays stable even when exported column sets grow over time.
+
+Run the full frozen study protocol across `standard`, `hard`, and `held_out` in one shot:
+
+```bash
+python3 scripts/run_study.py \
+  --config examples/model_matrix.openai.chat.live.json \
+  --label study-v1
+```
+
+That creates a timestamped study bundle under `artifacts/study_runs/` with:
+
+- a snapshot of `docs/study_protocol.md`
+- a snapshot of the exact matrix config used
+- one matrix run per scenario pack
+- one analysis export per scenario pack
+- an aggregate leaderboard across packs
+- a single `study_summary.md`, `study_summary.json`, and `x_post.txt`
+
+Use a smaller config plus `--with-ablations` for the secondary ablation phase after the primary frozen run:
+
+```bash
+python3 scripts/run_study.py \
+  --config path/to/ablation-config.json \
+  --with-ablations \
+  --label study-ablations-v1
+```

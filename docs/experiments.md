@@ -232,6 +232,8 @@ There is also a held-out generalization pack across both suites. It targets the 
 
 Those packs are available through the shared `scenario_pack` switch in the model eval, natural eval, and matrix CLIs with values `standard`, `hard`, `held_out`, or `all`.
 
+For the actual frozen study workflow, use `scripts/run_study.py`. It snapshots the protocol and config, runs `standard`, `hard`, and `held_out` as separate matrix runs, exports a per-pack analysis for each, and writes one aggregate study summary bundle under `artifacts/study_runs/`.
+
 ## What To Log
 
 For every run, log:

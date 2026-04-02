@@ -44,6 +44,16 @@ from .matrix_analysis import (
 from .runtime import BrainLayerRuntime, BrainLayerRuntimeConfig, ModelTurnResult
 from .session import BrainLayerSession
 from .storage import load_state, save_state
+from .study_runner import (
+    DEFAULT_STUDY_CONFIG,
+    DEFAULT_STUDY_EXPORT_ROOT,
+    DEFAULT_STUDY_PROTOCOL,
+    build_study_aggregate_leaderboard,
+    parse_study_scenario_packs,
+    render_study_summary_markdown,
+    render_study_x_post,
+    run_study,
+)
 from .validation import BrainLayerValidationError, validate_state_dict
 
 __all__ = [
@@ -87,14 +97,22 @@ __all__ = [
     "render_model_matrix_x_post",
     "render_matrix_analysis_x_post",
     "render_natural_eval_report",
+    "render_study_summary_markdown",
+    "render_study_x_post",
     "run_live_model_eval_suite",
     "run_live_natural_eval_suite",
     "run_model_matrix",
     "run_natural_eval_suite",
+    "run_study",
     "run_suite",
     "run_model_eval_suite",
     "score_structured_value",
     "select_matrix_history_run",
     "save_state",
+    "DEFAULT_STUDY_CONFIG",
+    "DEFAULT_STUDY_EXPORT_ROOT",
+    "DEFAULT_STUDY_PROTOCOL",
+    "build_study_aggregate_leaderboard",
+    "parse_study_scenario_packs",
     "validate_state_dict",
 ]
