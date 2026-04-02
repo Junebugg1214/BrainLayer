@@ -9,6 +9,7 @@ from brainlayer.model_eval import (
     HeuristicBrainLayerEvalAdapter,
     ModelEvalScenario,
     ModelEvalTurn,
+    RUNTIME_PROFILE_STUDY_V2,
     export_model_eval_results,
     run_model_eval_suite,
 )
@@ -85,6 +86,44 @@ class ModelEvalTests(unittest.TestCase):
         model_loop_results = [result for result in results if result.runtime_name == "model_loop"]
         self.assertEqual(len(model_loop_results), 4)
         self.assertTrue(all(result.passed for result in model_loop_results))
+
+    def test_study_v2_runtime_profile_exposes_stronger_baselines(self) -> None:
+        results = run_model_eval_suite(
+            include_ablations=False,
+            runtime_profile=RUNTIME_PROFILE_STUDY_V2,
+        )
+
+        runtime_names = {result.runtime_name for result in results}
+        self.assertEqual(
+            runtime_names,
+            {
+                "brainlayer_full",
+                "context_only",
+                "naive_retrieval",
+                "structured_no_consolidation",
+                "summary_state",
+            },
+        )
+
+        def lookup(runtime_name: str, scenario_slug: str, checkpoint: str) -> object:
+            for result in results:
+                if (
+                    result.runtime_name == runtime_name
+                    and result.scenario_slug == scenario_slug
+                    and result.checkpoint == checkpoint
+                ):
+                    return result
+            self.fail(f"Missing result for {runtime_name} on {scenario_slug}/{checkpoint}")
+
+        self.assertTrue(
+            lookup("brainlayer_full", "model_goal_revision", "revised_goal").passed
+        )
+        self.assertTrue(
+            lookup("structured_no_consolidation", "model_goal_revision", "revised_goal").passed
+        )
+        self.assertFalse(
+            lookup("context_only", "model_goal_revision", "revised_goal").passed
+        )
 
     def test_ablations_show_targeted_runtime_regressions(self) -> None:
         results = run_model_eval_suite()

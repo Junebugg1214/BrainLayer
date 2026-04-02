@@ -17,6 +17,8 @@ from .benchmark_harness import (
 from .eval_support import estimate_usage_cost_usd, write_case_artifact
 from .llm import LLMAdapter
 from .model_eval import (
+    RUNTIME_PROFILE_DEFAULT,
+    RUNTIME_PROFILE_STUDY_V2,
     DEFAULT_SCENARIO_PACK as DEFAULT_MODEL_SCENARIO_PACK,
     DEFAULT_HEURISTIC_MODEL,
     DEFAULT_HEURISTIC_PROVIDER,
@@ -358,6 +360,7 @@ def run_model_matrix(
     suites: Sequence[str] = SUITE_NAMES,
     adapter_overrides: Mapping[tuple[str, str], LLMAdapter] | None = None,
     behavior_scoring_mode: str = "judge",
+    runtime_profile: str = RUNTIME_PROFILE_DEFAULT,
 ) -> List[MatrixCaseResult]:
     results: List[MatrixCaseResult] = []
     overrides = dict(adapter_overrides or {})
@@ -376,6 +379,7 @@ def run_model_matrix(
                     requested_model=entry.requested_model,
                     runtime_config=runtime_config,
                     behavior_scoring_mode=behavior_scoring_mode,
+                    runtime_profile=runtime_profile,
                 )
                 results.extend(
                     _convert_model_eval_result(entry, result) for result in suite_results
@@ -392,6 +396,7 @@ def run_model_matrix(
                     requested_model=entry.requested_model,
                     runtime_config=runtime_config,
                     behavior_scoring_mode=behavior_scoring_mode,
+                    runtime_profile=runtime_profile,
                 )
                 results.extend(
                     _convert_natural_eval_result(entry, result) for result in suite_results
@@ -771,6 +776,7 @@ def build_model_matrix_metadata(
     scenario_pack: str = DEFAULT_MODEL_SCENARIO_PACK,
     include_ablations: bool,
     label: str | None,
+    runtime_profile: str = RUNTIME_PROFILE_DEFAULT,
 ) -> Dict[str, object]:
     timestamp = utc_now_compact()
     run_id = timestamp if not label else f"{timestamp}-{slugify_label(label)}"
@@ -780,6 +786,7 @@ def build_model_matrix_metadata(
         "git_commit": get_git_commit(),
         "scenario_pack": scenario_pack,
         "include_ablations": include_ablations,
+        "runtime_profile": runtime_profile,
         "label": label or "",
         "entry_count": len({result.entry_name for result in results}),
         "suite_count": len({result.suite_name for result in results}),
@@ -849,6 +856,7 @@ def export_model_matrix_results(
     scenario_pack: str = DEFAULT_MODEL_SCENARIO_PACK,
     include_ablations: bool,
     label: str | None = None,
+    runtime_profile: str = RUNTIME_PROFILE_DEFAULT,
 ) -> Path:
     suite_summaries = summarize_matrix_results_by_suite(results)
     leaderboard = build_matrix_leaderboard(results)
@@ -857,6 +865,7 @@ def export_model_matrix_results(
         scenario_pack=scenario_pack,
         include_ablations=include_ablations,
         label=label,
+        runtime_profile=runtime_profile,
     )
     run_dir = export_root / str(metadata["run_id"])
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -900,6 +909,7 @@ def export_model_matrix_results(
                 "label": metadata["label"],
                 "scenario_pack": metadata["scenario_pack"],
                 "include_ablations": metadata["include_ablations"],
+                "runtime_profile": metadata["runtime_profile"],
                 "score_methods": ",".join(metadata["score_methods"]),
                 **row,
             }
@@ -944,6 +954,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="Choose the standard eval suites, the harder delayed/noisy suites, the held-out generalization suites, or all packs together.",
     )
     parser.add_argument(
+        "--runtime-profile",
+        choices=(RUNTIME_PROFILE_DEFAULT, RUNTIME_PROFILE_STUDY_V2),
+        default=RUNTIME_PROFILE_DEFAULT,
+        help="Choose the default BrainLayer runtime set or the study-v2 stronger-baseline set.",
+    )
+    parser.add_argument(
         "--suite",
         choices=("all", "contradiction", "natural"),
         default="all",
@@ -978,6 +994,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         include_ablations=args.with_ablations,
         suites=suites,
         behavior_scoring_mode="exact" if args.score_exact else "judge",
+        runtime_profile=args.runtime_profile,
     )
     print(render_model_matrix_report(results))
     if args.dump_states:
@@ -991,6 +1008,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             scenario_pack=args.scenario_pack,
             include_ablations=args.with_ablations,
             label=args.label,
+            runtime_profile=args.runtime_profile,
         )
         print("")
         print(f"Matrix exports written to {run_dir}")

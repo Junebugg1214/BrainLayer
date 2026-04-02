@@ -12,6 +12,7 @@ from brainlayer.model_matrix import (
     load_model_matrix_entries,
     run_model_matrix,
 )
+from brainlayer.runtime_variants import RUNTIME_PROFILE_STUDY_V2
 from brainlayer.natural_eval import HeuristicNaturalConversationAdapter
 
 
@@ -82,6 +83,27 @@ class ModelMatrixTests(unittest.TestCase):
         self.assertEqual(len(leaderboard), 2)
         self.assertTrue(all(row.overall_passed == 14 for row in leaderboard))
         self.assertTrue(all(row.natural_extraction_passed == 5 for row in leaderboard))
+
+    def test_matrix_runner_supports_study_v2_runtime_profile(self) -> None:
+        entries = [load_model_matrix_entries(ROOT / "examples" / "model_matrix.sample.json")[0]]
+        results = run_model_matrix(
+            entries,
+            include_ablations=False,
+            runtime_profile=RUNTIME_PROFILE_STUDY_V2,
+        )
+
+        leaderboard = build_matrix_leaderboard(results)
+        self.assertEqual(len(leaderboard), 5)
+        self.assertEqual(
+            {row.runtime_name for row in leaderboard},
+            {
+                "brainlayer_full",
+                "context_only",
+                "naive_retrieval",
+                "structured_no_consolidation",
+                "summary_state",
+            },
+        )
 
     def test_matrix_export_writes_results_summary_leaderboard_history_and_x_post(self) -> None:
         entries = load_model_matrix_entries(ROOT / "examples" / "model_matrix.sample.json")

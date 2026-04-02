@@ -32,6 +32,8 @@ from .judging import (
 )
 from .llm import LLMAdapter, LLMError, ModelMessage, ModelResponse
 from .model_eval import (
+    RUNTIME_PROFILE_DEFAULT,
+    RUNTIME_PROFILE_STUDY_V2,
     DEFAULT_HEURISTIC_MODEL,
     DEFAULT_HEURISTIC_PROVIDER,
     DEFAULT_LIVE_MODEL,
@@ -919,11 +921,17 @@ class HeuristicNaturalConversationAdapter(LLMAdapter):
             content = layer_match.group("content")
 
             slot_match = SLOT_RE.search(content)
-            if slot_match and layer in {"working_state", "beliefs", "autobiographical_state"}:
+            if slot_match and layer in {
+                "working_state",
+                "beliefs",
+                "autobiographical_state",
+                "notes",
+                "summary_state",
+            }:
                 slots.setdefault(slot_match.group("key"), slot_match.group("value").strip())
 
             procedure_match = PROCEDURE_RE.search(content)
-            if procedure_match and layer == "procedures":
+            if procedure_match and layer in {"procedures", "notes", "summary_state"}:
                 procedures.setdefault(
                     procedure_match.group("trigger").strip(),
                     procedure_match.group("step").strip(),
@@ -936,6 +944,7 @@ def default_natural_eval_runtime_config(
     *,
     temperature: float = 0.0,
     max_output_tokens: int = 700,
+    memory_strategy: str = "brainlayer",
 ) -> BrainLayerRuntimeConfig:
     return BrainLayerRuntimeConfig(
         system_prompt=NATURAL_EVAL_SYSTEM_PROMPT,
@@ -947,6 +956,7 @@ def default_natural_eval_runtime_config(
         interaction_salience=0.55,
         consolidate_before_reply=True,
         auto_consolidate_after_turn=True,
+        memory_strategy=memory_strategy,
     )
 
 
@@ -997,11 +1007,12 @@ def _build_runtime(
     requested_model: str,
     runtime_config: BrainLayerRuntimeConfig,
 ) -> BrainLayerRuntime:
+    active_runtime_config = BrainLayerRuntimeConfig(**runtime_config.__dict__)
     return BrainLayerRuntime(
         adapter,
         session=BrainLayerSession(features=features),
         model=requested_model,
-        config=runtime_config,
+        config=active_runtime_config,
     )
 
 
@@ -1211,6 +1222,7 @@ def run_natural_eval_scenario(
     runtime_config: BrainLayerRuntimeConfig | None = None,
     behavior_scoring_mode: str = "judge",
     behavior_judge: BehaviorJudge | None = None,
+    runtime_profile: str = RUNTIME_PROFILE_DEFAULT,
 ) -> List[NaturalEvalResult]:
     active_adapter = adapter or HeuristicNaturalConversationAdapter()
     active_provider_name = provider_name or DEFAULT_HEURISTIC_PROVIDER
@@ -1219,12 +1231,22 @@ def run_natural_eval_scenario(
     active_behavior_judge = behavior_judge or _build_behavior_judge(behavior_scoring_mode)
 
     results: List[NaturalEvalResult] = []
-    for runtime_name, features in build_runtime_variants(include_ablations=include_ablations):
+    for variant in build_runtime_variants(
+        include_ablations=include_ablations,
+        runtime_profile=runtime_profile,
+    ):
+        runtime_name = variant.name
+        active_variant_config = BrainLayerRuntimeConfig(
+            **{
+                **active_runtime_config.__dict__,
+                "memory_strategy": variant.memory_strategy,
+            }
+        )
         runtime = _build_runtime(
             active_adapter,
-            features=features,
+            features=variant.features,
             requested_model=active_requested_model,
-            runtime_config=active_runtime_config,
+            runtime_config=active_variant_config,
         )
         blocked_error = ""
         for turn in scenario.turns:
@@ -1238,7 +1260,7 @@ def run_natural_eval_scenario(
                             eval_mode=eval_mode,
                             provider_name=active_provider_name,
                             requested_model=active_requested_model,
-                            exported_state=runtime.session.state.to_dict(),
+                            exported_state=runtime.export_state(),
                             error=blocked_error,
                             latency_ms=0.0,
                             skipped=True,
@@ -1261,7 +1283,7 @@ def run_natural_eval_scenario(
                             eval_mode=eval_mode,
                             provider_name=active_provider_name,
                             requested_model=active_requested_model,
-                            exported_state=runtime.session.state.to_dict(),
+                            exported_state=runtime.export_state(),
                             error=blocked_error,
                             latency_ms=latency_ms,
                             skipped=False,
@@ -1280,7 +1302,7 @@ def run_natural_eval_scenario(
                             eval_mode=eval_mode,
                             provider_name=active_provider_name,
                             requested_model=active_requested_model,
-                            exported_state=runtime.session.state.to_dict(),
+                            exported_state=runtime.export_state(),
                             error=blocked_error,
                             latency_ms=latency_ms,
                             skipped=False,
@@ -1322,6 +1344,7 @@ def run_natural_eval_suite(
     runtime_config: BrainLayerRuntimeConfig | None = None,
     behavior_scoring_mode: str = "judge",
     behavior_judge: BehaviorJudge | None = None,
+    runtime_profile: str = RUNTIME_PROFILE_DEFAULT,
 ) -> List[NaturalEvalResult]:
     active_scenarios = list(scenarios or get_natural_eval_scenarios(scenario_pack))
     results: List[NaturalEvalResult] = []
@@ -1337,6 +1360,7 @@ def run_natural_eval_suite(
                 runtime_config=runtime_config,
                 behavior_scoring_mode=behavior_scoring_mode,
                 behavior_judge=behavior_judge,
+                runtime_profile=runtime_profile,
             )
         )
     return results
@@ -1358,6 +1382,7 @@ def run_live_natural_eval_suite(
     max_output_tokens: int = 700,
     behavior_scoring_mode: str = "judge",
     behavior_judge: BehaviorJudge | None = None,
+    runtime_profile: str = RUNTIME_PROFILE_DEFAULT,
 ) -> List[NaturalEvalResult]:
     adapter = build_live_model_eval_adapter(
         api_key_env=api_key_env,
@@ -1381,6 +1406,7 @@ def run_live_natural_eval_suite(
         runtime_config=runtime_config,
         behavior_scoring_mode=behavior_scoring_mode,
         behavior_judge=behavior_judge,
+        runtime_profile=runtime_profile,
     )
 
 
@@ -1821,6 +1847,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="Choose the standard natural suite, the harder delayed/noisy set, the held-out generalization set, or all packs together.",
     )
     parser.add_argument(
+        "--runtime-profile",
+        choices=(RUNTIME_PROFILE_DEFAULT, RUNTIME_PROFILE_STUDY_V2),
+        default=RUNTIME_PROFILE_DEFAULT,
+        help="Choose the default BrainLayer runtime set or the study-v2 stronger-baseline set.",
+    )
+    parser.add_argument(
         "--score-exact",
         action="store_true",
         help="Disable judge-backed semantic behavior scoring and require exact normalized matches.",
@@ -1856,6 +1888,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         requested_model=requested_model,
         runtime_config=runtime_config,
         behavior_scoring_mode="exact" if args.score_exact else "judge",
+        runtime_profile=args.runtime_profile,
     )
 
     if args.dump_states:

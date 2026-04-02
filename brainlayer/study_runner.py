@@ -12,6 +12,7 @@ from .matrix_analysis import (
     export_matrix_analysis,
 )
 from .model_matrix import SUITE_NAMES, export_model_matrix_results, load_model_matrix_entries, run_model_matrix
+from .runtime_variants import RUNTIME_PROFILE_DEFAULT, RUNTIME_PROFILE_STUDY_V2
 
 
 DEFAULT_STUDY_CONFIG = Path("examples/model_matrix.openai.chat.live.json")
@@ -57,6 +58,7 @@ def run_study(
     suites: Sequence[str] = SUITE_NAMES,
     behavior_scoring_mode: str = "judge",
     label: str | None = None,
+    runtime_profile: str = RUNTIME_PROFILE_DEFAULT,
 ) -> Path:
     config_path = Path(config_path)
     protocol_path = Path(protocol_path)
@@ -95,6 +97,7 @@ def run_study(
             include_ablations=include_ablations,
             suites=suite_names,
             behavior_scoring_mode=behavior_scoring_mode,
+            runtime_profile=runtime_profile,
         )
         run_dir = export_model_matrix_results(
             results,
@@ -102,6 +105,7 @@ def run_study(
             scenario_pack=pack,
             include_ablations=include_ablations,
             label=pack_label,
+            runtime_profile=runtime_profile,
         )
         run_payload = json.loads((run_dir / "results.json").read_text())
         run_id = str(run_payload.get("metadata", {}).get("run_id", ""))
@@ -173,6 +177,7 @@ def run_study(
         "include_ablations": include_ablations,
         "suites": list(suite_names),
         "behavior_scoring_mode": behavior_scoring_mode,
+        "runtime_profile": runtime_profile,
         "entry_count": len(entries),
     }
 
@@ -509,6 +514,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--label",
         help="Optional label to attach to the study bundle and underlying pack runs.",
     )
+    parser.add_argument(
+        "--runtime-profile",
+        choices=(RUNTIME_PROFILE_DEFAULT, RUNTIME_PROFILE_STUDY_V2),
+        default=RUNTIME_PROFILE_DEFAULT,
+        help="Choose the default BrainLayer runtime set or the study-v2 stronger-baseline set.",
+    )
     args = parser.parse_args(argv)
 
     suites = SUITE_NAMES if args.suite == "all" else (args.suite,)
@@ -521,6 +532,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         suites=suites,
         behavior_scoring_mode="exact" if args.score_exact else "judge",
         label=args.label,
+        runtime_profile=args.runtime_profile,
     )
     payload = json.loads((study_dir / "study_summary.json").read_text())
     print(render_study_summary_markdown(payload))

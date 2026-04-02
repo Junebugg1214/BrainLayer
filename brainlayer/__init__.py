@@ -42,6 +42,12 @@ from .matrix_analysis import (
     select_matrix_history_run,
 )
 from .runtime import BrainLayerRuntime, BrainLayerRuntimeConfig, ModelTurnResult
+from .runtime_variants import (
+    RUNTIME_PROFILE_DEFAULT,
+    RUNTIME_PROFILE_STUDY_V2,
+    RuntimeVariantSpec,
+    build_runtime_variants,
+)
 from .session import BrainLayerSession
 from .storage import load_state, save_state
 from .study_runner import (
@@ -99,6 +105,7 @@ __all__ = [
     "render_natural_eval_report",
     "render_study_summary_markdown",
     "render_study_x_post",
+    "RuntimeVariantSpec",
     "run_live_model_eval_suite",
     "run_live_natural_eval_suite",
     "run_model_matrix",
@@ -106,12 +113,15 @@ __all__ = [
     "run_study",
     "run_suite",
     "run_model_eval_suite",
+    "build_runtime_variants",
     "score_structured_value",
     "select_matrix_history_run",
     "save_state",
     "DEFAULT_STUDY_CONFIG",
     "DEFAULT_STUDY_EXPORT_ROOT",
     "DEFAULT_STUDY_PROTOCOL",
+    "RUNTIME_PROFILE_DEFAULT",
+    "RUNTIME_PROFILE_STUDY_V2",
     "build_study_aggregate_leaderboard",
     "parse_study_scenario_packs",
     "validate_state_dict",

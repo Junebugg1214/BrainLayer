@@ -98,6 +98,13 @@ DEFAULT_SYSTEM_PROMPT = (
     "Use the retrieved state when it is relevant, prefer the latest explicit corrections "
     "over older traces, and keep your response grounded in the prompt."
 )
+VALID_MEMORY_STRATEGIES = {
+    "brainlayer",
+    "context_only",
+    "naive_retrieval",
+    "structured_no_consolidation",
+    "summary_state",
+}
 
 
 def tokenize(text: str) -> List[str]:
@@ -127,6 +134,8 @@ class BrainLayerRuntimeConfig:
     interaction_salience: float = 0.55
     consolidate_before_reply: bool = True
     auto_consolidate_after_turn: bool = True
+    memory_strategy: str = "brainlayer"
+    max_turn_history: int = 6
 
 
 @dataclass
@@ -170,6 +179,16 @@ class BrainLayerRuntime:
         self.session = session or BrainLayerSession()
         self.model = model
         self.config = config or BrainLayerRuntimeConfig()
+        if self.config.memory_strategy not in VALID_MEMORY_STRATEGIES:
+            raise ValueError(
+                f"Unsupported memory strategy: {self.config.memory_strategy}. "
+                f"Expected one of {sorted(VALID_MEMORY_STRATEGIES)}."
+            )
+        self.turn_history: List[Dict[str, str]] = []
+        self.note_memory: List[Dict[str, object]] = []
+        self.summary_slots: Dict[str, str] = {}
+        self.summary_procedures: Dict[str, str] = {}
+        self.summary_events: List[str] = []
 
     def run_turn(
         self,
@@ -180,15 +199,9 @@ class BrainLayerRuntime:
     ) -> ModelTurnResult:
         active_scenario_slug = scenario_slug or self.config.default_scenario_slug
         for observation in observations or []:
-            self.session.observe(
-                text=observation.text,
-                memory_type=observation.memory_type,
-                payload=observation.payload,
-                salience=observation.salience,
-                scenario_slug=active_scenario_slug,
-            )
+            self._store_observation(observation, scenario_slug=active_scenario_slug)
 
-        if self.config.consolidate_before_reply:
+        if self.config.consolidate_before_reply and self.config.memory_strategy == "brainlayer":
             self.session.consolidate()
 
         retrieved = self.retrieve_memories(prompt)
@@ -204,7 +217,10 @@ class BrainLayerRuntime:
             fallback_prompt=prompt,
         )
         recovered_observations = list(parsed_output.memory_observations)
-        if not recovered_observations:
+        if (
+            not recovered_observations
+            and self.config.memory_strategy != "context_only"
+        ):
             recovered_observations = self._recover_missing_observations(
                 prompt,
                 parsed_output.assistant_response,
@@ -214,35 +230,27 @@ class BrainLayerRuntime:
         applied_observations: List[Observation] = []
         for observation in recovered_observations:
             try:
-                self.session.observe(
-                    text=observation.text,
-                    memory_type=observation.memory_type,
-                    payload=observation.payload,
-                    salience=observation.salience,
-                    scenario_slug=active_scenario_slug,
-                )
+                if not self._store_observation(observation, scenario_slug=active_scenario_slug):
+                    continue
             except Exception:
                 continue
             applied_observations.append(observation)
 
-        interaction_episode = self.session.state.record_episode(
-            scenario=active_scenario_slug,
-            summary=parsed_output.episodic_summary,
-            tags=["interaction", "assistant_reply"],
-            metadata={
-                "prompt": _truncate_text(prompt, 240),
-                "assistant_response": _truncate_text(parsed_output.assistant_response, 240),
-                "model": self.model,
-                "used_json": "true" if parsed_output.used_json else "false",
-            },
-            salience=self.config.interaction_salience,
-            outcome="completed model-backed turn",
-            source_refs=[memory.record_id for memory in retrieved],
+        interaction_episode_id = self._record_interaction_episode(
+            scenario_slug=active_scenario_slug,
+            prompt=prompt,
+            assistant_response=parsed_output.assistant_response,
+            episodic_summary=parsed_output.episodic_summary,
+            used_json=parsed_output.used_json,
+            retrieved=retrieved,
         )
 
         consolidation_report = None
-        if self.config.auto_consolidate_after_turn:
+        if self.config.auto_consolidate_after_turn and self.config.memory_strategy == "brainlayer":
             consolidation_report = self.session.consolidate()
+
+        self._append_turn_history(prompt, parsed_output.assistant_response)
+        exported_state = self._export_runtime_state()
 
         return ModelTurnResult(
             assistant_response=parsed_output.assistant_response,
@@ -251,15 +259,22 @@ class BrainLayerRuntime:
             prompt_messages=prompt_messages,
             retrieved_memories=retrieved,
             applied_observations=applied_observations,
-            interaction_episode_id=interaction_episode.id,
+            interaction_episode_id=interaction_episode_id,
             consolidation_report=consolidation_report,
             model_response=model_response,
-            exported_state=self.session.state.to_dict(),
+            exported_state=exported_state,
             used_json=parsed_output.used_json,
             empty_answer=parsed_output.empty_answer,
         )
 
     def retrieve_memories(self, prompt: str) -> List[RetrievedMemory]:
+        if self.config.memory_strategy == "context_only":
+            return self._retrieve_turn_history()
+        if self.config.memory_strategy == "naive_retrieval":
+            return self._retrieve_naive_notes(prompt)
+        if self.config.memory_strategy == "summary_state":
+            return self._retrieve_summary_state(prompt)
+
         state = self.session.state
         layer_candidates = {
             "working_state": self._retrieve_working_state(prompt, state),
@@ -286,6 +301,9 @@ class BrainLayerRuntime:
 
         selected.sort(key=lambda memory: memory.score, reverse=True)
         return selected[: self.config.max_memories]
+
+    def export_state(self) -> Dict[str, object]:
+        return self._export_runtime_state()
 
     def build_messages(
         self,
@@ -335,6 +353,411 @@ class BrainLayerRuntime:
                 f"(score={memory.score:.2f})"
             )
         return "\n".join(lines)
+
+    def _store_observation(self, observation: Observation, *, scenario_slug: str) -> bool:
+        strategy = self.config.memory_strategy
+        if strategy == "context_only":
+            return False
+        if strategy == "brainlayer":
+            self.session.observe(
+                text=observation.text,
+                memory_type=observation.memory_type,
+                payload=observation.payload,
+                salience=observation.salience,
+                scenario_slug=scenario_slug,
+            )
+            return True
+        if strategy == "structured_no_consolidation":
+            self._observe_append_only(observation, scenario_slug=scenario_slug)
+            return True
+        if strategy == "naive_retrieval":
+            self.note_memory.append(
+                {
+                    "id": f"note-{len(self.note_memory) + 1}",
+                    "scenario": scenario_slug,
+                    "text": observation.text,
+                    "memory_type": observation.memory_type,
+                    "payload": dict(observation.payload),
+                    "salience": observation.salience,
+                }
+            )
+            return True
+        if strategy == "summary_state":
+            self._update_summary_state(observation)
+            return True
+        return False
+
+    def _record_interaction_episode(
+        self,
+        *,
+        scenario_slug: str,
+        prompt: str,
+        assistant_response: str,
+        episodic_summary: str,
+        used_json: bool,
+        retrieved: Sequence[RetrievedMemory],
+    ) -> str:
+        strategy = self.config.memory_strategy
+        if strategy not in {"brainlayer", "structured_no_consolidation"}:
+            return ""
+
+        episode = self.session.state.record_episode(
+            scenario=scenario_slug,
+            summary=episodic_summary,
+            tags=["interaction", "assistant_reply"],
+            metadata={
+                "prompt": _truncate_text(prompt, 240),
+                "assistant_response": _truncate_text(assistant_response, 240),
+                "model": self.model,
+                "used_json": "true" if used_json else "false",
+            },
+            salience=self.config.interaction_salience,
+            outcome="completed model-backed turn",
+            source_refs=[memory.record_id for memory in retrieved],
+        )
+        return episode.id
+
+    def _append_turn_history(self, prompt: str, assistant_response: str) -> None:
+        self.turn_history.append(
+            {
+                "prompt": _truncate_text(prompt, 240),
+                "assistant_response": _truncate_text(assistant_response, 240),
+            }
+        )
+        if len(self.turn_history) > self.config.max_turn_history:
+            self.turn_history = self.turn_history[-self.config.max_turn_history :]
+
+    def _export_runtime_state(self) -> Dict[str, object]:
+        strategy = self.config.memory_strategy
+        if strategy in {"brainlayer", "structured_no_consolidation"}:
+            return self.session.state.to_dict()
+        if strategy == "naive_retrieval":
+            episodes = []
+            for note in self.note_memory:
+                payload = note.get("payload", {})
+                if not isinstance(payload, dict):
+                    payload = {}
+                episodes.append(
+                    {
+                        "id": str(note.get("id", "")),
+                        "scenario": str(note.get("scenario", "")),
+                        "summary": str(note.get("text", "")),
+                        "tags": [str(note.get("memory_type", "note"))],
+                        "metadata": {str(key): str(value) for key, value in payload.items()},
+                        "salience": float(note.get("salience", 0.5) or 0.5),
+                        "outcome": "stored naive note",
+                        "source_refs": [],
+                        "timestamp": "",
+                    }
+                )
+            return {
+                "working_state": [],
+                "episodes": episodes,
+                "beliefs": [],
+                "autobiographical_state": [],
+                "procedures": [],
+                "naive_notes": list(self.note_memory),
+            }
+        if strategy == "summary_state":
+            return {
+                "working_state": [],
+                "episodes": [],
+                "beliefs": [],
+                "autobiographical_state": [],
+                "procedures": [],
+                "summary_state": {
+                    "slots": dict(self.summary_slots),
+                    "procedures": dict(self.summary_procedures),
+                    "events": list(self.summary_events),
+                },
+            }
+        return {
+            "working_state": [],
+            "episodes": [],
+            "beliefs": [],
+            "autobiographical_state": [],
+            "procedures": [],
+        }
+
+    def _retrieve_turn_history(self) -> List[RetrievedMemory]:
+        recent_history = self.turn_history[-self.config.max_turn_history :]
+        memories: List[RetrievedMemory] = []
+        for index, turn in enumerate(recent_history, start=1):
+            memories.append(
+                RetrievedMemory(
+                    layer="history",
+                    record_id=f"history-{index}",
+                    score=float(index),
+                    content=(
+                        f"User: {turn.get('prompt', '')} "
+                        f"Assistant: {turn.get('assistant_response', '')}"
+                    ),
+                )
+            )
+        return memories
+
+    def _retrieve_naive_notes(self, prompt: str) -> List[RetrievedMemory]:
+        memories: List[RetrievedMemory] = []
+        total = max(1, len(self.note_memory))
+        for index, note in enumerate(self.note_memory):
+            content = self._render_note_content(note)
+            recency_bonus = (index + 1) / total
+            memories.append(
+                RetrievedMemory(
+                    layer="notes",
+                    record_id=str(note.get("id", f"note-{index + 1}")),
+                    score=self._score_candidate(
+                        prompt,
+                        content,
+                        float(note.get("salience", 0.5) or 0.5) + recency_bonus,
+                        1.6,
+                    ),
+                    content=content,
+                )
+            )
+        memories.sort(key=lambda memory: memory.score, reverse=True)
+        return memories[: self.config.max_memories]
+
+    def _retrieve_summary_state(self, prompt: str) -> List[RetrievedMemory]:
+        memories: List[RetrievedMemory] = []
+        for key, value in self.summary_slots.items():
+            content = f"{key} = {value}."
+            memories.append(
+                RetrievedMemory(
+                    layer="summary_state",
+                    record_id=f"summary-slot-{key}",
+                    score=self._score_candidate(prompt, content, 0.8, 2.0),
+                    content=content,
+                )
+            )
+        for trigger, action in self.summary_procedures.items():
+            content = f"When {trigger}, {action}."
+            memories.append(
+                RetrievedMemory(
+                    layer="summary_state",
+                    record_id=f"summary-procedure-{trigger}",
+                    score=self._score_candidate(prompt, content, 0.8, 2.0),
+                    content=content,
+                )
+            )
+        for index, event in enumerate(self.summary_events[-3:], start=1):
+            memories.append(
+                RetrievedMemory(
+                    layer="summary_state",
+                    record_id=f"summary-event-{index}",
+                    score=self._score_candidate(prompt, event, 0.3, 0.8),
+                    content=event,
+                )
+            )
+        memories.sort(key=lambda memory: memory.score, reverse=True)
+        return memories[: self.config.max_memories]
+
+    def _render_note_content(self, note: Dict[str, object]) -> str:
+        memory_type = str(note.get("memory_type", "note"))
+        payload = note.get("payload", {})
+        if not isinstance(payload, dict):
+            payload = {}
+        text = str(note.get("text", "")).strip()
+        if memory_type in {"preference", "correction", "preference_hint"}:
+            key = payload.get("key", "")
+            value = payload.get("value", "")
+            proposition = payload.get("proposition", "")
+            if key and value:
+                return f"{key} = {value}. {proposition or text}".strip()
+        if memory_type in {"goal", "goal_hint", "relationship", "relationship_hint"}:
+            key = payload.get("key", "")
+            value = payload.get("value", "")
+            summary = payload.get("summary", "")
+            if key and value:
+                return f"{key} = {value}. {summary or text}".strip()
+        if memory_type in {"lesson", "lesson_hint"}:
+            trigger = payload.get("trigger", "")
+            action = payload.get("action", "")
+            summary = payload.get("summary", "")
+            if trigger and action:
+                return f"When {trigger}, {action}. {summary or text}".strip()
+        return text or json.dumps(note, sort_keys=True)
+
+    def _update_summary_state(self, observation: Observation) -> None:
+        self.summary_events.append(observation.text)
+        self.summary_events = self.summary_events[-8:]
+
+        if observation.memory_type in {"preference", "correction"}:
+            key = observation.payload.get("key")
+            value = observation.payload.get("value")
+            if key and value:
+                self.summary_slots[key] = value
+            return
+
+        if observation.memory_type == "goal":
+            key = observation.payload.get("key")
+            value = observation.payload.get("value")
+            if key and value:
+                self.summary_slots[key] = value
+            return
+
+        if observation.memory_type == "relationship":
+            key = observation.payload.get("key")
+            value = observation.payload.get("value")
+            if key and value:
+                self.summary_slots[key] = value
+            return
+
+        if observation.memory_type == "lesson":
+            trigger = observation.payload.get("trigger")
+            action = observation.payload.get("action")
+            if trigger and action:
+                self.summary_procedures[trigger] = action
+            return
+
+        if observation.memory_type in {"preference_hint", "goal_hint", "relationship_hint", "lesson_hint"}:
+            key = observation.payload.get("key")
+            trigger = observation.payload.get("trigger")
+            if key and key not in self.summary_slots:
+                value = observation.payload.get("value")
+                if value:
+                    self.summary_slots[key] = value
+            if trigger and trigger not in self.summary_procedures:
+                action = observation.payload.get("action")
+                if action:
+                    self.summary_procedures[trigger] = action
+
+    def _observe_append_only(self, observation: Observation, *, scenario_slug: str) -> None:
+        state = self.session.state
+        if observation.memory_type in {"preference", "correction"}:
+            episode = state.record_episode(
+                scenario=scenario_slug,
+                summary=observation.text,
+                tags=[observation.memory_type, observation.payload["key"]],
+                metadata=observation.payload,
+                salience=observation.salience,
+                outcome="captured preference",
+            )
+            state.beliefs.append(
+                Belief(
+                    id=state._next_id("belief"),
+                    key=observation.payload["key"],
+                    proposition=observation.payload["proposition"],
+                    value=observation.payload["value"],
+                    confidence=observation.salience,
+                    evidence_episode_ids=[episode.id],
+                )
+            )
+            state.working_state.append(
+                WorkingItem(
+                    id=state._next_id("working"),
+                    key=observation.payload["key"],
+                    value=observation.payload["value"],
+                    content=observation.payload["proposition"],
+                    priority=observation.salience,
+                    source_refs=[episode.id],
+                )
+            )
+            return
+
+        if observation.memory_type == "goal":
+            episode = state.record_episode(
+                scenario=scenario_slug,
+                summary=observation.text,
+                tags=["goal", observation.payload["key"]],
+                metadata=observation.payload,
+                salience=observation.salience,
+                outcome="captured goal",
+            )
+            state.working_state.append(
+                WorkingItem(
+                    id=state._next_id("working"),
+                    key=observation.payload["key"],
+                    value=observation.payload["value"],
+                    content=observation.payload["summary"],
+                    priority=observation.salience,
+                    source_refs=[episode.id],
+                )
+            )
+            return
+
+        if observation.memory_type == "relationship":
+            episode = state.record_episode(
+                scenario=scenario_slug,
+                summary=observation.text,
+                tags=["relationship", observation.payload["key"]],
+                metadata=observation.payload,
+                salience=observation.salience,
+                outcome="updated relationship framing",
+            )
+            themes = [
+                value.strip()
+                for value in observation.payload.get("themes", "").split(",")
+                if value.strip()
+            ]
+            state.autobiographical_state.append(
+                AutobioNote(
+                    id=state._next_id("autobio"),
+                    key=observation.payload["key"],
+                    value=observation.payload["value"],
+                    summary=observation.payload["summary"],
+                    themes=themes or ["relationship"],
+                    supporting_ids=[episode.id],
+                )
+            )
+            state.working_state.append(
+                WorkingItem(
+                    id=state._next_id("working"),
+                    key=observation.payload["key"],
+                    value=observation.payload["value"],
+                    content=observation.payload["summary"],
+                    priority=observation.salience,
+                    source_refs=[episode.id],
+                )
+            )
+            return
+
+        if observation.memory_type == "lesson":
+            episode = state.record_episode(
+                scenario=scenario_slug,
+                summary=observation.text,
+                tags=["lesson", observation.payload["trigger"]],
+                metadata=observation.payload,
+                salience=observation.salience,
+                outcome="failure lesson",
+            )
+            state.procedures.append(
+                Procedure(
+                    id=state._next_id("procedure"),
+                    trigger=observation.payload["trigger"],
+                    summary=observation.payload["summary"],
+                    steps=[observation.payload["action"]],
+                    confidence=observation.salience,
+                    derived_from=[episode.id],
+                )
+            )
+            return
+
+        if observation.memory_type in {
+            "preference_hint",
+            "lesson_hint",
+            "goal_hint",
+            "relationship_hint",
+        }:
+            topic_key = observation.payload.get("key") or observation.payload.get("trigger", "signal")
+            state.record_episode(
+                scenario=scenario_slug,
+                summary=observation.text,
+                tags=[observation.memory_type, topic_key],
+                metadata=observation.payload,
+                salience=observation.salience,
+                outcome="captured candidate signal",
+            )
+            return
+
+        state.record_episode(
+            scenario=scenario_slug,
+            summary=observation.text,
+            tags=["noise"],
+            metadata=observation.payload,
+            salience=observation.salience,
+            outcome="ignored",
+        )
 
     def parse_model_output(
         self,
@@ -588,15 +1011,22 @@ class BrainLayerRuntime:
         state: BrainLayerState,
     ) -> List[RetrievedMemory]:
         memories = []
-        for item in state.working_state:
+        total = max(1, len(state.working_state))
+        for index, item in enumerate(state.working_state):
             if item.status != "active":
                 continue
             content = f"{item.key} = {item.value}. {item.content}"
+            recency_bonus = (index + 1) / total
             memories.append(
                 RetrievedMemory(
                     layer="working_state",
                     record_id=item.id,
-                    score=self._score_candidate(prompt, content, item.priority, 4.0),
+                    score=self._score_candidate(
+                        prompt,
+                        content,
+                        item.priority + (recency_bonus * 0.35),
+                        4.0,
+                    ),
                     content=content,
                 )
             )
@@ -608,18 +1038,25 @@ class BrainLayerRuntime:
         state: BrainLayerState,
     ) -> List[RetrievedMemory]:
         memories = []
-        for belief in state.beliefs:
+        total = max(1, len(state.beliefs))
+        for index, belief in enumerate(state.beliefs):
             if belief.status != "active":
                 continue
             content = (
                 f"{belief.key} = {belief.value}. {belief.proposition} "
                 f"(confidence={belief.confidence:.2f})"
             )
+            recency_bonus = (index + 1) / total
             memories.append(
                 RetrievedMemory(
                     layer="beliefs",
                     record_id=belief.id,
-                    score=self._score_candidate(prompt, content, belief.confidence, 3.2),
+                    score=self._score_candidate(
+                        prompt,
+                        content,
+                        belief.confidence + (recency_bonus * 0.35),
+                        3.2,
+                    ),
                     content=content,
                 )
             )
@@ -631,16 +1068,23 @@ class BrainLayerRuntime:
         state: BrainLayerState,
     ) -> List[RetrievedMemory]:
         memories = []
-        for note in state.autobiographical_state:
+        total = max(1, len(state.autobiographical_state))
+        for index, note in enumerate(state.autobiographical_state):
             content = (
                 f"{note.key} = {note.value}. {note.summary} "
                 f"(themes={', '.join(note.themes)})"
             )
+            recency_bonus = (index + 1) / total
             memories.append(
                 RetrievedMemory(
                     layer="autobiographical_state",
                     record_id=note.id,
-                    score=self._score_candidate(prompt, content, 0.7, 2.8),
+                    score=self._score_candidate(
+                        prompt,
+                        content,
+                        0.7 + (recency_bonus * 0.35),
+                        2.8,
+                    ),
                     content=content,
                 )
             )
@@ -652,17 +1096,24 @@ class BrainLayerRuntime:
         state: BrainLayerState,
     ) -> List[RetrievedMemory]:
         memories = []
-        for procedure in state.procedures:
+        total = max(1, len(state.procedures))
+        for index, procedure in enumerate(state.procedures):
             first_step = procedure.steps[0] if procedure.steps else "no step recorded"
             content = (
                 f"When {procedure.trigger}, {first_step}. {procedure.summary} "
                 f"(confidence={procedure.confidence:.2f})"
             )
+            recency_bonus = (index + 1) / total
             memories.append(
                 RetrievedMemory(
                     layer="procedures",
                     record_id=procedure.id,
-                    score=self._score_candidate(prompt, content, procedure.confidence, 2.6),
+                    score=self._score_candidate(
+                        prompt,
+                        content,
+                        procedure.confidence + (recency_bonus * 0.35),
+                        2.6,
+                    ),
                     content=content,
                 )
             )

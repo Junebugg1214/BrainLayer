@@ -13,6 +13,7 @@ from brainlayer.natural_eval import (
     export_natural_eval_results,
     run_natural_eval_suite,
 )
+from brainlayer.model_eval import RUNTIME_PROFILE_STUDY_V2
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -120,6 +121,44 @@ class NaturalEvalTests(unittest.TestCase):
         model_loop_results = [result for result in results if result.runtime_name == "model_loop"]
         self.assertEqual(len(model_loop_results), 10)
         self.assertTrue(all(result.passed for result in model_loop_results))
+
+    def test_study_v2_runtime_profile_exposes_stronger_baselines(self) -> None:
+        results = run_natural_eval_suite(
+            include_ablations=False,
+            runtime_profile=RUNTIME_PROFILE_STUDY_V2,
+        )
+
+        runtime_names = {result.runtime_name for result in results}
+        self.assertEqual(
+            runtime_names,
+            {
+                "brainlayer_full",
+                "context_only",
+                "naive_retrieval",
+                "structured_no_consolidation",
+                "summary_state",
+            },
+        )
+
+        def lookup(runtime_name: str, scenario_slug: str, checkpoint: str) -> object:
+            for result in results:
+                if (
+                    result.runtime_name == runtime_name
+                    and result.scenario_slug == scenario_slug
+                    and result.checkpoint == checkpoint
+                ):
+                    return result
+            self.fail(f"Missing result for {runtime_name} on {scenario_slug}/{checkpoint}")
+
+        self.assertTrue(
+            lookup("brainlayer_full", "natural_goal_shift", "extract_revised_goal").passed
+        )
+        self.assertTrue(
+            lookup("structured_no_consolidation", "natural_goal_shift", "extract_revised_goal").passed
+        )
+        self.assertFalse(
+            lookup("context_only", "natural_goal_shift", "extract_revised_goal").passed
+        )
 
     def test_natural_ablations_show_targeted_regressions(self) -> None:
         results = run_natural_eval_suite()
