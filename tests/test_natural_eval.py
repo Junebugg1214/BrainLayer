@@ -122,6 +122,21 @@ class NaturalEvalTests(unittest.TestCase):
         self.assertEqual(len(model_loop_results), 10)
         self.assertTrue(all(result.passed for result in model_loop_results))
 
+    def test_external_dev_natural_suite_passes_with_heuristic_adapter(self) -> None:
+        results = run_natural_eval_suite(include_ablations=False, scenario_pack="external_dev")
+        model_loop_results = [result for result in results if result.runtime_name == "model_loop"]
+        self.assertEqual(len(model_loop_results), 16)
+        self.assertTrue(all(result.passed for result in model_loop_results))
+
+    def test_external_held_out_natural_suite_passes_with_heuristic_adapter(self) -> None:
+        results = run_natural_eval_suite(
+            include_ablations=False,
+            scenario_pack="external_held_out",
+        )
+        model_loop_results = [result for result in results if result.runtime_name == "model_loop"]
+        self.assertEqual(len(model_loop_results), 16)
+        self.assertTrue(all(result.passed for result in model_loop_results))
+
     def test_study_v2_runtime_profile_exposes_stronger_baselines(self) -> None:
         results = run_natural_eval_suite(
             include_ablations=False,

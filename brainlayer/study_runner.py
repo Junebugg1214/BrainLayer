@@ -19,7 +19,13 @@ DEFAULT_STUDY_CONFIG = Path("examples/model_matrix.openai.chat.live.json")
 DEFAULT_STUDY_PROTOCOL = Path("docs/study_protocol.md")
 DEFAULT_STUDY_EXPORT_ROOT = Path("artifacts/study_runs")
 DEFAULT_STUDY_SCENARIO_PACKS = ("standard", "hard", "held_out")
-VALID_STUDY_SCENARIO_PACKS = set(DEFAULT_STUDY_SCENARIO_PACKS)
+VALID_STUDY_SCENARIO_PACKS = {
+    "standard",
+    "hard",
+    "held_out",
+    "external_dev",
+    "external_held_out",
+}
 
 
 def parse_study_scenario_packs(raw: str | Sequence[str]) -> tuple[str, ...]:

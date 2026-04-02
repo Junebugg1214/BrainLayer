@@ -949,9 +949,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument(
         "--scenario-pack",
-        choices=("standard", "hard", "held_out", "all"),
+        choices=("standard", "hard", "held_out", "external_dev", "external_held_out", "all"),
         default=DEFAULT_MODEL_SCENARIO_PACK,
-        help="Choose the standard eval suites, the harder delayed/noisy suites, the held-out generalization suites, or all packs together.",
+        help="Choose the standard eval suites, the harder delayed/noisy suites, the held-out generalization suites, the external dev suites, the external held-out suites, or all packs together.",
     )
     parser.add_argument(
         "--runtime-profile",

@@ -87,6 +87,21 @@ class ModelEvalTests(unittest.TestCase):
         self.assertEqual(len(model_loop_results), 4)
         self.assertTrue(all(result.passed for result in model_loop_results))
 
+    def test_external_dev_model_loop_passes_contradiction_suite(self) -> None:
+        results = run_model_eval_suite(include_ablations=False, scenario_pack="external_dev")
+        model_loop_results = [result for result in results if result.runtime_name == "model_loop"]
+        self.assertEqual(len(model_loop_results), 8)
+        self.assertTrue(all(result.passed for result in model_loop_results))
+
+    def test_external_held_out_model_loop_passes_contradiction_suite(self) -> None:
+        results = run_model_eval_suite(
+            include_ablations=False,
+            scenario_pack="external_held_out",
+        )
+        model_loop_results = [result for result in results if result.runtime_name == "model_loop"]
+        self.assertEqual(len(model_loop_results), 8)
+        self.assertTrue(all(result.passed for result in model_loop_results))
+
     def test_study_v2_runtime_profile_exposes_stronger_baselines(self) -> None:
         results = run_model_eval_suite(
             include_ablations=False,

@@ -837,9 +837,20 @@ class BrainLayerRuntime:
                 existing_slots.setdefault(belief.key, belief.value)
 
         if (
-            "retry" in combined
-            and "release" in combined
-            and any(term in combined for term in ("auth", "authentication", "login", "github"))
+            (
+                "retry" in combined
+                and "release" in combined
+                and any(term in combined for term in ("auth", "authentication", "login", "github"))
+            )
+            or any(
+                phrase in combined
+                for phrase in (
+                    "session had died",
+                    "repo credentials were stale",
+                    "reauthing github",
+                    "repo login had expired",
+                )
+            )
         ):
             return [
                 Observation(
@@ -854,7 +865,20 @@ class BrainLayerRuntime:
                 )
             ]
 
-        if any(term in combined for term in ("research partner", "co-investigator", "co investigator")):
+        if any(
+            term in combined
+            for term in (
+                "research partner",
+                "co-investigator",
+                "co investigator",
+                "research collaborator",
+                "thought partner",
+                "co-design",
+                "co design",
+                "co-pilot",
+                "co pilot",
+            )
+        ):
             return [
                 Observation(
                     text="The collaboration mode is research partner.",
@@ -869,7 +893,11 @@ class BrainLayerRuntime:
                 )
             ]
 
-        if "eval summary" in combined or "evaluation summary" in combined:
+        if (
+            "eval summary" in combined
+            or "evaluation summary" in combined
+            or "evaluation digest" in combined
+        ):
             return [
                 Observation(
                     text="The current primary goal is to ship the eval summary.",
@@ -911,7 +939,17 @@ class BrainLayerRuntime:
                 )
             ]
 
-        if any(term in combined for term in ("full reasoning", "detailed explanation", "detailed replies")):
+        if any(
+            term in combined
+            for term in (
+                "full reasoning",
+                "detailed explanation",
+                "detailed replies",
+                "long-form rationale",
+                "long form rationale",
+                "whole chain of reasoning",
+            )
+        ):
             memory_type = "correction" if "response_style" in existing_slots else "preference"
             return [
                 Observation(
@@ -926,7 +964,20 @@ class BrainLayerRuntime:
                 )
             ]
 
-        if any(term in combined for term in ("really brief", "keep it brief", "punchiest", "short answers")):
+        if any(
+            term in combined
+            for term in (
+                "really brief",
+                "keep it brief",
+                "punchiest",
+                "short answers",
+                "quick-scan version",
+                "quick scan version",
+                "leanest take",
+                "bare-bones version",
+                "bare bones version",
+            )
+        ):
             memory_type = "correction" if "response_style" in existing_slots else "preference"
             return [
                 Observation(
@@ -1411,18 +1462,56 @@ def _normalize_slot_value(
     lowered = combined.lower()
 
     if key == "response_style":
-        if any(phrase in lowered for phrase in ("full reasoning", "detailed", "step-by-step", "step by step")):
+        if any(
+            phrase in lowered
+            for phrase in (
+                "full reasoning",
+                "detailed",
+                "step-by-step",
+                "step by step",
+                "long-form rationale",
+                "long form rationale",
+                "whole chain of reasoning",
+            )
+        ):
             return "detailed"
         if "concise" in lowered:
             return "concise"
-        if any(term in lowered for term in ("terser", "terse", "headline version", "headline", "gist", "even shorter")):
+        if any(
+            term in lowered
+            for term in (
+                "terser",
+                "terse",
+                "headline version",
+                "headline",
+                "gist",
+                "even shorter",
+            )
+        ):
             return "concise"
-        if any(token in lowered for token in ("brief", "short", "succinct")):
+        if any(
+            token in lowered
+            for token in (
+                "brief",
+                "short",
+                "succinct",
+                "quick-scan",
+                "quick scan",
+                "leanest take",
+                "bare-bones",
+                "bare bones",
+            )
+        ):
             return "brief"
         return value.strip().lower()
 
     if key == "primary_goal":
-        if "eval summary" in lowered or "evaluation summary" in lowered:
+        if (
+            "eval summary" in lowered
+            or "evaluation summary" in lowered
+            or "eval digest" in lowered
+            or "evaluation digest" in lowered
+        ):
             return "ship eval summary"
         if "eval report" in lowered or "evaluation report" in lowered:
             return "ship eval report"
@@ -1431,7 +1520,20 @@ def _normalize_slot_value(
         return value.strip().lower()
 
     if key == "collaboration_mode":
-        if "research partner" in lowered or "co-investigator" in lowered or "co investigator" in lowered:
+        if any(
+            phrase in lowered
+            for phrase in (
+                "research partner",
+                "co-investigator",
+                "co investigator",
+                "research collaborator",
+                "thought partner",
+                "co-design",
+                "co design",
+                "co-pilot",
+                "co pilot",
+            )
+        ):
             return "research partner"
         if "task executor" in lowered or "task runner" in lowered:
             return "task executor"
@@ -1466,6 +1568,9 @@ def _normalize_action(action: str, payload: Dict[str, str], text: str) -> str:
         or "log into github" in combined
         or "login to github" in combined
         or "logging back into github" in combined
+        or "confirm the login first" in combined
+        or "confirm the credentials" in combined
+        or "reauth" in combined
     ):
         return "check authentication"
     return action.strip().lower()

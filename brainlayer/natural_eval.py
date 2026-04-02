@@ -533,6 +533,378 @@ HELD_OUT_NATURAL_EVAL_SCENARIOS: List[NaturalEvalScenario] = [
     ),
 ]
 
+EXTERNAL_DEV_NATURAL_EVAL_SCENARIOS: List[NaturalEvalScenario] = [
+    NaturalEvalScenario(
+        slug="external_dev_quickscan_briefing",
+        title="External Dev Quickscan Briefing",
+        description="Can the agent infer a brief style preference from a realistic skim-reading setup?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="I'm walking between rooms, so just give me the quick-scan version.",
+                checkpoint="extract_preference",
+                evaluation_type="extraction",
+                target_layer="beliefs",
+                target_key="response_style",
+                expected_value="brief",
+            ),
+            NaturalEvalTurn(
+                prompt="How should you answer by default right now?",
+                checkpoint="behavior_preference",
+                evaluation_type="behavior",
+                expected_value="brief",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="external_dev_methods_longform_override",
+        title="External Dev Methods Longform Override",
+        description="Can the agent revise an earlier compact preference when a methods note later needs depth?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="Usually keep this compact for me.",
+            ),
+            NaturalEvalTurn(
+                prompt="For the methodology note, I need the long-form rationale, not the clipped version.",
+                checkpoint="extract_revised_preference",
+                evaluation_type="extraction",
+                target_layer="beliefs",
+                target_key="response_style",
+                expected_value="detailed",
+            ),
+            NaturalEvalTurn(
+                prompt="How should you answer by default right now?",
+                checkpoint="behavior_revised_preference",
+                evaluation_type="behavior",
+                expected_value="detailed",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="external_dev_research_collaborator_frame",
+        title="External Dev Research Collaborator Frame",
+        description="Can the agent infer a partnership frame from natural collaboration language?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="Don't just close tasks here. Work beside me like a research collaborator on the study.",
+                checkpoint="extract_relationship",
+                evaluation_type="extraction",
+                target_layer="autobiographical_state",
+                target_key="collaboration_mode",
+                expected_value="research partner",
+            ),
+            NaturalEvalTurn(
+                prompt="What collaboration mode should define this project right now?",
+                checkpoint="behavior_relationship",
+                evaluation_type="behavior",
+                expected_value="research partner",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="external_dev_thought_partner_reframe",
+        title="External Dev Thought Partner Reframe",
+        description="Can the agent hold a research-partner framing after an unrelated side turn?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="The appendix labels can wait until the main draft is stable.",
+            ),
+            NaturalEvalTurn(
+                prompt="This is not an intake queue. I need a thought partner on the experiment.",
+                checkpoint="extract_relationship",
+                evaluation_type="extraction",
+                target_layer="autobiographical_state",
+                target_key="collaboration_mode",
+                expected_value="research partner",
+            ),
+            NaturalEvalTurn(
+                prompt="What collaboration mode should define this project right now?",
+                checkpoint="behavior_relationship",
+                evaluation_type="behavior",
+                expected_value="research partner",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="external_dev_session_expired_lesson",
+        title="External Dev Session Expired Lesson",
+        description="Can the agent infer a reusable release lesson from an operational retrospective?",
+        turns=[
+            NaturalEvalTurn(
+                prompt=(
+                    "The release failed because the GitHub session had died and we reran too soon. "
+                    "Next time, confirm the login first."
+                ),
+                checkpoint="extract_lesson",
+                evaluation_type="extraction",
+                target_layer="procedures",
+                target_key="retry_release",
+                expected_value="check authentication",
+            ),
+            NaturalEvalTurn(
+                prompt="Before retrying the release, what should you do first?",
+                checkpoint="behavior_lesson",
+                evaluation_type="behavior",
+                expected_value="check authentication",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="external_dev_repo_credentials_lesson",
+        title="External Dev Repo Credentials Lesson",
+        description="Can the agent infer the same reusable lesson from different failure-note wording?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="The rerun flaked because the repo credentials were stale. Verify auth before you kick it again.",
+                checkpoint="extract_lesson",
+                evaluation_type="extraction",
+                target_layer="procedures",
+                target_key="retry_release",
+                expected_value="check authentication",
+            ),
+            NaturalEvalTurn(
+                prompt="Before retrying the release, what should you do first?",
+                checkpoint="behavior_lesson",
+                evaluation_type="behavior",
+                expected_value="check authentication",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="external_dev_sponsor_review_goal",
+        title="External Dev Sponsor Review Goal",
+        description="Can the agent update the active goal when a sponsor-facing summary becomes the new priority?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="For now keep the citations preserved.",
+            ),
+            NaturalEvalTurn(
+                prompt="Sponsor review got pulled forward, so the real job now is getting the evaluation summary out today.",
+                checkpoint="extract_revised_goal",
+                evaluation_type="extraction",
+                target_layer="working_state",
+                target_key="primary_goal",
+                expected_value="ship eval summary",
+            ),
+            NaturalEvalTurn(
+                prompt="What is the main goal right now?",
+                checkpoint="behavior_goal",
+                evaluation_type="behavior",
+                expected_value="ship eval summary",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="external_dev_board_packet_goal",
+        title="External Dev Board Packet Goal",
+        description="Can the agent keep a board-packet report goal after an earlier citation-preserving default?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="Every draft needs to preserve citations.",
+            ),
+            NaturalEvalTurn(
+                prompt="The board packet moved up, so shipping the eval report tonight is the top priority.",
+                checkpoint="extract_revised_goal",
+                evaluation_type="extraction",
+                target_layer="working_state",
+                target_key="primary_goal",
+                expected_value="ship eval report",
+            ),
+            NaturalEvalTurn(
+                prompt="What is the main goal right now?",
+                checkpoint="behavior_goal",
+                evaluation_type="behavior",
+                expected_value="ship eval report",
+            ),
+        ],
+    ),
+]
+
+EXTERNAL_HELD_OUT_NATURAL_EVAL_SCENARIOS: List[NaturalEvalScenario] = [
+    NaturalEvalScenario(
+        slug="external_heldout_cab_briefing",
+        title="External Held-Out Cab Briefing",
+        description="Can the agent infer a brief preference from new skim-reading wording?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="I'm reading this in the back of a cab, so give me the leanest take.",
+                checkpoint="extract_preference",
+                evaluation_type="extraction",
+                target_layer="beliefs",
+                target_key="response_style",
+                expected_value="brief",
+            ),
+            NaturalEvalTurn(
+                prompt="How should you answer by default right now?",
+                checkpoint="behavior_preference",
+                evaluation_type="behavior",
+                expected_value="brief",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="external_heldout_appendix_deepdive",
+        title="External Held-Out Appendix Deepdive",
+        description="Can the agent switch from a minimal default to a deeper appendix mode under new phrasing?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="Default to the bare-bones version for me.",
+            ),
+            NaturalEvalTurn(
+                prompt="For the appendix defense, I need the whole chain of reasoning.",
+                checkpoint="extract_revised_preference",
+                evaluation_type="extraction",
+                target_layer="beliefs",
+                target_key="response_style",
+                expected_value="detailed",
+            ),
+            NaturalEvalTurn(
+                prompt="How should you answer by default right now?",
+                checkpoint="behavior_revised_preference",
+                evaluation_type="behavior",
+                expected_value="detailed",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="external_heldout_codesign_partner",
+        title="External Held-Out Codesign Partner",
+        description="Can the agent infer a partnership frame from a co-design metaphor?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="Treat this like co-design with me, not an intake queue.",
+                checkpoint="extract_relationship",
+                evaluation_type="extraction",
+                target_layer="autobiographical_state",
+                target_key="collaboration_mode",
+                expected_value="research partner",
+            ),
+            NaturalEvalTurn(
+                prompt="What collaboration mode should define this project right now?",
+                checkpoint="behavior_relationship",
+                evaluation_type="behavior",
+                expected_value="research partner",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="external_heldout_copilot_partner",
+        title="External Held-Out Copilot Partner",
+        description="Can the agent preserve a partner frame after unrelated noise using different collaboration wording?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="The evidence table can wait until after the main narrative settles.",
+            ),
+            NaturalEvalTurn(
+                prompt="I need a co-pilot on the experiment, not a request fulfiller.",
+                checkpoint="extract_relationship",
+                evaluation_type="extraction",
+                target_layer="autobiographical_state",
+                target_key="collaboration_mode",
+                expected_value="research partner",
+            ),
+            NaturalEvalTurn(
+                prompt="What collaboration mode should define this project right now?",
+                checkpoint="behavior_relationship",
+                evaluation_type="behavior",
+                expected_value="research partner",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="external_heldout_reauth_release",
+        title="External Held-Out Reauth Release",
+        description="Can the agent infer the retry-auth lesson from a reauth-specific retrospective?",
+        turns=[
+            NaturalEvalTurn(
+                prompt=(
+                    "The deploy fell over because we kicked it again before reauthing GitHub. "
+                    "Authenticate again first next time."
+                ),
+                checkpoint="extract_lesson",
+                evaluation_type="extraction",
+                target_layer="procedures",
+                target_key="retry_release",
+                expected_value="check authentication",
+            ),
+            NaturalEvalTurn(
+                prompt="Before retrying the release, what should you do first?",
+                checkpoint="behavior_lesson",
+                evaluation_type="behavior",
+                expected_value="check authentication",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="external_heldout_credentials_release",
+        title="External Held-Out Credentials Release",
+        description="Can the agent infer the same reusable lesson from repo-login language?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="The rerun failed because the repo login had expired. Confirm the credentials before retrying.",
+                checkpoint="extract_lesson",
+                evaluation_type="extraction",
+                target_layer="procedures",
+                target_key="retry_release",
+                expected_value="check authentication",
+            ),
+            NaturalEvalTurn(
+                prompt="Before retrying the release, what should you do first?",
+                checkpoint="behavior_lesson",
+                evaluation_type="behavior",
+                expected_value="check authentication",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="external_heldout_digest_goal",
+        title="External Held-Out Digest Goal",
+        description="Can the agent update the active goal when a leadership digest becomes the new priority?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="Keep the citations intact for now.",
+            ),
+            NaturalEvalTurn(
+                prompt="The leadership brief changed, so the only thing that matters is getting the evaluation digest out tonight.",
+                checkpoint="extract_revised_goal",
+                evaluation_type="extraction",
+                target_layer="working_state",
+                target_key="primary_goal",
+                expected_value="ship eval summary",
+            ),
+            NaturalEvalTurn(
+                prompt="What is the main goal right now?",
+                checkpoint="behavior_goal",
+                evaluation_type="behavior",
+                expected_value="ship eval summary",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="external_heldout_report_goal",
+        title="External Held-Out Report Goal",
+        description="Can the agent preserve a report-shipping priority from a new packet/funder framing?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="Don't drop the citations yet.",
+            ),
+            NaturalEvalTurn(
+                prompt="The funder packet needs the eval report shipped tonight, so that is the real priority now.",
+                checkpoint="extract_revised_goal",
+                evaluation_type="extraction",
+                target_layer="working_state",
+                target_key="primary_goal",
+                expected_value="ship eval report",
+            ),
+            NaturalEvalTurn(
+                prompt="What is the main goal right now?",
+                checkpoint="behavior_goal",
+                evaluation_type="behavior",
+                expected_value="ship eval report",
+            ),
+        ],
+    ),
+]
+
 NATURAL_EVAL_SCENARIOS = STANDARD_NATURAL_EVAL_SCENARIOS
 
 
@@ -543,11 +915,17 @@ def get_natural_eval_scenarios(scenario_pack: str = DEFAULT_SCENARIO_PACK) -> Li
         return list(HARD_NATURAL_EVAL_SCENARIOS)
     if scenario_pack == "held_out":
         return list(HELD_OUT_NATURAL_EVAL_SCENARIOS)
+    if scenario_pack == "external_dev":
+        return list(EXTERNAL_DEV_NATURAL_EVAL_SCENARIOS)
+    if scenario_pack == "external_held_out":
+        return list(EXTERNAL_HELD_OUT_NATURAL_EVAL_SCENARIOS)
     if scenario_pack == "all":
         return (
             list(STANDARD_NATURAL_EVAL_SCENARIOS)
             + list(HARD_NATURAL_EVAL_SCENARIOS)
             + list(HELD_OUT_NATURAL_EVAL_SCENARIOS)
+            + list(EXTERNAL_DEV_NATURAL_EVAL_SCENARIOS)
+            + list(EXTERNAL_HELD_OUT_NATURAL_EVAL_SCENARIOS)
         )
     raise ValueError(f"Unsupported natural eval scenario pack: {scenario_pack}")
 
@@ -679,6 +1057,31 @@ class HeuristicNaturalConversationAdapter(LLMAdapter):
                 },
             }
 
+        if any(
+            phrase in lowered
+            for phrase in (
+                "research collaborator",
+                "work beside me",
+                "thought partner",
+                "co-design",
+                "co design",
+                "co-pilot",
+                "co pilot",
+                "request fulfiller",
+            )
+        ):
+            return {
+                "text": "The collaboration mode is research partner.",
+                "memory_type": "relationship",
+                "salience": 0.95,
+                "payload": {
+                    "key": "collaboration_mode",
+                    "value": "research partner",
+                    "summary": "The collaboration mode is research partner.",
+                    "themes": "relationship,research-mode",
+                },
+            }
+
         if "last time the release failed" in lowered or "check auth first" in lowered:
             return {
                 "text": "Before retrying a release, check authentication first.",
@@ -715,7 +1118,55 @@ class HeuristicNaturalConversationAdapter(LLMAdapter):
                 },
             }
 
+        if any(
+            phrase in lowered
+            for phrase in (
+                "session had died",
+                "confirm the login first",
+                "repo credentials were stale",
+                "kick it again",
+                "reauthing github",
+                "authenticate again first",
+                "repo login had expired",
+                "confirm the credentials before retrying",
+            )
+        ):
+            return {
+                "text": "Before retrying a release, check authentication first.",
+                "memory_type": "lesson",
+                "salience": 0.93,
+                "payload": {
+                    "trigger": "retry_release",
+                    "action": "check authentication",
+                    "summary": "Before retrying a release, confirm GitHub authentication first.",
+                },
+            }
+
         if "main thing now is" in lowered or "deadline moved up" in lowered:
+            return {
+                "text": "The current primary goal is to ship the eval summary.",
+                "memory_type": "goal",
+                "salience": 0.96,
+                "payload": {
+                    "key": "primary_goal",
+                    "value": "ship eval summary",
+                    "summary": "The current primary goal is to ship the eval summary.",
+                },
+            }
+
+        if "sponsor review got pulled forward" in lowered or "evaluation summary out today" in lowered:
+            return {
+                "text": "The current primary goal is to ship the eval summary.",
+                "memory_type": "goal",
+                "salience": 0.96,
+                "payload": {
+                    "key": "primary_goal",
+                    "value": "ship eval summary",
+                    "summary": "The current primary goal is to ship the eval summary.",
+                },
+            }
+
+        if "evaluation digest out tonight" in lowered or "leadership brief changed" in lowered:
             return {
                 "text": "The current primary goal is to ship the eval summary.",
                 "memory_type": "goal",
@@ -739,6 +1190,18 @@ class HeuristicNaturalConversationAdapter(LLMAdapter):
                 },
             }
 
+        if "board packet moved up" in lowered or "funder packet needs the eval report shipped tonight" in lowered:
+            return {
+                "text": "The current primary goal is to ship the eval report.",
+                "memory_type": "goal",
+                "salience": 0.96,
+                "payload": {
+                    "key": "primary_goal",
+                    "value": "ship eval report",
+                    "summary": "The current primary goal is to ship the eval report.",
+                },
+            }
+
         if "what matters most now is getting the eval summary out today" in lowered:
             return {
                 "text": "The current primary goal is to ship the eval summary.",
@@ -748,6 +1211,18 @@ class HeuristicNaturalConversationAdapter(LLMAdapter):
                     "key": "primary_goal",
                     "value": "ship eval summary",
                     "summary": "The current primary goal is to ship the eval summary.",
+                },
+            }
+
+        if "don't drop the citations yet" in lowered or "for now keep the citations preserved" in lowered:
+            return {
+                "text": "The current primary goal is to preserve citations.",
+                "memory_type": "goal",
+                "salience": 0.9,
+                "payload": {
+                    "key": "primary_goal",
+                    "value": "preserve citations",
+                    "summary": "The current primary goal is to preserve citations.",
                 },
             }
 
@@ -784,6 +1259,29 @@ class HeuristicNaturalConversationAdapter(LLMAdapter):
                     "key": "primary_goal",
                     "value": "preserve citations",
                     "summary": "The current primary goal is to preserve citations.",
+                },
+            }
+
+        if any(
+            phrase in lowered
+            for phrase in (
+                "long-form rationale",
+                "long form rationale",
+                "whole chain of reasoning",
+                "appendix defense",
+                "methodology note",
+            )
+        ):
+            memory_type = "correction" if "response_style" in slots else "preference"
+            proposition = "The user prefers detailed replies."
+            return {
+                "text": proposition,
+                "memory_type": memory_type,
+                "salience": 0.95,
+                "payload": {
+                    "key": "response_style",
+                    "value": "detailed",
+                    "proposition": proposition,
                 },
             }
 
@@ -844,6 +1342,30 @@ class HeuristicNaturalConversationAdapter(LLMAdapter):
                     "key": "response_style",
                     "value": "concise",
                     "proposition": "The user likely prefers concise replies.",
+                },
+            }
+
+        if any(
+            phrase in lowered
+            for phrase in (
+                "quick-scan version",
+                "quick scan version",
+                "bare-bones version",
+                "bare bones version",
+                "leanest take",
+                "walking between rooms",
+            )
+        ):
+            memory_type = "correction" if "response_style" in slots else "preference"
+            proposition = "The user prefers brief replies."
+            return {
+                "text": proposition,
+                "memory_type": memory_type,
+                "salience": 0.94,
+                "payload": {
+                    "key": "response_style",
+                    "value": "brief",
+                    "proposition": proposition,
                 },
             }
 
@@ -1842,9 +2364,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument(
         "--scenario-pack",
-        choices=("standard", "hard", "held_out", "all"),
+        choices=("standard", "hard", "held_out", "external_dev", "external_held_out", "all"),
         default=DEFAULT_SCENARIO_PACK,
-        help="Choose the standard natural suite, the harder delayed/noisy set, the held-out generalization set, or all packs together.",
+        help="Choose the standard natural suite, the harder delayed/noisy set, the held-out generalization set, the external dev set, the external held-out set, or all packs together.",
     )
     parser.add_argument(
         "--runtime-profile",

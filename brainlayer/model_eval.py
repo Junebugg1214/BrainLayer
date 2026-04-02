@@ -514,6 +514,444 @@ HELD_OUT_MODEL_EVAL_SCENARIOS: List[ModelEvalScenario] = [
     ),
 ]
 
+EXTERNAL_DEV_MODEL_EVAL_SCENARIOS: List[ModelEvalScenario] = [
+    ModelEvalScenario(
+        slug="external_dev_model_collab_partner_shift",
+        title="External Dev Collaboration Partner Shift",
+        description="Can the runtime preserve a collaboration reframing from executor to partner in a longer project-style log?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record relationship: key=collaboration_mode; value=task executor; "
+                    "summary=The collaboration mode is task executor.; "
+                    "themes=relationship,delivery-mode"
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The synthesis notes still need a section on reviewer concerns."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record relationship: key=collaboration_mode; value=research partner; "
+                    "summary=The collaboration mode is research partner.; "
+                    "themes=relationship,research-mode"
+                )
+            ),
+            ModelEvalTurn(
+                prompt="What collaboration mode should define this project right now?",
+                expected_answer="research partner",
+                checkpoint="partner_shift",
+            ),
+        ],
+    ),
+    ModelEvalScenario(
+        slug="external_dev_model_methods_override",
+        title="External Dev Methods Override",
+        description="Can the runtime update an earlier brevity preference when a methods-style walkthrough later needs more depth?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record preference: key=response_style; value=brief; "
+                    "proposition=The user generally prefers brief replies."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The reviewer tracker needs an owner column before handoff."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record correction: key=response_style; value=detailed; "
+                    "proposition=For the methods review, the user now wants detailed replies."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="What response style should you use right now?",
+                expected_answer="detailed",
+                checkpoint="methods_override",
+            ),
+        ],
+    ),
+    ModelEvalScenario(
+        slug="external_dev_model_release_session_lesson",
+        title="External Dev Release Session Lesson",
+        description="Can the runtime retain a direct release lesson described like an incident note?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record lesson: trigger=retry_release; action=check authentication; "
+                    "summary=Before rerunning a release after the GitHub session expires, confirm authentication first."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The incident template still needs a recovery-owner field."
+            ),
+            ModelEvalTurn(
+                prompt="Before retrying the release, what should you do first?",
+                expected_answer="check authentication",
+                checkpoint="session_lesson",
+            ),
+        ],
+    ),
+    ModelEvalScenario(
+        slug="external_dev_model_release_hint_stack",
+        title="External Dev Release Hint Stack",
+        description="Can the runtime consolidate repeated weak release lessons spread across operational notes?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record lesson hint: trigger=retry_release; action=check authentication; "
+                    "summary=Before retrying a release, confirm GitHub authentication first."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The deployment timeline should stay aligned to UTC."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record lesson hint: trigger=retry_release; action=check authentication; "
+                    "summary=Before retrying a release, confirm GitHub authentication first."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Before retrying the release, what should you do first?",
+                expected_answer="check authentication",
+                checkpoint="hint_stack",
+            ),
+        ],
+    ),
+    ModelEvalScenario(
+        slug="external_dev_model_sponsor_summary_shift",
+        title="External Dev Sponsor Summary Shift",
+        description="Can the runtime move from citation preservation to a deadline-driven evaluation summary goal?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=primary_goal; value=preserve citations; "
+                    "summary=The current primary goal is to preserve citations in the draft."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The bibliography style needs a final consistency pass."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=primary_goal; value=ship eval summary; "
+                    "summary=The current primary goal is to ship the eval summary before sponsor review."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="What is the current primary goal for this task?",
+                expected_answer="ship eval summary",
+                checkpoint="sponsor_summary",
+            ),
+        ],
+    ),
+    ModelEvalScenario(
+        slug="external_dev_model_board_report_shift",
+        title="External Dev Board Report Shift",
+        description="Can the runtime preserve the newest board-facing report goal after unrelated project details intervene?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=primary_goal; value=preserve citations; "
+                    "summary=The current primary goal is to preserve citations in every section."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The appendix screenshot captions still need a style pass."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=primary_goal; value=ship eval report; "
+                    "summary=The current primary goal is to ship the eval report for the board packet."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="What is the current primary goal for this task?",
+                expected_answer="ship eval report",
+                checkpoint="board_report",
+            ),
+        ],
+    ),
+    ModelEvalScenario(
+        slug="external_dev_model_style_revert_chain",
+        title="External Dev Style Revert Chain",
+        description="Can the runtime keep the latest style after multiple contradictory updates in a longer chain?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record preference: key=response_style; value=concise; "
+                    "proposition=The user prefers concise replies."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The field notes still need page references."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record correction: key=response_style; value=detailed; "
+                    "proposition=For the methods walkthrough, the user wants detailed replies."
+                )
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record correction: key=response_style; value=brief; "
+                    "proposition=After the methods note, the user wants brief replies again."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="What response style should you use right now?",
+                expected_answer="brief",
+                checkpoint="style_revert",
+            ),
+        ],
+    ),
+    ModelEvalScenario(
+        slug="external_dev_model_goal_contradiction_chain",
+        title="External Dev Goal Contradiction Chain",
+        description="Can the runtime preserve the latest goal after multiple realistic project reprioritizations?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=primary_goal; value=preserve citations; "
+                    "summary=The current primary goal is to preserve citations throughout the memo."
+                )
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=primary_goal; value=ship eval summary; "
+                    "summary=The current primary goal is to ship the eval summary today."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The comparison appendix still needs a color legend."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=primary_goal; value=ship eval report; "
+                    "summary=The current primary goal is to ship the eval report for leadership."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="What is the current primary goal for this task?",
+                expected_answer="ship eval report",
+                checkpoint="goal_chain",
+            ),
+        ],
+    ),
+]
+
+EXTERNAL_HELD_OUT_MODEL_EVAL_SCENARIOS: List[ModelEvalScenario] = [
+    ModelEvalScenario(
+        slug="external_heldout_model_appendix_depth_override",
+        title="External Held-Out Appendix Depth Override",
+        description="Can the runtime switch from a skim-friendly default to deeper appendix replies under new wording?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record preference: key=response_style; value=brief; "
+                    "proposition=The user usually wants a skim-friendly version."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The evidence table still needs one more reviewer pass."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record correction: key=response_style; value=detailed; "
+                    "proposition=For the appendix walkthrough, the user now wants detailed replies."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="What response style should you use right now?",
+                expected_answer="detailed",
+                checkpoint="appendix_depth",
+            ),
+        ],
+    ),
+    ModelEvalScenario(
+        slug="external_heldout_model_style_return_to_brief",
+        title="External Held-Out Style Return To Brief",
+        description="Can the runtime end on the latest brief style after a deeper detour and a final revert?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record preference: key=response_style; value=concise; "
+                    "proposition=The user prefers concise replies."
+                )
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record correction: key=response_style; value=detailed; "
+                    "proposition=For the appendix walkthrough, the user wants detailed replies."
+                )
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record correction: key=response_style; value=brief; "
+                    "proposition=Outside the appendix, the user again wants brief replies."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="What response style should you use right now?",
+                expected_answer="brief",
+                checkpoint="return_to_brief",
+            ),
+        ],
+    ),
+    ModelEvalScenario(
+        slug="external_heldout_model_digest_goal_reframe",
+        title="External Held-Out Digest Goal Reframe",
+        description="Can the runtime preserve a digest-oriented evaluation goal under different surface wording?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=primary_goal; value=preserve citations; "
+                    "summary=The current primary goal is to preserve citations in the deck."
+                )
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=primary_goal; value=ship eval summary; "
+                    "summary=The current primary goal is to ship the evaluation digest before leadership review."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="What is the current primary goal for this task?",
+                expected_answer="ship eval summary",
+                checkpoint="digest_goal",
+            ),
+        ],
+    ),
+    ModelEvalScenario(
+        slug="external_heldout_model_packet_goal_reframe",
+        title="External Held-Out Packet Goal Reframe",
+        description="Can the runtime preserve a packet/report goal when priorities are restated in new language?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=primary_goal; value=preserve citations; "
+                    "summary=The current primary goal is to preserve citations in the memo."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The appendix tables still need final row labels."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=primary_goal; value=ship eval report; "
+                    "summary=The current primary goal is to ship the eval report for the packet."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="What is the current primary goal for this task?",
+                expected_answer="ship eval report",
+                checkpoint="packet_goal",
+            ),
+        ],
+    ),
+    ModelEvalScenario(
+        slug="external_heldout_model_copilot_frame",
+        title="External Held-Out Copilot Frame",
+        description="Can the runtime retain a partnership framing under a new collaboration metaphor?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record relationship: key=collaboration_mode; value=task executor; "
+                    "summary=The collaboration mode is task executor.; "
+                    "themes=relationship,delivery-mode"
+                )
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record relationship: key=collaboration_mode; value=research partner; "
+                    "summary=The collaboration mode is research partner.; "
+                    "themes=relationship,thinking-mode"
+                )
+            ),
+            ModelEvalTurn(
+                prompt="What collaboration mode should define this project right now?",
+                expected_answer="research partner",
+                checkpoint="copilot_frame",
+            ),
+        ],
+    ),
+    ModelEvalScenario(
+        slug="external_heldout_model_codesign_frame",
+        title="External Held-Out Codesign Frame",
+        description="Can the runtime preserve a codesign-style partnership reframing after a prior executor mode?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record relationship: key=collaboration_mode; value=task executor; "
+                    "summary=The collaboration mode is task executor.; "
+                    "themes=relationship,execution-mode"
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The experiment appendix still needs a provenance note."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record relationship: key=collaboration_mode; value=research partner; "
+                    "summary=The collaboration mode is research partner.; "
+                    "themes=relationship,co-design"
+                )
+            ),
+            ModelEvalTurn(
+                prompt="What collaboration mode should define this project right now?",
+                expected_answer="research partner",
+                checkpoint="codesign_frame",
+            ),
+        ],
+    ),
+    ModelEvalScenario(
+        slug="external_heldout_model_reauth_lesson",
+        title="External Held-Out Reauth Lesson",
+        description="Can the runtime preserve a reauthentication lesson under a different operational framing?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record lesson: trigger=retry_release; action=check authentication; "
+                    "summary=Before rerunning a release after reauth is required, confirm GitHub authentication first."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Before retrying the release, what should you do first?",
+                expected_answer="check authentication",
+                checkpoint="reauth_lesson",
+            ),
+        ],
+    ),
+    ModelEvalScenario(
+        slug="external_heldout_model_repo_credentials_hint",
+        title="External Held-Out Repo Credentials Hint",
+        description="Can the runtime consolidate repeated release-auth hints under new wording?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record lesson hint: trigger=retry_release; action=check authentication; "
+                    "summary=Before retrying a release, confirm repository authentication first."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The launch brief still needs a sign-off row."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record lesson hint: trigger=retry_release; action=check authentication; "
+                    "summary=Before retrying a release, confirm repository authentication first."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Before retrying the release, what should you do first?",
+                expected_answer="check authentication",
+                checkpoint="repo_credentials_hint",
+            ),
+        ],
+    ),
+]
+
 MODEL_EVAL_SCENARIOS = STANDARD_MODEL_EVAL_SCENARIOS
 
 
@@ -524,11 +962,17 @@ def get_model_eval_scenarios(scenario_pack: str = DEFAULT_SCENARIO_PACK) -> List
         return list(HARD_MODEL_EVAL_SCENARIOS)
     if scenario_pack == "held_out":
         return list(HELD_OUT_MODEL_EVAL_SCENARIOS)
+    if scenario_pack == "external_dev":
+        return list(EXTERNAL_DEV_MODEL_EVAL_SCENARIOS)
+    if scenario_pack == "external_held_out":
+        return list(EXTERNAL_HELD_OUT_MODEL_EVAL_SCENARIOS)
     if scenario_pack == "all":
         return (
             list(STANDARD_MODEL_EVAL_SCENARIOS)
             + list(HARD_MODEL_EVAL_SCENARIOS)
             + list(HELD_OUT_MODEL_EVAL_SCENARIOS)
+            + list(EXTERNAL_DEV_MODEL_EVAL_SCENARIOS)
+            + list(EXTERNAL_HELD_OUT_MODEL_EVAL_SCENARIOS)
         )
     raise ValueError(f"Unsupported model eval scenario pack: {scenario_pack}")
 
@@ -1677,9 +2121,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument(
         "--scenario-pack",
-        choices=("standard", "hard", "held_out", "all"),
+        choices=("standard", "hard", "held_out", "external_dev", "external_held_out", "all"),
         default=DEFAULT_SCENARIO_PACK,
-        help="Choose the standard eval set, the harder delayed/noisy set, the held-out generalization set, or all packs together.",
+        help="Choose the standard eval set, the harder delayed/noisy set, the held-out generalization set, the external dev set, the external held-out set, or all packs together.",
     )
     parser.add_argument(
         "--runtime-profile",

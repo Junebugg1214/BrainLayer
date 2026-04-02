@@ -84,6 +84,30 @@ class ModelMatrixTests(unittest.TestCase):
         self.assertTrue(all(row.overall_passed == 14 for row in leaderboard))
         self.assertTrue(all(row.natural_extraction_passed == 5 for row in leaderboard))
 
+    def test_matrix_runner_supports_external_dev_scenario_pack(self) -> None:
+        entries = load_model_matrix_entries(ROOT / "examples" / "model_matrix.sample.json")
+        results = run_model_matrix(entries, include_ablations=False, scenario_pack="external_dev")
+
+        self.assertEqual(len(results), 48)
+        leaderboard = build_matrix_leaderboard(results)
+        self.assertEqual(len(leaderboard), 2)
+        self.assertTrue(all(row.overall_passed == 24 for row in leaderboard))
+        self.assertTrue(all(row.natural_extraction_passed == 8 for row in leaderboard))
+
+    def test_matrix_runner_supports_external_held_out_scenario_pack(self) -> None:
+        entries = load_model_matrix_entries(ROOT / "examples" / "model_matrix.sample.json")
+        results = run_model_matrix(
+            entries,
+            include_ablations=False,
+            scenario_pack="external_held_out",
+        )
+
+        self.assertEqual(len(results), 48)
+        leaderboard = build_matrix_leaderboard(results)
+        self.assertEqual(len(leaderboard), 2)
+        self.assertTrue(all(row.overall_passed == 24 for row in leaderboard))
+        self.assertTrue(all(row.natural_extraction_passed == 8 for row in leaderboard))
+
     def test_matrix_runner_supports_study_v2_runtime_profile(self) -> None:
         entries = [load_model_matrix_entries(ROOT / "examples" / "model_matrix.sample.json")[0]]
         results = run_model_matrix(
