@@ -483,6 +483,82 @@ class BrainLayerRuntimeTests(unittest.TestCase):
             )
         )
 
+    def test_runtime_normalizes_detailed_reasoning_goal_value(self) -> None:
+        session = BrainLayerSession()
+        runtime = BrainLayerRuntime(
+            StaticLLMAdapter(
+                response=json.dumps(
+                    {
+                        "assistant_response": "Understood.",
+                        "episodic_summary": "The appendix defense requires the full reasoning chain.",
+                        "memory_observations": [
+                            {
+                                "memory_type": "goal",
+                                "payload": {
+                                    "key": "primary_goal",
+                                    "value": "provide the full chain of reasoning",
+                                    "summary": "The appendix defense needs the full chain of reasoning.",
+                                },
+                            }
+                        ],
+                    }
+                )
+            ),
+            session=session,
+        )
+
+        result = runtime.run_turn("For the appendix defense, I need the whole chain of reasoning.")
+
+        self.assertEqual(len(result.applied_observations), 1)
+        self.assertEqual(result.applied_observations[0].payload["value"], "provide detailed reasoning")
+        self.assertTrue(
+            any(
+                item.key == "primary_goal" and item.value == "provide detailed reasoning"
+                for item in session.state.working_state
+            )
+        )
+
+    def test_runtime_adds_style_override_when_detailed_goal_is_active(self) -> None:
+        session = BrainLayerSession()
+        session.observe(
+            text="The user prefers brief replies.",
+            memory_type="preference",
+            payload={
+                "key": "response_style",
+                "value": "brief",
+                "proposition": "The user prefers brief replies.",
+            },
+            salience=0.9,
+        )
+        session.observe(
+            text="The appendix defense requires detailed reasoning.",
+            memory_type="goal",
+            payload={
+                "key": "primary_goal",
+                "value": "provide detailed reasoning",
+                "summary": "The current primary goal is to provide detailed reasoning.",
+            },
+            salience=0.92,
+        )
+
+        runtime = BrainLayerRuntime(
+            StaticLLMAdapter(
+                response=json.dumps(
+                    {
+                        "assistant_response": "Detailed.",
+                        "episodic_summary": "The assistant used the active detailed-reasoning override.",
+                        "memory_observations": [],
+                    }
+                )
+            ),
+            session=session,
+        )
+
+        result = runtime.run_turn("How should you answer by default right now?")
+
+        self.assertIn("[derived_override] response_style = detailed.", result.prompt_messages[1].content)
+        self.assertIn("overrides older brief defaults", result.prompt_messages[1].content)
+
     def test_runtime_normalizes_relationship_key_aliases(self) -> None:
         session = BrainLayerSession()
         runtime = BrainLayerRuntime(

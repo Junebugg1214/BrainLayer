@@ -115,6 +115,19 @@ def lexical_overlap_score(query: str, text: str) -> int:
     return len(set(tokenize(query)) & set(tokenize(text)))
 
 
+def _is_response_style_query(prompt: str) -> bool:
+    lowered = prompt.lower()
+    return any(
+        phrase in lowered
+        for phrase in (
+            "response style",
+            "how should you answer",
+            "how should you respond",
+            "what style should you use",
+        )
+    )
+
+
 @dataclass(frozen=True)
 class RetrievedMemory:
     layer: str
@@ -311,6 +324,9 @@ class BrainLayerRuntime:
         retrieved_memories: Sequence[RetrievedMemory],
     ) -> List[ModelMessage]:
         context = self.render_retrieved_context(retrieved_memories)
+        style_override = self._derive_response_style_override(prompt, retrieved_memories)
+        if style_override:
+            context = f"{context}\n{style_override}"
         user_message = (
             "BrainLayer context:\n"
             f"{context}\n\n"
@@ -341,6 +357,38 @@ class BrainLayerRuntime:
             ModelMessage(role="system", content=self.config.system_prompt),
             ModelMessage(role="user", content=user_message),
         ]
+
+    def _derive_response_style_override(
+        self,
+        prompt: str,
+        retrieved_memories: Sequence[RetrievedMemory],
+    ) -> str:
+        if not _is_response_style_query(prompt):
+            return ""
+
+        detailed_goal_active = any(
+            memory.layer == "working_state"
+            and "primary_goal =" in memory.content
+            and any(
+                phrase in memory.content.lower()
+                for phrase in (
+                    "provide detailed reasoning",
+                    "detailed explanation",
+                    "full reasoning",
+                    "whole chain of reasoning",
+                    "full chain of reasoning",
+                )
+            )
+            for memory in retrieved_memories
+        )
+        if not detailed_goal_active:
+            return ""
+
+        return (
+            "- [derived_override] response_style = detailed. "
+            "An active working-state goal currently requires detailed reasoning, "
+            "so that overrides older brief defaults for this answer."
+        )
 
     def render_retrieved_context(self, retrieved_memories: Sequence[RetrievedMemory]) -> str:
         if not retrieved_memories:
@@ -1506,6 +1554,18 @@ def _normalize_slot_value(
         return value.strip().lower()
 
     if key == "primary_goal":
+        if any(
+            phrase in lowered
+            for phrase in (
+                "provide detailed reasoning",
+                "detailed reasoning",
+                "detailed explanation",
+                "full reasoning",
+                "whole chain of reasoning",
+                "full chain of reasoning",
+            )
+        ):
+            return "provide detailed reasoning"
         if (
             "eval summary" in lowered
             or "evaluation summary" in lowered
