@@ -26,6 +26,28 @@ Headline frozen baseline:
 - `gemini-2.5-flash`: `43/47`
 - `gemini-2.5-flash-lite`: `39/47`
 
+## Current Post-Patch Freeze
+
+As of April 3, 2026, the current post-patch study-v2 reference set is:
+
+- primary bundle: `artifacts/study_runs/20260403T020152Z-study-v2-gemini-core-v5`
+- repeat 1: `artifacts/study_runs/20260403T165058Z-study-v2-gemini-core-v5-repeat1`
+- repeat 2: `artifacts/study_runs/20260403T174802Z-study-v2-gemini-core-v5-repeat2`
+
+Aggregate post-patch results:
+
+- `gemini-2.5-flash / brainlayer_full`: `90/95`, `92/95`, `91/95` across the three runs
+- `gemini-2.5-flash / structured_no_consolidation`: `86/95`, `84/95`, `89/95`
+- `gemini-2.5-flash-lite / brainlayer_full`: `85/95`, `87/95`, `85/95`
+- `gemini-2.5-flash-lite / structured_no_consolidation`: `81/95`, `86/95`, `87/95`
+
+Interpretation:
+
+- `gemini-2.5-flash` shows a stable post-patch win for `brainlayer_full`
+- `gemini-2.5-flash-lite` is closer to a near-tie, but remains slightly favorable to `brainlayer_full` on average across the three runs
+
+These three bundles should be treated as the frozen post-patch study-v2 baseline until a clearly labeled successor such as `study-v2-*` is intentionally promoted.
+
 ## Study-V2 Question
 
 Does BrainLayer still provide a meaningful advantage when compared against stronger non-BrainLayer baselines and evaluated on more external, less authored tasks?

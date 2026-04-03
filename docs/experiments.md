@@ -245,6 +245,28 @@ Those packs are available through the shared `scenario_pack` switch in the model
 
 For the actual frozen study workflow, use `scripts/run_study.py`. It snapshots the protocol and config, runs `standard`, `hard`, and `held_out` as separate matrix runs, exports a per-pack analysis for each, and writes one aggregate study summary bundle under `artifacts/study_runs/`.
 
+## Frozen Study-V2 Post-Patch Baseline
+
+The current post-patch study-v2 reference set is:
+
+- `artifacts/study_runs/20260403T020152Z-study-v2-gemini-core-v5`
+- `artifacts/study_runs/20260403T165058Z-study-v2-gemini-core-v5-repeat1`
+- `artifacts/study_runs/20260403T174802Z-study-v2-gemini-core-v5-repeat2`
+
+Across those three runs:
+
+- `gemini-2.5-flash / brainlayer_full` scored `90/95`, `92/95`, and `91/95`
+- `gemini-2.5-flash / structured_no_consolidation` scored `86/95`, `84/95`, and `89/95`
+- `gemini-2.5-flash-lite / brainlayer_full` scored `85/95`, `87/95`, and `85/95`
+- `gemini-2.5-flash-lite / structured_no_consolidation` scored `81/95`, `86/95`, and `87/95`
+
+The current read is:
+
+- strong and stable post-patch improvement for `gemini-2.5-flash`
+- a smaller, noisier margin for `gemini-2.5-flash-lite`
+
+Until a new `study-v2-*` result is explicitly promoted, treat these three bundles together as the frozen post-patch study-v2 baseline.
+
 ## What To Log
 
 For every run, log:
