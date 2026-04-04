@@ -102,6 +102,24 @@ class ModelEvalTests(unittest.TestCase):
         self.assertEqual(len(model_loop_results), 8)
         self.assertTrue(all(result.passed for result in model_loop_results))
 
+    def test_consolidation_stress_model_loop_passes_contradiction_suite(self) -> None:
+        results = run_model_eval_suite(
+            include_ablations=False,
+            scenario_pack="consolidation_stress",
+        )
+        model_loop_results = [result for result in results if result.runtime_name == "model_loop"]
+        self.assertEqual(len(model_loop_results), 8)
+        self.assertTrue(all(result.passed for result in model_loop_results))
+
+    def test_forgetting_stress_model_loop_passes_contradiction_suite(self) -> None:
+        results = run_model_eval_suite(
+            include_ablations=False,
+            scenario_pack="forgetting_stress",
+        )
+        model_loop_results = [result for result in results if result.runtime_name == "model_loop"]
+        self.assertEqual(len(model_loop_results), 8)
+        self.assertTrue(all(result.passed for result in model_loop_results))
+
     def test_study_v2_runtime_profile_exposes_stronger_baselines(self) -> None:
         results = run_model_eval_suite(
             include_ablations=False,
@@ -250,6 +268,34 @@ class ModelEvalTests(unittest.TestCase):
                 "model_loop_no_autobio",
                 "model_relationship_after_distraction",
                 "late_relationship",
+            ).passed
+        )
+
+    def test_consolidation_stress_pack_shows_no_consolidation_regression(self) -> None:
+        results = run_model_eval_suite(scenario_pack="consolidation_stress")
+
+        def lookup(runtime_name: str, scenario_slug: str, checkpoint: str) -> object:
+            for result in results:
+                if (
+                    result.runtime_name == runtime_name
+                    and result.scenario_slug == scenario_slug
+                    and result.checkpoint == checkpoint
+                ):
+                    return result
+            self.fail(f"Missing result for {runtime_name} on {scenario_slug}/{checkpoint}")
+
+        self.assertFalse(
+            lookup(
+                "model_loop_no_consolidation",
+                "consolidation_stress_goal_hint_stack",
+                "goal_promoted",
+            ).passed
+        )
+        self.assertFalse(
+            lookup(
+                "model_loop_no_consolidation",
+                "consolidation_stress_lesson_hint_stack",
+                "lesson_promoted",
             ).passed
         )
 

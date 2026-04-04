@@ -905,6 +905,216 @@ EXTERNAL_HELD_OUT_NATURAL_EVAL_SCENARIOS: List[NaturalEvalScenario] = [
     ),
 ]
 
+CONSOLIDATION_STRESS_NATURAL_EVAL_SCENARIOS: List[NaturalEvalScenario] = [
+    NaturalEvalScenario(
+        slug="consolidation_stress_natural_style_hints",
+        title="Consolidation Stress Natural Style Hints",
+        description="Can repeated weak style hints become a durable response-style belief?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="Still too long for the handoff note."
+            ),
+            NaturalEvalTurn(
+                prompt="I only need the gist before the next call.",
+                checkpoint="extract_style",
+                evaluation_type="extraction",
+                target_layer="beliefs",
+                target_key="response_style",
+                expected_value="concise",
+            ),
+            NaturalEvalTurn(
+                prompt="How should you answer by default right now?",
+                checkpoint="behavior_style",
+                evaluation_type="behavior",
+                expected_value="concise",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="consolidation_stress_natural_goal_hints",
+        title="Consolidation Stress Natural Goal Hints",
+        description="Can repeated weak goal hints become a durable working-state goal?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="Let's keep the citation anchors from slipping while we sort the rest out."
+            ),
+            NaturalEvalTurn(
+                prompt="We still can't lose the citation anchors in the next draft.",
+                checkpoint="extract_goal",
+                evaluation_type="extraction",
+                target_layer="working_state",
+                target_key="primary_goal",
+                expected_value="preserve citations",
+            ),
+            NaturalEvalTurn(
+                prompt="What is the main goal right now?",
+                checkpoint="behavior_goal",
+                evaluation_type="behavior",
+                expected_value="preserve citations",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="consolidation_stress_natural_relationship_hints",
+        title="Consolidation Stress Natural Relationship Hints",
+        description="Can repeated weak relationship hints become durable collaboration framing?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="Less ticket queue, more thinking together on the framing."
+            ),
+            NaturalEvalTurn(
+                prompt="I want more of a co-thinking partner vibe on this pass.",
+                checkpoint="extract_relationship",
+                evaluation_type="extraction",
+                target_layer="autobiographical_state",
+                target_key="collaboration_mode",
+                expected_value="research partner",
+            ),
+            NaturalEvalTurn(
+                prompt="What collaboration mode should define this project right now?",
+                checkpoint="behavior_relationship",
+                evaluation_type="behavior",
+                expected_value="research partner",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="consolidation_stress_natural_lesson_hints",
+        title="Consolidation Stress Natural Lesson Hints",
+        description="Can repeated weak operational hints become a reusable procedure?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="Let's not rerun the release blind again."
+            ),
+            NaturalEvalTurn(
+                prompt="Double-check the GitHub login before trying the release again.",
+                checkpoint="extract_lesson",
+                evaluation_type="extraction",
+                target_layer="procedures",
+                target_key="retry_release",
+                expected_value="check authentication",
+            ),
+            NaturalEvalTurn(
+                prompt="Before retrying the release, what should you do first?",
+                checkpoint="behavior_lesson",
+                evaluation_type="behavior",
+                expected_value="check authentication",
+            ),
+        ],
+    ),
+]
+
+FORGETTING_STRESS_NATURAL_EVAL_SCENARIOS: List[NaturalEvalScenario] = [
+    NaturalEvalScenario(
+        slug="forgetting_stress_natural_style_reversion",
+        title="Forgetting Stress Natural Style Reversion",
+        description="Can the runtime keep the latest response style after reversals and distractions?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="I'm skimming between meetings, so please keep this really brief."
+            ),
+            NaturalEvalTurn(
+                prompt="For the methods memo, give me the full reasoning spelled out."
+            ),
+            NaturalEvalTurn(
+                prompt="Outside the methods memo, default to short answers again because I'm heading into calls.",
+                checkpoint="extract_style",
+                evaluation_type="extraction",
+                target_layer="beliefs",
+                target_key="response_style",
+                expected_value="brief",
+            ),
+            NaturalEvalTurn(
+                prompt="How should you answer by default right now?",
+                checkpoint="behavior_style",
+                evaluation_type="behavior",
+                expected_value="brief",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="forgetting_stress_natural_goal_reversion",
+        title="Forgetting Stress Natural Goal Reversion",
+        description="Can the runtime keep the latest goal after several obsolete goal states?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="Before anything else, let's make sure every answer keeps the citations intact."
+            ),
+            NaturalEvalTurn(
+                prompt="Actually the board packet moved up, so the top priority now is shipping the eval report tonight."
+            ),
+            NaturalEvalTurn(
+                prompt="For now keep the citations preserved; the report can wait a moment.",
+                checkpoint="extract_goal",
+                evaluation_type="extraction",
+                target_layer="working_state",
+                target_key="primary_goal",
+                expected_value="preserve citations",
+            ),
+            NaturalEvalTurn(
+                prompt="What is the main goal right now?",
+                checkpoint="behavior_goal",
+                evaluation_type="behavior",
+                expected_value="preserve citations",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="forgetting_stress_natural_relationship_reversion",
+        title="Forgetting Stress Natural Relationship Reversion",
+        description="Can the runtime keep the latest collaboration framing after a temporary executor phase?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="I don't just need a task runner here; think with me like a research partner on this."
+            ),
+            NaturalEvalTurn(
+                prompt="For the next hour, just execute the task list without trying to co-design it."
+            ),
+            NaturalEvalTurn(
+                prompt="Actually we're back in synthesis mode, so work beside me as a research collaborator again.",
+                checkpoint="extract_relationship",
+                evaluation_type="extraction",
+                target_layer="autobiographical_state",
+                target_key="collaboration_mode",
+                expected_value="research partner",
+            ),
+            NaturalEvalTurn(
+                prompt="What collaboration mode should define this project right now?",
+                checkpoint="behavior_relationship",
+                evaluation_type="behavior",
+                expected_value="research partner",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="forgetting_stress_natural_latest_goal_shift",
+        title="Forgetting Stress Natural Latest Goal Shift",
+        description="Can the runtime keep the latest deadline-driven goal after multiple shifts?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="Before anything else, let's make sure every answer keeps the citations intact."
+            ),
+            NaturalEvalTurn(
+                prompt="Actually the deadline moved up, so the main thing now is shipping the eval summary today."
+            ),
+            NaturalEvalTurn(
+                prompt="One more shift: the funder packet needs the eval report shipped tonight.",
+                checkpoint="extract_goal",
+                evaluation_type="extraction",
+                target_layer="working_state",
+                target_key="primary_goal",
+                expected_value="ship eval report",
+            ),
+            NaturalEvalTurn(
+                prompt="What is the main goal right now?",
+                checkpoint="behavior_goal",
+                evaluation_type="behavior",
+                expected_value="ship eval report",
+            ),
+        ],
+    ),
+]
+
 NATURAL_EVAL_SCENARIOS = STANDARD_NATURAL_EVAL_SCENARIOS
 
 
@@ -919,6 +1129,10 @@ def get_natural_eval_scenarios(scenario_pack: str = DEFAULT_SCENARIO_PACK) -> Li
         return list(EXTERNAL_DEV_NATURAL_EVAL_SCENARIOS)
     if scenario_pack == "external_held_out":
         return list(EXTERNAL_HELD_OUT_NATURAL_EVAL_SCENARIOS)
+    if scenario_pack == "consolidation_stress":
+        return list(CONSOLIDATION_STRESS_NATURAL_EVAL_SCENARIOS)
+    if scenario_pack == "forgetting_stress":
+        return list(FORGETTING_STRESS_NATURAL_EVAL_SCENARIOS)
     if scenario_pack == "all":
         return (
             list(STANDARD_NATURAL_EVAL_SCENARIOS)
@@ -926,6 +1140,8 @@ def get_natural_eval_scenarios(scenario_pack: str = DEFAULT_SCENARIO_PACK) -> Li
             + list(HELD_OUT_NATURAL_EVAL_SCENARIOS)
             + list(EXTERNAL_DEV_NATURAL_EVAL_SCENARIOS)
             + list(EXTERNAL_HELD_OUT_NATURAL_EVAL_SCENARIOS)
+            + list(CONSOLIDATION_STRESS_NATURAL_EVAL_SCENARIOS)
+            + list(FORGETTING_STRESS_NATURAL_EVAL_SCENARIOS)
         )
     raise ValueError(f"Unsupported natural eval scenario pack: {scenario_pack}")
 
@@ -1018,6 +1234,27 @@ class HeuristicNaturalConversationAdapter(LLMAdapter):
         lowered = task.lower()
         slots = self._parse_context(context)["slots"]
 
+        if any(
+            phrase in lowered
+            for phrase in (
+                "just execute the task list",
+                "without trying to co-design it",
+                "without trying to co design it",
+                "just execute this one",
+            )
+        ):
+            return {
+                "text": "The collaboration mode is task executor.",
+                "memory_type": "relationship",
+                "salience": 0.94,
+                "payload": {
+                    "key": "collaboration_mode",
+                    "value": "task executor",
+                    "summary": "The collaboration mode is task executor.",
+                    "themes": "relationship,delivery-mode",
+                },
+            }
+
         if "research partner" in lowered or "task runner" in lowered:
             return {
                 "text": "The collaboration mode is research partner.",
@@ -1082,6 +1319,19 @@ class HeuristicNaturalConversationAdapter(LLMAdapter):
                 },
             }
 
+        if "less ticket queue" in lowered or "co-thinking partner vibe" in lowered:
+            return {
+                "text": "The collaboration mode is likely research partner.",
+                "memory_type": "relationship_hint",
+                "salience": 0.43,
+                "payload": {
+                    "key": "collaboration_mode",
+                    "value": "research partner",
+                    "summary": "The collaboration mode is likely research partner.",
+                    "themes": "relationship,research-mode",
+                },
+            }
+
         if "last time the release failed" in lowered or "check auth first" in lowered:
             return {
                 "text": "Before retrying a release, check authentication first.",
@@ -1135,6 +1385,18 @@ class HeuristicNaturalConversationAdapter(LLMAdapter):
                 "text": "Before retrying a release, check authentication first.",
                 "memory_type": "lesson",
                 "salience": 0.93,
+                "payload": {
+                    "trigger": "retry_release",
+                    "action": "check authentication",
+                    "summary": "Before retrying a release, confirm GitHub authentication first.",
+                },
+            }
+
+        if "not rerun the release blind again" in lowered or "double-check the github login before trying the release again" in lowered:
+            return {
+                "text": "Before retrying a release, check authentication first.",
+                "memory_type": "lesson_hint",
+                "salience": 0.43,
                 "payload": {
                     "trigger": "retry_release",
                     "action": "check authentication",
@@ -1211,6 +1473,18 @@ class HeuristicNaturalConversationAdapter(LLMAdapter):
                     "key": "primary_goal",
                     "value": "ship eval summary",
                     "summary": "The current primary goal is to ship the eval summary.",
+                },
+            }
+
+        if "citation anchors from slipping" in lowered or "can't lose the citation anchors" in lowered:
+            return {
+                "text": "The current primary goal is likely to preserve citations.",
+                "memory_type": "goal_hint",
+                "salience": 0.43,
+                "payload": {
+                    "key": "primary_goal",
+                    "value": "preserve citations",
+                    "summary": "The current primary goal is likely to preserve citations.",
                 },
             }
 
@@ -2366,9 +2640,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument(
         "--scenario-pack",
-        choices=("standard", "hard", "held_out", "external_dev", "external_held_out", "all"),
+        choices=(
+            "standard",
+            "hard",
+            "held_out",
+            "external_dev",
+            "external_held_out",
+            "consolidation_stress",
+            "forgetting_stress",
+            "all",
+        ),
         default=DEFAULT_SCENARIO_PACK,
-        help="Choose the standard natural suite, the harder delayed/noisy set, the held-out generalization set, the external dev set, the external held-out set, or all packs together.",
+        help="Choose the standard natural suite, the harder delayed/noisy set, the held-out generalization set, the external dev set, the external held-out set, the consolidation-stress set, the forgetting-stress set, or all packs together.",
     )
     parser.add_argument(
         "--runtime-profile",

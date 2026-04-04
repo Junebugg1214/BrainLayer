@@ -25,6 +25,10 @@ class StudyRunnerTests(unittest.TestCase):
             parse_study_scenario_packs("standard,external_dev,external_held_out"),
             ("standard", "external_dev", "external_held_out"),
         )
+        self.assertEqual(
+            parse_study_scenario_packs("consolidation_stress,forgetting_stress"),
+            ("consolidation_stress", "forgetting_stress"),
+        )
 
     def test_run_study_writes_frozen_bundle_and_aggregate_outputs(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -25,6 +25,8 @@ VALID_STUDY_SCENARIO_PACKS = {
     "held_out",
     "external_dev",
     "external_held_out",
+    "consolidation_stress",
+    "forgetting_stress",
 }
 
 

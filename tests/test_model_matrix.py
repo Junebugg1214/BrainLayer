@@ -119,6 +119,34 @@ class ModelMatrixTests(unittest.TestCase):
         self.assertTrue(all(row.overall_passed == 24 for row in leaderboard))
         self.assertTrue(all(row.natural_extraction_passed == 8 for row in leaderboard))
 
+    def test_matrix_runner_supports_consolidation_stress_scenario_pack(self) -> None:
+        entries = load_model_matrix_entries(ROOT / "examples" / "model_matrix.sample.json")
+        results = run_model_matrix(
+            entries,
+            include_ablations=False,
+            scenario_pack="consolidation_stress",
+        )
+
+        self.assertEqual(len(results), 32)
+        leaderboard = build_matrix_leaderboard(results)
+        self.assertEqual(len(leaderboard), 2)
+        self.assertTrue(all(row.overall_passed == 16 for row in leaderboard))
+        self.assertTrue(all(row.natural_extraction_passed == 4 for row in leaderboard))
+
+    def test_matrix_runner_supports_forgetting_stress_scenario_pack(self) -> None:
+        entries = load_model_matrix_entries(ROOT / "examples" / "model_matrix.sample.json")
+        results = run_model_matrix(
+            entries,
+            include_ablations=False,
+            scenario_pack="forgetting_stress",
+        )
+
+        self.assertEqual(len(results), 32)
+        leaderboard = build_matrix_leaderboard(results)
+        self.assertEqual(len(leaderboard), 2)
+        self.assertTrue(all(row.overall_passed == 16 for row in leaderboard))
+        self.assertTrue(all(row.natural_extraction_passed == 4 for row in leaderboard))
+
     def test_matrix_runner_supports_study_v2_runtime_profile(self) -> None:
         entries = [load_model_matrix_entries(ROOT / "examples" / "model_matrix.sample.json")[0]]
         results = run_model_matrix(

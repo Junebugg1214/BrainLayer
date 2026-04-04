@@ -953,6 +953,330 @@ EXTERNAL_HELD_OUT_MODEL_EVAL_SCENARIOS: List[ModelEvalScenario] = [
     ),
 ]
 
+CONSOLIDATION_STRESS_MODEL_EVAL_SCENARIOS: List[ModelEvalScenario] = [
+    ModelEvalScenario(
+        slug="consolidation_stress_style_hint_stack",
+        title="Consolidation Stress Style Hint Stack",
+        description="Can repeated weak style hints become a durable response-style belief?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record preference hint: key=response_style; value=concise; "
+                    "proposition=The user likely prefers concise replies."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The appendix figure labels still need a spacing pass."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record preference hint: key=response_style; value=concise; "
+                    "proposition=The user likely prefers concise replies."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="What response style should you use right now?",
+                expected_answer="concise",
+                checkpoint="hint_promoted",
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The changelog caption should keep title case."
+            ),
+            ModelEvalTurn(
+                prompt="What response style should you use right now?",
+                expected_answer="concise",
+                checkpoint="hint_retained",
+            ),
+        ],
+    ),
+    ModelEvalScenario(
+        slug="consolidation_stress_goal_hint_stack",
+        title="Consolidation Stress Goal Hint Stack",
+        description="Can repeated weak goal hints become a durable working-state goal?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal hint: key=primary_goal; value=preserve citations; "
+                    "summary=The current primary goal is likely to preserve citations."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The appendix footnotes still need a style pass."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal hint: key=primary_goal; value=preserve citations; "
+                    "summary=The current primary goal is likely to preserve citations."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="What is the current primary goal for this task?",
+                expected_answer="preserve citations",
+                checkpoint="goal_promoted",
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The section divider still needs a provenance row."
+            ),
+            ModelEvalTurn(
+                prompt="What is the current primary goal for this task?",
+                expected_answer="preserve citations",
+                checkpoint="goal_retained",
+            ),
+        ],
+    ),
+    ModelEvalScenario(
+        slug="consolidation_stress_relationship_hint_stack",
+        title="Consolidation Stress Relationship Hint Stack",
+        description="Can repeated weak relationship hints become durable collaboration framing?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record relationship hint: key=collaboration_mode; value=research partner; "
+                    "summary=The collaboration mode is likely research partner.; "
+                    "themes=relationship,research-mode"
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The roadmap appendix still needs a timeline legend."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record relationship hint: key=collaboration_mode; value=research partner; "
+                    "summary=The collaboration mode is likely research partner.; "
+                    "themes=relationship,research-mode"
+                )
+            ),
+            ModelEvalTurn(
+                prompt="What collaboration mode should define this project right now?",
+                expected_answer="research partner",
+                checkpoint="relationship_promoted",
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The methods appendix still needs a glossary row."
+            ),
+            ModelEvalTurn(
+                prompt="What collaboration mode should define this project right now?",
+                expected_answer="research partner",
+                checkpoint="relationship_retained",
+            ),
+        ],
+    ),
+    ModelEvalScenario(
+        slug="consolidation_stress_lesson_hint_stack",
+        title="Consolidation Stress Lesson Hint Stack",
+        description="Can repeated weak operational hints become a reusable procedure?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record lesson hint: trigger=retry_release; action=check authentication; "
+                    "summary=Before retrying a release, confirm repository authentication first."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The launch checklist still needs a rollback column."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record lesson hint: trigger=retry_release; action=check authentication; "
+                    "summary=Before retrying a release, confirm repository authentication first."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Before retrying the release, what should you do first?",
+                expected_answer="check authentication",
+                checkpoint="lesson_promoted",
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The release packet still needs a final owner row."
+            ),
+            ModelEvalTurn(
+                prompt="Before retrying the release, what should you do first?",
+                expected_answer="check authentication",
+                checkpoint="lesson_retained",
+            ),
+        ],
+    ),
+]
+
+FORGETTING_STRESS_MODEL_EVAL_SCENARIOS: List[ModelEvalScenario] = [
+    ModelEvalScenario(
+        slug="forgetting_stress_style_reversion",
+        title="Forgetting Stress Style Reversion",
+        description="Can the runtime stay anchored to the latest style after multiple reversals and distractions?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record preference: key=response_style; value=brief; "
+                    "proposition=The user generally prefers brief replies."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The appendix caption spacing still needs a cleanup pass."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record correction: key=response_style; value=detailed; "
+                    "proposition=For the methods memo, the user wants detailed replies."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The rollout sidebar still needs a border token."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record correction: key=response_style; value=brief; "
+                    "proposition=Outside the methods memo, the user again wants brief replies."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="What response style should you use right now?",
+                expected_answer="brief",
+                checkpoint="final_style",
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The appendix glossary still needs a contrast review."
+            ),
+            ModelEvalTurn(
+                prompt="What response style should you use right now?",
+                expected_answer="brief",
+                checkpoint="style_after_noise",
+            ),
+        ],
+    ),
+    ModelEvalScenario(
+        slug="forgetting_stress_goal_reversion",
+        title="Forgetting Stress Goal Reversion",
+        description="Can the runtime keep the latest goal after several obsolete goal states?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=primary_goal; value=preserve citations; "
+                    "summary=The current primary goal is to preserve citations."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The appendix bullets still need a spacing review."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=primary_goal; value=ship eval summary; "
+                    "summary=The current primary goal is to ship the eval summary."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The methods sidebar still needs a color legend."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=primary_goal; value=preserve citations; "
+                    "summary=The current primary goal is to preserve citations."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="What is the current primary goal for this task?",
+                expected_answer="preserve citations",
+                checkpoint="final_goal",
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The appendix notes still need a sign-off column."
+            ),
+            ModelEvalTurn(
+                prompt="What is the current primary goal for this task?",
+                expected_answer="preserve citations",
+                checkpoint="goal_after_noise",
+            ),
+        ],
+    ),
+    ModelEvalScenario(
+        slug="forgetting_stress_goal_latest_deadline",
+        title="Forgetting Stress Goal Latest Deadline",
+        description="Can the runtime keep the latest deadline-driven goal after several shifts?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=primary_goal; value=preserve citations; "
+                    "summary=The current primary goal is to preserve citations."
+                )
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=primary_goal; value=ship eval summary; "
+                    "summary=The current primary goal is to ship the eval summary."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The methods appendix still needs a provenance footnote."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=primary_goal; value=ship eval report; "
+                    "summary=The current primary goal is to ship the eval report."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="What is the current primary goal for this task?",
+                expected_answer="ship eval report",
+                checkpoint="latest_goal",
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The rollout appendix still needs a legend key."
+            ),
+            ModelEvalTurn(
+                prompt="What is the current primary goal for this task?",
+                expected_answer="ship eval report",
+                checkpoint="latest_goal_after_noise",
+            ),
+        ],
+    ),
+    ModelEvalScenario(
+        slug="forgetting_stress_relationship_reversion",
+        title="Forgetting Stress Relationship Reversion",
+        description="Can the runtime keep the latest collaboration framing after reversals and distractions?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record relationship: key=collaboration_mode; value=task executor; "
+                    "summary=The collaboration mode is task executor.; "
+                    "themes=relationship,delivery-mode"
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The appendix roadmap still needs a milestone footnote."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record relationship: key=collaboration_mode; value=research partner; "
+                    "summary=The collaboration mode is research partner.; "
+                    "themes=relationship,research-mode"
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The evidence appendix still needs a source index."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record relationship: key=collaboration_mode; value=task executor; "
+                    "summary=The collaboration mode is task executor.; "
+                    "themes=relationship,delivery-mode"
+                )
+            ),
+            ModelEvalTurn(
+                prompt="What collaboration mode should define this project right now?",
+                expected_answer="task executor",
+                checkpoint="final_relationship",
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The delivery appendix still needs a risk row."
+            ),
+            ModelEvalTurn(
+                prompt="What collaboration mode should define this project right now?",
+                expected_answer="task executor",
+                checkpoint="relationship_after_noise",
+            ),
+        ],
+    ),
+]
+
 MODEL_EVAL_SCENARIOS = STANDARD_MODEL_EVAL_SCENARIOS
 
 
@@ -967,6 +1291,10 @@ def get_model_eval_scenarios(scenario_pack: str = DEFAULT_SCENARIO_PACK) -> List
         return list(EXTERNAL_DEV_MODEL_EVAL_SCENARIOS)
     if scenario_pack == "external_held_out":
         return list(EXTERNAL_HELD_OUT_MODEL_EVAL_SCENARIOS)
+    if scenario_pack == "consolidation_stress":
+        return list(CONSOLIDATION_STRESS_MODEL_EVAL_SCENARIOS)
+    if scenario_pack == "forgetting_stress":
+        return list(FORGETTING_STRESS_MODEL_EVAL_SCENARIOS)
     if scenario_pack == "all":
         return (
             list(STANDARD_MODEL_EVAL_SCENARIOS)
@@ -974,6 +1302,8 @@ def get_model_eval_scenarios(scenario_pack: str = DEFAULT_SCENARIO_PACK) -> List
             + list(HELD_OUT_MODEL_EVAL_SCENARIOS)
             + list(EXTERNAL_DEV_MODEL_EVAL_SCENARIOS)
             + list(EXTERNAL_HELD_OUT_MODEL_EVAL_SCENARIOS)
+            + list(CONSOLIDATION_STRESS_MODEL_EVAL_SCENARIOS)
+            + list(FORGETTING_STRESS_MODEL_EVAL_SCENARIOS)
         )
     raise ValueError(f"Unsupported model eval scenario pack: {scenario_pack}")
 
@@ -1081,7 +1411,9 @@ class HeuristicBrainLayerEvalAdapter(LLMAdapter):
             "preference",
             "correction",
             "goal",
+            "goal_hint",
             "relationship",
+            "relationship_hint",
             "lesson",
             "preference_hint",
             "lesson_hint",
@@ -1098,7 +1430,7 @@ class HeuristicBrainLayerEvalAdapter(LLMAdapter):
                 "value": fields["value"],
                 "proposition": fields["proposition"],
             }
-        if memory_type == "goal":
+        if memory_type in {"goal", "goal_hint"}:
             return {
                 "key": fields["key"],
                 "value": fields["value"],
@@ -1110,7 +1442,7 @@ class HeuristicBrainLayerEvalAdapter(LLMAdapter):
                 "action": fields["action"],
                 "summary": fields["summary"],
             }
-        if memory_type == "relationship":
+        if memory_type in {"relationship", "relationship_hint"}:
             return {
                 "key": fields["key"],
                 "value": fields["value"],
@@ -1126,7 +1458,7 @@ class HeuristicBrainLayerEvalAdapter(LLMAdapter):
             return payload["proposition"]
         if memory_type in {"lesson", "lesson_hint"}:
             return payload["summary"]
-        if memory_type in {"goal", "relationship"}:
+        if memory_type in {"goal", "goal_hint", "relationship", "relationship_hint"}:
             return payload["summary"]
         if memory_type == "noise":
             return payload["value"]
@@ -2132,9 +2464,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument(
         "--scenario-pack",
-        choices=("standard", "hard", "held_out", "external_dev", "external_held_out", "all"),
+        choices=(
+            "standard",
+            "hard",
+            "held_out",
+            "external_dev",
+            "external_held_out",
+            "consolidation_stress",
+            "forgetting_stress",
+            "all",
+        ),
         default=DEFAULT_SCENARIO_PACK,
-        help="Choose the standard eval set, the harder delayed/noisy set, the held-out generalization set, the external dev set, the external held-out set, or all packs together.",
+        help="Choose the standard eval set, the harder delayed/noisy set, the held-out generalization set, the external dev set, the external held-out set, the consolidation-stress set, the forgetting-stress set, or all packs together.",
     )
     parser.add_argument(
         "--runtime-profile",
