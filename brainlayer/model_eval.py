@@ -1100,178 +1100,238 @@ CONSOLIDATION_STRESS_MODEL_EVAL_SCENARIOS: List[ModelEvalScenario] = [
 
 FORGETTING_STRESS_MODEL_EVAL_SCENARIOS: List[ModelEvalScenario] = [
     ModelEvalScenario(
-        slug="forgetting_stress_style_reversion",
-        title="Forgetting Stress Style Reversion",
-        description="Can the runtime stay anchored to the latest style after multiple reversals and distractions?",
+        slug="forgetting_stress_goal_crowding_citations",
+        title="Forgetting Stress Goal Crowding Citations",
+        description="Can forgetting keep stale goal-like working items from crowding out the true current goal?",
         turns=[
             ModelEvalTurn(
                 prompt=(
-                    "Record preference: key=response_style; value=brief; "
-                    "proposition=The user generally prefers brief replies."
+                    "Record goal: key=appendix_caption_focus; value=lock caption table; salience=0.72; "
+                    "summary=The current primary goal for this task is to lock the caption table before the appendix pass."
                 )
             ),
             ModelEvalTurn(
-                prompt="Record noise: value=The appendix caption spacing still needs a cleanup pass."
-            ),
-            ModelEvalTurn(
                 prompt=(
-                    "Record correction: key=response_style; value=detailed; "
-                    "proposition=For the methods memo, the user wants detailed replies."
+                    "Record goal: key=glossary_cleanup_focus; value=tighten glossary bullets; salience=0.71; "
+                    "summary=The current primary goal for this task is to tighten the glossary bullets before the glossary pass."
                 )
             ),
             ModelEvalTurn(
-                prompt="Record noise: value=The rollout sidebar still needs a border token."
-            ),
-            ModelEvalTurn(
                 prompt=(
-                    "Record correction: key=response_style; value=brief; "
-                    "proposition=Outside the methods memo, the user again wants brief replies."
+                    "Record goal: key=sidebar_cleanup_focus; value=patch sidebar legend; salience=0.82; "
+                    "summary=Patch the sidebar legend before the visual QA pass."
                 )
             ),
             ModelEvalTurn(
-                prompt="What response style should you use right now?",
-                expected_answer="brief",
-                checkpoint="final_style",
-            ),
-            ModelEvalTurn(
-                prompt="Record noise: value=The appendix glossary still needs a contrast review."
-            ),
-            ModelEvalTurn(
-                prompt="What response style should you use right now?",
-                expected_answer="brief",
-                checkpoint="style_after_noise",
-            ),
-        ],
-    ),
-    ModelEvalScenario(
-        slug="forgetting_stress_goal_reversion",
-        title="Forgetting Stress Goal Reversion",
-        description="Can the runtime keep the latest goal after several obsolete goal states?",
-        turns=[
-            ModelEvalTurn(
                 prompt=(
-                    "Record goal: key=primary_goal; value=preserve citations; "
+                    "Record goal: key=primary_goal; value=preserve citations; salience=0.98; "
                     "summary=The current primary goal is to preserve citations."
                 )
             ),
             ModelEvalTurn(
-                prompt="Record noise: value=The appendix bullets still need a spacing review."
-            ),
-            ModelEvalTurn(
                 prompt=(
-                    "Record goal: key=primary_goal; value=ship eval summary; "
-                    "summary=The current primary goal is to ship the eval summary."
+                    "Record goal: key=packet_footer_focus; value=align footer labels; salience=0.84; "
+                    "summary=The current primary goal for this task is to align the footer labels before the packet ships."
                 )
             ),
             ModelEvalTurn(
-                prompt="Record noise: value=The methods sidebar still needs a color legend."
-            ),
-            ModelEvalTurn(
                 prompt=(
-                    "Record goal: key=primary_goal; value=preserve citations; "
-                    "summary=The current primary goal is to preserve citations."
+                    "Record goal: key=figure_caption_focus; value=trim figure caption spacing; salience=0.83; "
+                    "summary=Trim the figure caption spacing before the polish pass."
                 )
             ),
             ModelEvalTurn(
                 prompt="What is the current primary goal for this task?",
                 expected_answer="preserve citations",
-                checkpoint="final_goal",
+                checkpoint="goal_after_crowding",
             ),
             ModelEvalTurn(
-                prompt="Record noise: value=The appendix notes still need a sign-off column."
+                prompt=(
+                    "Record goal: key=timeline_cleanup_focus; value=tidy timeline labels; salience=0.81; "
+                    "summary=Tidy the timeline labels before the cleanup pass."
+                )
             ),
             ModelEvalTurn(
                 prompt="What is the current primary goal for this task?",
                 expected_answer="preserve citations",
-                checkpoint="goal_after_noise",
+                checkpoint="goal_after_more_crowding",
             ),
         ],
     ),
     ModelEvalScenario(
-        slug="forgetting_stress_goal_latest_deadline",
-        title="Forgetting Stress Goal Latest Deadline",
-        description="Can the runtime keep the latest deadline-driven goal after several shifts?",
+        slug="forgetting_stress_goal_crowding_summary",
+        title="Forgetting Stress Goal Crowding Summary",
+        description="Can forgetting preserve the active summary goal against stale goal-like clutter?",
         turns=[
             ModelEvalTurn(
                 prompt=(
-                    "Record goal: key=primary_goal; value=preserve citations; "
-                    "summary=The current primary goal is to preserve citations."
+                    "Record goal: key=appendix_caption_focus; value=lock caption table; salience=0.72; "
+                    "summary=The current primary goal for this task is to lock the caption table before the appendix pass."
                 )
             ),
             ModelEvalTurn(
                 prompt=(
-                    "Record goal: key=primary_goal; value=ship eval summary; "
+                    "Record goal: key=glossary_cleanup_focus; value=tighten glossary bullets; salience=0.71; "
+                    "summary=The current primary goal for this task is to tighten the glossary bullets before the glossary pass."
+                )
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=sidebar_cleanup_focus; value=patch sidebar legend; salience=0.82; "
+                    "summary=Patch the sidebar legend before the visual QA pass."
+                )
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=primary_goal; value=ship eval summary; salience=0.98; "
                     "summary=The current primary goal is to ship the eval summary."
                 )
             ),
             ModelEvalTurn(
-                prompt="Record noise: value=The methods appendix still needs a provenance footnote."
+                prompt=(
+                    "Record goal: key=packet_footer_focus; value=align footer labels; salience=0.84; "
+                    "summary=The current primary goal for this task is to align the footer labels before the packet ships."
+                )
             ),
             ModelEvalTurn(
                 prompt=(
-                    "Record goal: key=primary_goal; value=ship eval report; "
+                    "Record goal: key=figure_caption_focus; value=trim figure caption spacing; salience=0.83; "
+                    "summary=Trim the figure caption spacing before the polish pass."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="What is the current primary goal for this task?",
+                expected_answer="ship eval summary",
+                checkpoint="goal_after_crowding",
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=timeline_cleanup_focus; value=tidy timeline labels; salience=0.81; "
+                    "summary=Tidy the timeline labels before the cleanup pass."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="What is the current primary goal for this task?",
+                expected_answer="ship eval summary",
+                checkpoint="goal_after_more_crowding",
+            ),
+        ],
+    ),
+    ModelEvalScenario(
+        slug="forgetting_stress_goal_crowding_report",
+        title="Forgetting Stress Goal Crowding Report",
+        description="Can forgetting preserve a report-shipping goal against stale working-state clutter?",
+        turns=[
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=appendix_caption_focus; value=lock caption table; salience=0.72; "
+                    "summary=The current primary goal for this task is to lock the caption table before the appendix pass."
+                )
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=glossary_cleanup_focus; value=tighten glossary bullets; salience=0.71; "
+                    "summary=The current primary goal for this task is to tighten the glossary bullets before the glossary pass."
+                )
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=sidebar_cleanup_focus; value=patch sidebar legend; salience=0.82; "
+                    "summary=Patch the sidebar legend before the visual QA pass."
+                )
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=primary_goal; value=ship eval report; salience=0.98; "
                     "summary=The current primary goal is to ship the eval report."
                 )
             ),
             ModelEvalTurn(
-                prompt="What is the current primary goal for this task?",
-                expected_answer="ship eval report",
-                checkpoint="latest_goal",
+                prompt=(
+                    "Record goal: key=packet_footer_focus; value=align footer labels; salience=0.84; "
+                    "summary=The current primary goal for this task is to align the footer labels before the packet ships."
+                )
             ),
             ModelEvalTurn(
-                prompt="Record noise: value=The rollout appendix still needs a legend key."
+                prompt=(
+                    "Record goal: key=figure_caption_focus; value=trim figure caption spacing; salience=0.83; "
+                    "summary=Trim the figure caption spacing before the polish pass."
+                )
             ),
             ModelEvalTurn(
                 prompt="What is the current primary goal for this task?",
                 expected_answer="ship eval report",
-                checkpoint="latest_goal_after_noise",
+                checkpoint="goal_after_crowding",
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=timeline_cleanup_focus; value=tidy timeline labels; salience=0.81; "
+                    "summary=Tidy the timeline labels before the cleanup pass."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="What is the current primary goal for this task?",
+                expected_answer="ship eval report",
+                checkpoint="goal_after_more_crowding",
             ),
         ],
     ),
     ModelEvalScenario(
-        slug="forgetting_stress_relationship_reversion",
-        title="Forgetting Stress Relationship Reversion",
-        description="Can the runtime keep the latest collaboration framing after reversals and distractions?",
+        slug="forgetting_stress_goal_crowding_detailed_reasoning",
+        title="Forgetting Stress Goal Crowding Detailed Reasoning",
+        description="Can forgetting preserve a detailed-reasoning goal when older task goals crowd the working set?",
         turns=[
             ModelEvalTurn(
                 prompt=(
-                    "Record relationship: key=collaboration_mode; value=task executor; "
-                    "summary=The collaboration mode is task executor.; "
-                    "themes=relationship,delivery-mode"
+                    "Record goal: key=appendix_caption_focus; value=lock caption table; salience=0.72; "
+                    "summary=The current primary goal for this task is to lock the caption table before the appendix pass."
                 )
-            ),
-            ModelEvalTurn(
-                prompt="Record noise: value=The appendix roadmap still needs a milestone footnote."
             ),
             ModelEvalTurn(
                 prompt=(
-                    "Record relationship: key=collaboration_mode; value=research partner; "
-                    "summary=The collaboration mode is research partner.; "
-                    "themes=relationship,research-mode"
+                    "Record goal: key=glossary_cleanup_focus; value=tighten glossary bullets; salience=0.71; "
+                    "summary=The current primary goal for this task is to tighten the glossary bullets before the glossary pass."
                 )
-            ),
-            ModelEvalTurn(
-                prompt="Record noise: value=The evidence appendix still needs a source index."
             ),
             ModelEvalTurn(
                 prompt=(
-                    "Record relationship: key=collaboration_mode; value=task executor; "
-                    "summary=The collaboration mode is task executor.; "
-                    "themes=relationship,delivery-mode"
+                    "Record goal: key=sidebar_cleanup_focus; value=patch sidebar legend; salience=0.82; "
+                    "summary=Patch the sidebar legend before the visual QA pass."
                 )
             ),
             ModelEvalTurn(
-                prompt="What collaboration mode should define this project right now?",
-                expected_answer="task executor",
-                checkpoint="final_relationship",
+                prompt=(
+                    "Record goal: key=primary_goal; value=provide detailed reasoning; salience=0.98; "
+                    "summary=The current primary goal is to provide detailed reasoning."
+                )
             ),
             ModelEvalTurn(
-                prompt="Record noise: value=The delivery appendix still needs a risk row."
+                prompt=(
+                    "Record goal: key=packet_footer_focus; value=align footer labels; salience=0.84; "
+                    "summary=The current primary goal for this task is to align the footer labels before the packet ships."
+                )
             ),
             ModelEvalTurn(
-                prompt="What collaboration mode should define this project right now?",
-                expected_answer="task executor",
-                checkpoint="relationship_after_noise",
+                prompt=(
+                    "Record goal: key=figure_caption_focus; value=trim figure caption spacing; salience=0.83; "
+                    "summary=Trim the figure caption spacing before the polish pass."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="What is the current primary goal for this task?",
+                expected_answer="provide detailed reasoning",
+                checkpoint="goal_after_crowding",
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=timeline_cleanup_focus; value=tidy timeline labels; salience=0.81; "
+                    "summary=Tidy the timeline labels before the cleanup pass."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="What is the current primary goal for this task?",
+                expected_answer="provide detailed reasoning",
+                checkpoint="goal_after_more_crowding",
             ),
         ],
     ),
@@ -1369,7 +1429,7 @@ class HeuristicBrainLayerEvalAdapter(LLMAdapter):
                 {
                     "text": observation_text,
                     "memory_type": memory_type,
-                    "salience": self._default_salience(memory_type),
+                    "salience": float(fields.get("salience", self._default_salience(memory_type))),
                     "payload": payload,
                 }
             ],

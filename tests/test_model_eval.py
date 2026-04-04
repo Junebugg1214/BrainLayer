@@ -299,6 +299,34 @@ class ModelEvalTests(unittest.TestCase):
             ).passed
         )
 
+    def test_forgetting_stress_pack_shows_no_forgetting_regression(self) -> None:
+        results = run_model_eval_suite(scenario_pack="forgetting_stress")
+
+        def lookup(runtime_name: str, scenario_slug: str, checkpoint: str) -> object:
+            for result in results:
+                if (
+                    result.runtime_name == runtime_name
+                    and result.scenario_slug == scenario_slug
+                    and result.checkpoint == checkpoint
+                ):
+                    return result
+            self.fail(f"Missing result for {runtime_name} on {scenario_slug}/{checkpoint}")
+
+        self.assertFalse(
+            lookup(
+                "model_loop_no_forgetting",
+                "forgetting_stress_goal_crowding_citations",
+                "goal_after_crowding",
+            ).passed
+        )
+        self.assertFalse(
+            lookup(
+                "model_loop_no_forgetting",
+                "forgetting_stress_goal_crowding_report",
+                "goal_after_crowding",
+            ).passed
+        )
+
     def test_no_forgetting_retains_more_state_than_full_model_loop(self) -> None:
         results = run_model_eval_suite()
 

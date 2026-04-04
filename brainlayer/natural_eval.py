@@ -1006,50 +1006,32 @@ CONSOLIDATION_STRESS_NATURAL_EVAL_SCENARIOS: List[NaturalEvalScenario] = [
 
 FORGETTING_STRESS_NATURAL_EVAL_SCENARIOS: List[NaturalEvalScenario] = [
     NaturalEvalScenario(
-        slug="forgetting_stress_natural_style_reversion",
-        title="Forgetting Stress Natural Style Reversion",
-        description="Can the runtime keep the latest response style after reversals and distractions?",
+        slug="forgetting_stress_natural_citation_goal_crowding",
+        title="Forgetting Stress Natural Citation Goal Crowding",
+        description="Can forgetting keep stale natural-language goal clutter from crowding out the true current goal?",
         turns=[
             NaturalEvalTurn(
-                prompt="I'm skimming between meetings, so please keep this really brief."
+                prompt="For the appendix pass, prioritize locking the caption table above the rest."
             ),
             NaturalEvalTurn(
-                prompt="For the methods memo, give me the full reasoning spelled out."
+                prompt="For the glossary pass, prioritize tightening the glossary bullets above the rest."
             ),
             NaturalEvalTurn(
-                prompt="Outside the methods memo, default to short answers again because I'm heading into calls.",
-                checkpoint="extract_style",
-                evaluation_type="extraction",
-                target_layer="beliefs",
-                target_key="response_style",
-                expected_value="brief",
+                prompt="The sidebar legend still needs a cleanup pass before review."
             ),
             NaturalEvalTurn(
-                prompt="How should you answer by default right now?",
-                checkpoint="behavior_style",
-                evaluation_type="behavior",
-                expected_value="brief",
-            ),
-        ],
-    ),
-    NaturalEvalScenario(
-        slug="forgetting_stress_natural_goal_reversion",
-        title="Forgetting Stress Natural Goal Reversion",
-        description="Can the runtime keep the latest goal after several obsolete goal states?",
-        turns=[
-            NaturalEvalTurn(
-                prompt="Before anything else, let's make sure every answer keeps the citations intact."
-            ),
-            NaturalEvalTurn(
-                prompt="Actually the board packet moved up, so the top priority now is shipping the eval report tonight."
-            ),
-            NaturalEvalTurn(
-                prompt="For now keep the citations preserved; the report can wait a moment.",
+                prompt="Don't drop the citations yet.",
                 checkpoint="extract_goal",
                 evaluation_type="extraction",
                 target_layer="working_state",
                 target_key="primary_goal",
                 expected_value="preserve citations",
+            ),
+            NaturalEvalTurn(
+                prompt="For the packet polish, prioritize aligning the footer labels above the rest."
+            ),
+            NaturalEvalTurn(
+                prompt="The figure caption spacing still needs a polish pass."
             ),
             NaturalEvalTurn(
                 prompt="What is the main goal right now?",
@@ -1060,45 +1042,57 @@ FORGETTING_STRESS_NATURAL_EVAL_SCENARIOS: List[NaturalEvalScenario] = [
         ],
     ),
     NaturalEvalScenario(
-        slug="forgetting_stress_natural_relationship_reversion",
-        title="Forgetting Stress Natural Relationship Reversion",
-        description="Can the runtime keep the latest collaboration framing after a temporary executor phase?",
+        slug="forgetting_stress_natural_summary_goal_crowding",
+        title="Forgetting Stress Natural Summary Goal Crowding",
+        description="Can forgetting preserve the active summary goal under stale natural-language clutter?",
         turns=[
             NaturalEvalTurn(
-                prompt="I don't just need a task runner here; think with me like a research partner on this."
+                prompt="For the appendix pass, prioritize locking the caption table above the rest."
             ),
             NaturalEvalTurn(
-                prompt="For the next hour, just execute the task list without trying to co-design it."
+                prompt="For the glossary pass, prioritize tightening the glossary bullets above the rest."
             ),
             NaturalEvalTurn(
-                prompt="Actually we're back in synthesis mode, so work beside me as a research collaborator again.",
-                checkpoint="extract_relationship",
+                prompt="The sidebar legend still needs a cleanup pass before review."
+            ),
+            NaturalEvalTurn(
+                prompt="The leadership brief changed, so the only thing that matters is getting the evaluation digest out tonight.",
+                checkpoint="extract_goal",
                 evaluation_type="extraction",
-                target_layer="autobiographical_state",
-                target_key="collaboration_mode",
-                expected_value="research partner",
+                target_layer="working_state",
+                target_key="primary_goal",
+                expected_value="ship eval summary",
             ),
             NaturalEvalTurn(
-                prompt="What collaboration mode should define this project right now?",
-                checkpoint="behavior_relationship",
+                prompt="For the packet polish, prioritize aligning the footer labels above the rest."
+            ),
+            NaturalEvalTurn(
+                prompt="The figure caption spacing still needs a polish pass."
+            ),
+            NaturalEvalTurn(
+                prompt="What is the main goal right now?",
+                checkpoint="behavior_goal",
                 evaluation_type="behavior",
-                expected_value="research partner",
+                expected_value="ship eval summary",
             ),
         ],
     ),
     NaturalEvalScenario(
-        slug="forgetting_stress_natural_latest_goal_shift",
-        title="Forgetting Stress Natural Latest Goal Shift",
-        description="Can the runtime keep the latest deadline-driven goal after multiple shifts?",
+        slug="forgetting_stress_natural_report_goal_crowding",
+        title="Forgetting Stress Natural Report Goal Crowding",
+        description="Can forgetting preserve the active report goal under stale natural-language clutter?",
         turns=[
             NaturalEvalTurn(
-                prompt="Before anything else, let's make sure every answer keeps the citations intact."
+                prompt="For the appendix pass, prioritize locking the caption table above the rest."
             ),
             NaturalEvalTurn(
-                prompt="Actually the deadline moved up, so the main thing now is shipping the eval summary today."
+                prompt="For the glossary pass, prioritize tightening the glossary bullets above the rest."
             ),
             NaturalEvalTurn(
-                prompt="One more shift: the funder packet needs the eval report shipped tonight.",
+                prompt="The sidebar legend still needs a cleanup pass before review."
+            ),
+            NaturalEvalTurn(
+                prompt="The funder packet needs the eval report shipped tonight, so that is the real priority now.",
                 checkpoint="extract_goal",
                 evaluation_type="extraction",
                 target_layer="working_state",
@@ -1106,10 +1100,52 @@ FORGETTING_STRESS_NATURAL_EVAL_SCENARIOS: List[NaturalEvalScenario] = [
                 expected_value="ship eval report",
             ),
             NaturalEvalTurn(
+                prompt="For the packet polish, prioritize aligning the footer labels above the rest."
+            ),
+            NaturalEvalTurn(
+                prompt="The figure caption spacing still needs a polish pass."
+            ),
+            NaturalEvalTurn(
                 prompt="What is the main goal right now?",
                 checkpoint="behavior_goal",
                 evaluation_type="behavior",
                 expected_value="ship eval report",
+            ),
+        ],
+    ),
+    NaturalEvalScenario(
+        slug="forgetting_stress_natural_reasoning_goal_crowding",
+        title="Forgetting Stress Natural Reasoning Goal Crowding",
+        description="Can forgetting preserve a detailed-reasoning goal under stale natural-language clutter?",
+        turns=[
+            NaturalEvalTurn(
+                prompt="For the appendix pass, prioritize locking the caption table above the rest."
+            ),
+            NaturalEvalTurn(
+                prompt="For the glossary pass, prioritize tightening the glossary bullets above the rest."
+            ),
+            NaturalEvalTurn(
+                prompt="The sidebar legend still needs a cleanup pass before review."
+            ),
+            NaturalEvalTurn(
+                prompt="For this debrief, the only thing that matters now is walking through the whole chain of reasoning.",
+                checkpoint="extract_goal",
+                evaluation_type="extraction",
+                target_layer="working_state",
+                target_key="primary_goal",
+                expected_value="provide detailed reasoning",
+            ),
+            NaturalEvalTurn(
+                prompt="For the packet polish, prioritize aligning the footer labels above the rest."
+            ),
+            NaturalEvalTurn(
+                prompt="The figure caption spacing still needs a polish pass."
+            ),
+            NaturalEvalTurn(
+                prompt="What is the main goal right now?",
+                checkpoint="behavior_goal",
+                evaluation_type="behavior",
+                expected_value="provide detailed reasoning",
             ),
         ],
     ),
@@ -1401,6 +1437,78 @@ class HeuristicNaturalConversationAdapter(LLMAdapter):
                     "trigger": "retry_release",
                     "action": "check authentication",
                     "summary": "Before retrying a release, confirm GitHub authentication first.",
+                },
+            }
+
+        if "appendix pass" in lowered and "locking the caption table" in lowered:
+            return {
+                "text": "The main goal right now for this task is locking the caption table before the appendix pass.",
+                "memory_type": "goal",
+                "salience": 0.72,
+                "payload": {
+                    "key": "appendix_caption_focus",
+                    "value": "lock caption table",
+                    "summary": "The main goal right now for this task is locking the caption table before the appendix pass.",
+                },
+            }
+
+        if "glossary pass" in lowered and "tightening the glossary bullets" in lowered:
+            return {
+                "text": "The main goal right now for this task is tightening the glossary bullets before the glossary pass.",
+                "memory_type": "goal",
+                "salience": 0.71,
+                "payload": {
+                    "key": "glossary_cleanup_focus",
+                    "value": "tighten glossary bullets",
+                    "summary": "The main goal right now for this task is tightening the glossary bullets before the glossary pass.",
+                },
+            }
+
+        if "packet polish" in lowered and "aligning the footer labels" in lowered:
+            return {
+                "text": "The main goal right now for this task is aligning the footer labels before the packet ships.",
+                "memory_type": "goal",
+                "salience": 0.84,
+                "payload": {
+                    "key": "packet_footer_focus",
+                    "value": "align footer labels",
+                    "summary": "The main goal right now for this task is aligning the footer labels before the packet ships.",
+                },
+            }
+
+        if "sidebar legend still needs a cleanup pass" in lowered:
+            return {
+                "text": "Patch the sidebar legend before the visual QA pass.",
+                "memory_type": "goal",
+                "salience": 0.82,
+                "payload": {
+                    "key": "sidebar_cleanup_focus",
+                    "value": "patch sidebar legend",
+                    "summary": "Patch the sidebar legend before the visual QA pass.",
+                },
+            }
+
+        if "figure caption spacing still needs a polish pass" in lowered:
+            return {
+                "text": "Trim the figure caption spacing before the polish pass.",
+                "memory_type": "goal",
+                "salience": 0.83,
+                "payload": {
+                    "key": "figure_caption_focus",
+                    "value": "trim figure caption spacing",
+                    "summary": "Trim the figure caption spacing before the polish pass.",
+                },
+            }
+
+        if "walking through the whole chain of reasoning" in lowered:
+            return {
+                "text": "The current primary goal is to provide detailed reasoning.",
+                "memory_type": "goal",
+                "salience": 0.96,
+                "payload": {
+                    "key": "primary_goal",
+                    "value": "provide detailed reasoning",
+                    "summary": "The current primary goal is to provide detailed reasoning.",
                 },
             }
 

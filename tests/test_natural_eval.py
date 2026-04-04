@@ -313,6 +313,34 @@ class NaturalEvalTests(unittest.TestCase):
             ).passed
         )
 
+    def test_forgetting_stress_natural_pack_shows_no_forgetting_regression(self) -> None:
+        results = run_natural_eval_suite(scenario_pack="forgetting_stress")
+
+        def lookup(runtime_name: str, scenario_slug: str, checkpoint: str) -> object:
+            for result in results:
+                if (
+                    result.runtime_name == runtime_name
+                    and result.scenario_slug == scenario_slug
+                    and result.checkpoint == checkpoint
+                ):
+                    return result
+            self.fail(f"Missing result for {runtime_name} on {scenario_slug}/{checkpoint}")
+
+        self.assertFalse(
+            lookup(
+                "model_loop_no_forgetting",
+                "forgetting_stress_natural_citation_goal_crowding",
+                "behavior_goal",
+            ).passed
+        )
+        self.assertFalse(
+            lookup(
+                "model_loop_no_forgetting",
+                "forgetting_stress_natural_report_goal_crowding",
+                "behavior_goal",
+            ).passed
+        )
+
     def test_natural_eval_script_reports_summary(self) -> None:
         completed = subprocess.run(
             ["python3", str(ROOT / "scripts" / "run_natural_model_evals.py"), "--core-only"],
