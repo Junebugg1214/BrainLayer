@@ -72,6 +72,31 @@ def build_runtime_variants(
                 memory_strategy="summary_state",
             ),
         ]
+        if include_ablations:
+            variants.extend(
+                [
+                    RuntimeVariantSpec(
+                        name="brainlayer_no_consolidation",
+                        features=BrainLayerFeatureConfig(enable_consolidation=False),
+                        memory_strategy="brainlayer",
+                    ),
+                    RuntimeVariantSpec(
+                        name="brainlayer_no_forgetting",
+                        features=BrainLayerFeatureConfig(enable_forgetting=False),
+                        memory_strategy="brainlayer",
+                    ),
+                    RuntimeVariantSpec(
+                        name="brainlayer_no_autobio",
+                        features=BrainLayerFeatureConfig(enable_autobio=False),
+                        memory_strategy="brainlayer",
+                    ),
+                    RuntimeVariantSpec(
+                        name="brainlayer_no_working_state",
+                        features=BrainLayerFeatureConfig(enable_working_state=False),
+                        memory_strategy="brainlayer",
+                    ),
+                ]
+            )
         return variants
 
     variants = [

@@ -140,6 +140,28 @@ class ModelEvalTests(unittest.TestCase):
             lookup("context_only", "model_goal_revision", "revised_goal").passed
         )
 
+    def test_study_v2_runtime_profile_with_ablations_exposes_brainlayer_component_variants(self) -> None:
+        results = run_model_eval_suite(
+            include_ablations=True,
+            runtime_profile=RUNTIME_PROFILE_STUDY_V2,
+        )
+
+        runtime_names = {result.runtime_name for result in results}
+        self.assertEqual(
+            runtime_names,
+            {
+                "brainlayer_full",
+                "brainlayer_no_autobio",
+                "brainlayer_no_consolidation",
+                "brainlayer_no_forgetting",
+                "brainlayer_no_working_state",
+                "context_only",
+                "naive_retrieval",
+                "structured_no_consolidation",
+                "summary_state",
+            },
+        )
+
     def test_ablations_show_targeted_runtime_regressions(self) -> None:
         results = run_model_eval_suite()
 

@@ -129,6 +129,31 @@ class ModelMatrixTests(unittest.TestCase):
             },
         )
 
+    def test_matrix_runner_supports_study_v2_runtime_profile_with_ablations(self) -> None:
+        entries = [load_model_matrix_entries(ROOT / "examples" / "model_matrix.sample.json")[0]]
+        results = run_model_matrix(
+            entries,
+            include_ablations=True,
+            runtime_profile=RUNTIME_PROFILE_STUDY_V2,
+        )
+
+        leaderboard = build_matrix_leaderboard(results)
+        self.assertEqual(len(leaderboard), 9)
+        self.assertEqual(
+            {row.runtime_name for row in leaderboard},
+            {
+                "brainlayer_full",
+                "brainlayer_no_autobio",
+                "brainlayer_no_consolidation",
+                "brainlayer_no_forgetting",
+                "brainlayer_no_working_state",
+                "context_only",
+                "naive_retrieval",
+                "structured_no_consolidation",
+                "summary_state",
+            },
+        )
+
     def test_matrix_export_writes_results_summary_leaderboard_history_and_x_post(self) -> None:
         entries = load_model_matrix_entries(ROOT / "examples" / "model_matrix.sample.json")
         results = run_model_matrix(entries, include_ablations=False)
