@@ -267,6 +267,49 @@ The current read is:
 
 Until a new `study-v2-*` result is explicitly promoted, treat these three bundles together as the frozen post-patch study-v2 baseline.
 
+## Frozen Study-V2 Component-Attribution Baseline
+
+The current `study-v2` component-attribution reference set is the first five-pack live ablation sweep:
+
+- `artifacts/matrix_runs/20260403T232157Z-study-v2-gemini-core-ablations-standard-v1`
+- `artifacts/matrix_runs/20260403T234052Z-study-v2-gemini-core-ablations-hard-v1`
+- `artifacts/matrix_runs/20260403T235134Z-study-v2-gemini-core-ablations-heldout-v1`
+- `artifacts/matrix_runs/20260404T002614Z-study-v2-gemini-core-ablations-external-dev-v1`
+- `artifacts/matrix_runs/20260404T004713Z-study-v2-gemini-core-ablations-external-heldout-v1`
+
+See [docs/study_v2_ablation_report.md](/Users/marcsaint-jour/Documents/New%20project/docs/study_v2_ablation_report.md) for the full writeup.
+
+Aggregate totals:
+
+- `gemini-2.5-flash / brainlayer_full`: `91/95`
+- `gemini-2.5-flash / brainlayer_no_consolidation`: `90/95`
+- `gemini-2.5-flash / brainlayer_no_forgetting`: `92/95`
+- `gemini-2.5-flash / brainlayer_no_autobio`: `79/95`
+- `gemini-2.5-flash / brainlayer_no_working_state`: `78/95`
+
+- `gemini-2.5-flash-lite / brainlayer_full`: `87/95`
+- `gemini-2.5-flash-lite / brainlayer_no_consolidation`: `87/95`
+- `gemini-2.5-flash-lite / brainlayer_no_forgetting`: `87/95`
+- `gemini-2.5-flash-lite / brainlayer_no_autobio`: `75/95`
+- `gemini-2.5-flash-lite / brainlayer_no_working_state`: `77/95`
+
+Current read:
+
+- `autobio` and `working_state` matter a lot
+- `consolidation` is weak on this frozen setup
+- `forgetting` looks neutral on this frozen setup
+
+## Current Study-V2 Cross-Provider Replication
+
+The current cross-provider replication note for `study-v2` is the frozen Anthropic sweep recorded in [docs/study_v2_cross_provider_note.md](/Users/marcsaint-jour/Documents/New%20project/docs/study_v2_cross_provider_note.md).
+
+Current read:
+
+- the strongest Gemini component pattern reproduces on Anthropic
+- `autobio` and `working_state` still matter a lot
+- `consolidation` remains weak and `forgetting` remains mixed to near-neutral
+- the broader `brainlayer_full` advantage over simpler structured state is not yet universal across providers
+
 ## What To Log
 
 For every run, log:

@@ -34,6 +34,7 @@ from .judging import (
     normalize_answer_text,
 )
 from .llm import (
+    AnthropicMessagesAdapter,
     LLMAdapter,
     LLMError,
     ModelMessage,
@@ -1198,12 +1199,20 @@ def default_model_eval_runtime_config(
 
 def build_live_model_eval_adapter(
     *,
+    provider_name: str = DEFAULT_LIVE_PROVIDER,
     api_key_env: str = "OPENAI_API_KEY",
     base_url: str = "https://api.openai.com/v1",
     request_path: str = "/chat/completions",
     timeout_seconds: float = 30.0,
     max_output_tokens_field: str | None = "max_tokens",
-) -> OpenAICompatibleChatAdapter:
+) -> LLMAdapter:
+    if provider_name == "anthropic_messages":
+        return AnthropicMessagesAdapter(
+            api_key=os.environ.get(api_key_env),
+            base_url=base_url,
+            request_path=request_path,
+            timeout_seconds=timeout_seconds,
+        )
     return OpenAICompatibleChatAdapter(
         api_key=os.environ.get(api_key_env),
         base_url=base_url,
@@ -1665,6 +1674,7 @@ def run_live_model_eval_suite(
     runtime_profile: str = RUNTIME_PROFILE_DEFAULT,
 ) -> List[ModelEvalResult]:
     adapter = build_live_model_eval_adapter(
+        provider_name=provider_name,
         api_key_env=api_key_env,
         base_url=base_url,
         request_path=request_path,
@@ -2047,6 +2057,7 @@ def _build_adapter_from_args(args: argparse.Namespace) -> tuple[LLMAdapter, str,
     if max_output_tokens_field is not None and max_output_tokens_field.lower() == "none":
         max_output_tokens_field = None
     adapter = build_live_model_eval_adapter(
+        provider_name=args.provider_name,
         api_key_env=args.api_key_env,
         base_url=args.base_url,
         request_path=args.request_path,

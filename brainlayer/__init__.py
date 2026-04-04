@@ -6,6 +6,7 @@ from .agents import BrainLayerFeatureConfig
 from .eval_support import estimate_usage_cost_usd
 from .judging import BehaviorJudge, ExactMatchJudge, HeuristicBehaviorJudge, score_structured_value
 from .llm import LLMAdapter, LLMError, ModelMessage, ModelResponse, OpenAICompatibleChatAdapter
+from .llm import AnthropicMessagesAdapter
 from .model_eval import (
     build_live_model_eval_adapter,
     default_model_eval_runtime_config,
@@ -69,6 +70,7 @@ __all__ = [
     "BrainLayerValidationError",
     "BrainLayerFeatureConfig",
     "BehaviorJudge",
+    "AnthropicMessagesAdapter",
     "ConsolidationConfig",
     "ConsolidationEngine",
     "ConsolidationReport",

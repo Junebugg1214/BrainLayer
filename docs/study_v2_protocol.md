@@ -48,6 +48,56 @@ Interpretation:
 
 These three bundles should be treated as the frozen post-patch study-v2 baseline until a clearly labeled successor such as `study-v2-*` is intentionally promoted.
 
+## Current Component-Attribution Baseline
+
+As of April 4, 2026, the current `study-v2` component-attribution reference set is the first five-pack live ablation sweep:
+
+- `artifacts/matrix_runs/20260403T232157Z-study-v2-gemini-core-ablations-standard-v1`
+- `artifacts/matrix_runs/20260403T234052Z-study-v2-gemini-core-ablations-hard-v1`
+- `artifacts/matrix_runs/20260403T235134Z-study-v2-gemini-core-ablations-heldout-v1`
+- `artifacts/matrix_runs/20260404T002614Z-study-v2-gemini-core-ablations-external-dev-v1`
+- `artifacts/matrix_runs/20260404T004713Z-study-v2-gemini-core-ablations-external-heldout-v1`
+
+Reference report:
+
+- `docs/study_v2_ablation_report.md`
+
+Aggregate ablation totals:
+
+- `gemini-2.5-flash / brainlayer_full`: `91/95`
+- `gemini-2.5-flash / brainlayer_no_consolidation`: `90/95`
+- `gemini-2.5-flash / brainlayer_no_forgetting`: `92/95`
+- `gemini-2.5-flash / brainlayer_no_autobio`: `79/95`
+- `gemini-2.5-flash / brainlayer_no_working_state`: `78/95`
+
+- `gemini-2.5-flash-lite / brainlayer_full`: `87/95`
+- `gemini-2.5-flash-lite / brainlayer_no_consolidation`: `87/95`
+- `gemini-2.5-flash-lite / brainlayer_no_forgetting`: `87/95`
+- `gemini-2.5-flash-lite / brainlayer_no_autobio`: `75/95`
+- `gemini-2.5-flash-lite / brainlayer_no_working_state`: `77/95`
+
+Interpretation:
+
+- autobiographical state and working state are the strongest contributors on the frozen `study-v2` setup
+- consolidation is weak on this frozen setup
+- forgetting looks neutral on this frozen setup
+
+Treat these five ablation bundles and the ablation report as the current `study-v2` component-attribution baseline until a clearly labeled successor is intentionally promoted.
+
+## Current Cross-Provider Replication Note
+
+As of April 4, 2026, the current cross-provider replication note for `study-v2` is the Anthropic sweep summarized in:
+
+- `docs/study_v2_cross_provider_note.md`
+
+Interpretation:
+
+- the strongest Gemini component-attribution pattern reproduces on Anthropic
+- autobiographical state and working state remain the strongest contributors
+- consolidation is weak again on this frozen setup
+- forgetting remains mixed to near-neutral
+- the full BrainLayer stack does not yet show a universal advantage over simpler structured state across every provider and model size
+
 ## Study-V2 Question
 
 Does BrainLayer still provide a meaningful advantage when compared against stronger non-BrainLayer baselines and evaluated on more external, less authored tasks?

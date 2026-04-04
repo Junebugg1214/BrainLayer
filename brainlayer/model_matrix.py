@@ -229,6 +229,7 @@ def _build_suite_adapter(entry: ModelMatrixEntry, suite_name: str) -> LLMAdapter
         raise ValueError(f"Unsupported suite name: {suite_name}")
 
     return build_live_model_eval_adapter(
+        provider_name=entry.provider_name,
         api_key_env=entry.api_key_env,
         base_url=entry.base_url,
         request_path=entry.request_path,

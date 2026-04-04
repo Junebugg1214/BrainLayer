@@ -1,0 +1,32 @@
+{
+  "entries": [
+    {
+      "name": "anthropic-claude-haiku-4.5",
+      "mode": "live",
+      "provider_name": "anthropic_messages",
+      "base_url": "https://api.anthropic.com",
+      "api_key_env": "ANTHROPIC_API_KEY",
+      "request_path": "/v1/messages",
+      "timeout_seconds": 20,
+      "max_output_tokens_field": "none",
+      "model": "claude-haiku-4-5-20251001",
+      "input_cost_per_1k_tokens": 0.001,
+      "output_cost_per_1k_tokens": 0.005,
+      "enabled": true
+    },
+    {
+      "name": "anthropic-claude-sonnet-4.5",
+      "mode": "live",
+      "provider_name": "anthropic_messages",
+      "base_url": "https://api.anthropic.com",
+      "api_key_env": "ANTHROPIC_API_KEY",
+      "request_path": "/v1/messages",
+      "timeout_seconds": 20,
+      "max_output_tokens_field": "none",
+      "model": "claude-sonnet-4-5-20250929",
+      "input_cost_per_1k_tokens": 0.003,
+      "output_cost_per_1k_tokens": 0.015,
+      "enabled": true
+    }
+  ]
+}

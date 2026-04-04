@@ -1907,6 +1907,7 @@ def run_live_natural_eval_suite(
     runtime_profile: str = RUNTIME_PROFILE_DEFAULT,
 ) -> List[NaturalEvalResult]:
     adapter = build_live_model_eval_adapter(
+        provider_name=provider_name,
         api_key_env=api_key_env,
         base_url=base_url,
         request_path=request_path,
@@ -2290,6 +2291,7 @@ def _build_adapter_from_args(args: argparse.Namespace) -> tuple[LLMAdapter, str,
     if max_output_tokens_field is not None and max_output_tokens_field.lower() == "none":
         max_output_tokens_field = None
     adapter = build_live_model_eval_adapter(
+        provider_name=args.provider_name,
         api_key_env=args.api_key_env,
         base_url=args.base_url,
         request_path=args.request_path,

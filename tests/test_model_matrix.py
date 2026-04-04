@@ -54,6 +54,17 @@ class ModelMatrixTests(unittest.TestCase):
         self.assertEqual([entry.name for entry in entries], ["heuristic-baseline", "heuristic-repeat"])
         self.assertTrue(all(entry.mode == "heuristic" for entry in entries))
 
+    def test_load_model_matrix_entries_from_anthropic_config(self) -> None:
+        entries = load_model_matrix_entries(
+            ROOT / "examples" / "model_matrix.anthropic.core.live.json"
+        )
+
+        self.assertEqual(
+            [entry.name for entry in entries],
+            ["anthropic-claude-haiku-4.5", "anthropic-claude-sonnet-4.5"],
+        )
+        self.assertTrue(all(entry.provider_name == "anthropic_messages" for entry in entries))
+
     def test_matrix_runner_combines_both_suites_for_multiple_entries(self) -> None:
         entries = load_model_matrix_entries(ROOT / "examples" / "model_matrix.sample.json")
         results = run_model_matrix(entries, include_ablations=False)
