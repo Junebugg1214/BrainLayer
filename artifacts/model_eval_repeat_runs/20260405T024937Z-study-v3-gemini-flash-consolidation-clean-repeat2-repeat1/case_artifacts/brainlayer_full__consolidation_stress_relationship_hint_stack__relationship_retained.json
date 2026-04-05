@@ -1,0 +1,536 @@
+{
+  "suite_name": "contradiction",
+  "scenario": {
+    "slug": "consolidation_stress_relationship_hint_stack",
+    "title": "Consolidation Stress Relationship Hint Stack",
+    "description": "Can repeated weak relationship hints become durable collaboration framing?",
+    "checkpoint": "relationship_retained",
+    "prompt": "What collaboration mode should define this project right now?",
+    "expected": "research partner"
+  },
+  "judge": {
+    "passed": true,
+    "score": 1.0,
+    "method": "exact_match",
+    "reason": "Expected answer matched after normalized token comparison."
+  },
+  "runtime": {
+    "runtime_name": "brainlayer_full",
+    "eval_mode": "live",
+    "provider_name": "gemini_openai_compatible",
+    "requested_model": "gemini-2.5-flash",
+    "response_model": "gemini-2.5-flash",
+    "finish_reason": "stop",
+    "latency_ms": 1225.1258750000034,
+    "used_json": true,
+    "parse_failure": false,
+    "empty_answer": false,
+    "interaction_episode_id": "episode-18",
+    "usage_metrics": {
+      "completion_tokens": 44.0,
+      "prompt_tokens": 693.0,
+      "total_tokens": 828.0
+    }
+  },
+  "prompt_messages": [
+    {
+      "role": "system",
+      "content": "You are participating in a BrainLayer evaluation. Follow the task literally. If the task begins with 'Record', convert it into the appropriate structured memory_observations entry and keep assistant_response as a short acknowledgement. If the task asks about the current response style, primary goal, collaboration mode, or another stored value, return only the shortest value needed to answer correctly, not a full sentence. Always return valid JSON matching the requested schema."
+    },
+    {
+      "role": "user",
+      "content": "BrainLayer context:\n- [episodes] episode-13: User asked: What collaboration mode should define this project right now? Assistant answered: ```json\n{\n  \"assistant_response\": \"research partner\",\n  \"episodic_summary\": \"User asked about the current collaborati... (tags=interaction, assistant_reply) (score=18.71)\n- [episodes] episode-2: User asked: Record relationship hint: key=collaboration_mode; value=co-investigator; summary=This should feel like co-designing t... Assistant answered: ```json\n{\n  \"assistant_response\": \"Acknowledged.\",\n  \"episodic_summary\": \"Recorded a relationship hint about the coll... (tags=interaction, assistant_reply) (score=9.07)\n- [working_state] working-1: collaboration_mode = research partner. The collaboration mode is research partner. (score=8.72)\n- [autobiographical_state] autobio-1: collaboration_mode = research partner. The collaboration mode is research partner. (themes=relationship, research-mode) (score=7.45)\n- [working_state] working-3: timeline_cleanup_focus = tidy timeline labels. Timeline labels can wait for the later cleanup pass. (score=4.85)\n\nTask:\nWhat collaboration mode should define this project right now?\n\nReturn a JSON object with the following keys:\n- \"assistant_response\": the answer for the user\n- \"episodic_summary\": a short summary worth storing as an episode\n- \"memory_observations\": an optional array of observations to write back to BrainLayer\n\nOnly emit memory observations when the current turn strongly justifies them.\nAllowed memory_type values: preference, correction, lesson, goal, relationship, preference_hint, lesson_hint, goal_hint, relationship_hint, noise.\nRequired payloads:\n- preference/correction: key, value, proposition\n- lesson/lesson_hint: trigger, action, summary\n- goal/goal_hint: key, value, summary\n- relationship/relationship_hint: key, value, summary, themes\n- noise: any small string payload\nEach memory_observations item must include memory_type and a nested payload object.\nDo not place key/value/summary/proposition directly at the top level of a memory observation.\nExample preference observation:\n{\"memory_type\":\"preference\",\"payload\":{\"key\":\"response_style\",\"value\":\"brief\",\"proposition\":\"The user prefers brief replies.\"}}\nExample goal observation:\n{\"memory_type\":\"goal\",\"payload\":{\"key\":\"primary_goal\",\"value\":\"ship eval summary\",\"summary\":\"The current primary goal is to ship the eval summary.\"}}\nIf no memory write is justified, return an empty memory_observations array."
+    }
+  ],
+  "retrieved_memories": [
+    {
+      "layer": "episodes",
+      "record_id": "episode-13",
+      "score": 18.71470588235294,
+      "content": "User asked: What collaboration mode should define this project right now? Assistant answered: ```json\n{\n  \"assistant_response\": \"research partner\",\n  \"episodic_summary\": \"User asked about the current collaborati... (tags=interaction, assistant_reply)"
+    },
+    {
+      "layer": "episodes",
+      "record_id": "episode-2",
+      "score": 9.06764705882353,
+      "content": "User asked: Record relationship hint: key=collaboration_mode; value=co-investigator; summary=This should feel like co-designing t... Assistant answered: ```json\n{\n  \"assistant_response\": \"Acknowledged.\",\n  \"episodic_summary\": \"Recorded a relationship hint about the coll... (tags=interaction, assistant_reply)"
+    },
+    {
+      "layer": "working_state",
+      "record_id": "working-1",
+      "score": 8.716666666666667,
+      "content": "collaboration_mode = research partner. The collaboration mode is research partner."
+    },
+    {
+      "layer": "autobiographical_state",
+      "record_id": "autobio-1",
+      "score": 7.45,
+      "content": "collaboration_mode = research partner. The collaboration mode is research partner. (themes=relationship, research-mode)"
+    },
+    {
+      "layer": "working_state",
+      "record_id": "working-3",
+      "score": 4.85,
+      "content": "timeline_cleanup_focus = tidy timeline labels. Timeline labels can wait for the later cleanup pass."
+    }
+  ],
+  "raw_model_output": "```json\n{\n  \"assistant_response\": \"research partner\",\n  \"episodic_summary\": \"User asked about the current collaboration mode.\",\n  \"memory_observations\": []\n}\n```",
+  "parsed_output": {
+    "assistant_response": "research partner",
+    "episodic_summary": "User asked about the current collaboration mode.",
+    "memory_observations": []
+  },
+  "consolidation_report": {
+    "promoted_belief_keys": [],
+    "promoted_procedure_triggers": [],
+    "updated_working_keys": [
+      "methods_cleanup_focus",
+      "timeline_cleanup_focus"
+    ],
+    "updated_autobio_keys": [
+      "collaboration_mode"
+    ],
+    "forgotten_episode_ids": [],
+    "paused_working_item_ids": []
+  },
+  "exported_state": {
+    "working_state": [
+      {
+        "id": "working-1",
+        "key": "collaboration_mode",
+        "value": "research partner",
+        "content": "The collaboration mode is research partner.",
+        "priority": 1.0,
+        "status": "active",
+        "source_refs": [
+          "episode-1",
+          "episode-7",
+          "autobio-1"
+        ],
+        "updated_at": "2026-04-05T02:48:34+00:00"
+      },
+      {
+        "id": "working-2",
+        "key": "methods_cleanup_focus",
+        "value": "add glossary row",
+        "content": "The methods appendix still needs a glossary row later.",
+        "priority": 0.5,
+        "status": "active",
+        "source_refs": [
+          "episode-5"
+        ],
+        "updated_at": "2026-04-05T02:48:34+00:00"
+      },
+      {
+        "id": "working-3",
+        "key": "timeline_cleanup_focus",
+        "value": "tidy timeline labels",
+        "content": "Timeline labels can wait for the later cleanup pass.",
+        "priority": 0.5,
+        "status": "active",
+        "source_refs": [
+          "episode-11"
+        ],
+        "updated_at": "2026-04-05T02:48:34+00:00"
+      }
+    ],
+    "episodes": [
+      {
+        "id": "episode-1",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "The collaboration mode is research partner.",
+        "tags": [
+          "relationship",
+          "collaboration_mode"
+        ],
+        "metadata": {
+          "key": "collaboration_mode",
+          "value": "research partner",
+          "summary": "The collaboration mode is research partner.",
+          "themes": "relationship,research-mode"
+        },
+        "salience": 0.74,
+        "outcome": "updated relationship framing",
+        "source_refs": [],
+        "timestamp": "2026-04-05T02:48:22+00:00"
+      },
+      {
+        "id": "episode-2",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "User asked: Record relationship hint: key=collaboration_mode; value=co-investigator; summary=This should feel like co-designing t... Assistant answered: ```json\n{\n  \"assistant_response\": \"Acknowledged.\",\n  \"episodic_summary\": \"Recorded a relationship hint about the coll...",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Record relationship hint: key=collaboration_mode; value=co-investigator; summary=This should feel like co-designing the framing, not just closing tickets.; themes=relationship,research-mode",
+          "assistant_response": "```json\n{\n  \"assistant_response\": \"Acknowledged.\",\n  \"episodic_summary\": \"Recorded a relationship hint about the collaboration mode being 'co-investigator', emphasizing co-design over ticket closing, with themes of relationship and resea...",
+          "model": "gemini-2.5-flash",
+          "used_json": "false"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [],
+        "timestamp": "2026-04-05T02:48:22+00:00"
+      },
+      {
+        "id": "episode-3",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "The roadmap appendix still needs a timeline legend.",
+        "tags": [
+          "noise"
+        ],
+        "metadata": {
+          "value": "The roadmap appendix still needs a timeline legend."
+        },
+        "salience": 0.5,
+        "outcome": "ignored",
+        "source_refs": [],
+        "timestamp": "2026-04-05T02:48:24+00:00"
+      },
+      {
+        "id": "episode-4",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "Recorded a 'noise' observation about a missing timeline legend.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Record noise: value=The roadmap appendix still needs a timeline legend.",
+          "assistant_response": "Acknowledged.",
+          "model": "gemini-2.5-flash",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "episode-2",
+          "working-1",
+          "autobio-1",
+          "episode-1"
+        ],
+        "timestamp": "2026-04-05T02:48:24+00:00"
+      },
+      {
+        "id": "episode-5",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "The methods appendix still needs a glossary row later.",
+        "tags": [
+          "goal",
+          "methods_cleanup_focus"
+        ],
+        "metadata": {
+          "key": "methods_cleanup_focus",
+          "value": "add glossary row",
+          "summary": "The methods appendix still needs a glossary row later.",
+          "salience": "0.67"
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T02:48:25+00:00"
+      },
+      {
+        "id": "episode-6",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "Recorded a goal: methods_cleanup_focus = add glossary row.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Record goal: key=methods_cleanup_focus; value=add glossary row; salience=0.67; summary=The methods appendix still needs a glossary row later.",
+          "assistant_response": "Acknowledged.",
+          "model": "gemini-2.5-flash",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "episode-2",
+          "episode-3",
+          "working-1",
+          "autobio-1"
+        ],
+        "timestamp": "2026-04-05T02:48:25+00:00"
+      },
+      {
+        "id": "episode-7",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "We need joint framing and method choices, not a ticket queue handoff.",
+        "tags": [
+          "relationship_hint",
+          "collaboration_mode"
+        ],
+        "metadata": {
+          "key": "collaboration_mode",
+          "value": "research partner",
+          "summary": "We need joint framing and method choices, not a ticket queue handoff.",
+          "themes": "relationship, research-mode"
+        },
+        "salience": 0.5,
+        "outcome": "captured candidate signal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T02:48:26+00:00"
+      },
+      {
+        "id": "episode-8",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "Recorded a relationship hint about the collaboration mode.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Record relationship hint: key=collaboration_mode; value=thought partner; summary=We need joint framing and method choices, not a ticket queue handoff.; themes=relationship,research-mode",
+          "assistant_response": "Acknowledged.",
+          "model": "gemini-2.5-flash",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "episode-2",
+          "autobio-1",
+          "working-1",
+          "episode-1",
+          "working-2"
+        ],
+        "timestamp": "2026-04-05T02:48:26+00:00"
+      },
+      {
+        "id": "episode-9",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "Captured low-salience turn detail.",
+        "tags": [
+          "noise"
+        ],
+        "metadata": {},
+        "salience": 0.5,
+        "outcome": "ignored",
+        "source_refs": [],
+        "timestamp": "2026-04-05T02:48:27+00:00"
+      },
+      {
+        "id": "episode-10",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "The user recorded a noise memory: \"The evidence appendix still needs a provenance column.\"",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Record noise: value=The evidence appendix still needs a provenance column.",
+          "assistant_response": "Acknowledged.",
+          "model": "gemini-2.5-flash",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-2",
+          "episode-3",
+          "episode-5",
+          "working-1",
+          "autobio-1"
+        ],
+        "timestamp": "2026-04-05T02:48:27+00:00"
+      },
+      {
+        "id": "episode-11",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "Timeline labels can wait for the later cleanup pass.",
+        "tags": [
+          "goal",
+          "timeline_cleanup_focus"
+        ],
+        "metadata": {
+          "key": "timeline_cleanup_focus",
+          "value": "tidy timeline labels",
+          "salience": "0.68",
+          "summary": "Timeline labels can wait for the later cleanup pass."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T02:48:29+00:00"
+      },
+      {
+        "id": "episode-12",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "Recorded a new goal for timeline cleanup focus.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Record goal: key=timeline_cleanup_focus; value=tidy timeline labels; salience=0.68; summary=Timeline labels can wait for the later cleanup pass.",
+          "assistant_response": "Acknowledged.",
+          "model": "gemini-2.5-flash",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-2",
+          "episode-5",
+          "episode-2",
+          "working-1",
+          "autobio-1"
+        ],
+        "timestamp": "2026-04-05T02:48:29+00:00"
+      },
+      {
+        "id": "episode-13",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "User asked: What collaboration mode should define this project right now? Assistant answered: ```json\n{\n  \"assistant_response\": \"research partner\",\n  \"episodic_summary\": \"User asked about the current collaborati...",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "What collaboration mode should define this project right now?",
+          "assistant_response": "```json\n{\n  \"assistant_response\": \"research partner\",\n  \"episodic_summary\": \"User asked about the current collaboration mode and was informed it is 'research partner",
+          "model": "gemini-2.5-flash",
+          "used_json": "false"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "episode-2",
+          "working-1",
+          "autobio-1",
+          "episode-8",
+          "working-3"
+        ],
+        "timestamp": "2026-04-05T02:48:30+00:00"
+      },
+      {
+        "id": "episode-14",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "Captured low-salience turn detail.",
+        "tags": [
+          "noise"
+        ],
+        "metadata": {},
+        "salience": 0.5,
+        "outcome": "ignored",
+        "source_refs": [],
+        "timestamp": "2026-04-05T02:48:31+00:00"
+      },
+      {
+        "id": "episode-15",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "The user recorded a noise memory: \"The methods appendix still needs a glossary row.\"",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Record noise: value=The methods appendix still needs a glossary row.",
+          "assistant_response": "Acknowledged.",
+          "model": "gemini-2.5-flash",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-2",
+          "episode-5",
+          "episode-10",
+          "working-1",
+          "autobio-1"
+        ],
+        "timestamp": "2026-04-05T02:48:31+00:00"
+      },
+      {
+        "id": "episode-16",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "When retry_release, check authentication.",
+        "tags": [
+          "lesson_hint",
+          "retry_release"
+        ],
+        "metadata": {
+          "trigger": "retry_release",
+          "action": "check authentication",
+          "summary": "Before kicking the release again, verify auth first."
+        },
+        "salience": 0.5,
+        "outcome": "captured candidate signal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T02:48:33+00:00"
+      },
+      {
+        "id": "episode-17",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "Recorded a lesson hint about verifying auth before retrying a release.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Record lesson hint: trigger=retry_release; action=verify auth first; summary=Before kicking the release again, verify auth first.",
+          "assistant_response": "Acknowledged.",
+          "model": "gemini-2.5-flash",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "episode-2",
+          "working-1",
+          "working-3",
+          "episode-13",
+          "autobio-1"
+        ],
+        "timestamp": "2026-04-05T02:48:33+00:00"
+      },
+      {
+        "id": "episode-18",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "User asked about the current collaboration mode.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "What collaboration mode should define this project right now?",
+          "assistant_response": "research partner",
+          "model": "gemini-2.5-flash",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "episode-13",
+          "episode-2",
+          "working-1",
+          "autobio-1",
+          "working-3"
+        ],
+        "timestamp": "2026-04-05T02:48:34+00:00"
+      }
+    ],
+    "beliefs": [],
+    "autobiographical_state": [
+      {
+        "id": "autobio-1",
+        "key": "collaboration_mode",
+        "value": "research partner",
+        "summary": "The collaboration mode is research partner.",
+        "themes": [
+          "relationship",
+          "research-mode"
+        ],
+        "supporting_ids": [
+          "episode-1",
+          "episode-7"
+        ],
+        "updated_at": "2026-04-05T02:48:34+00:00"
+      }
+    ],
+    "procedures": []
+  }
+}

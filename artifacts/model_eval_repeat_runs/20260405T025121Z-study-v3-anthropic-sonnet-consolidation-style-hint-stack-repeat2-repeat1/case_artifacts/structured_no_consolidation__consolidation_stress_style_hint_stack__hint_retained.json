@@ -1,0 +1,475 @@
+{
+  "suite_name": "contradiction",
+  "scenario": {
+    "slug": "consolidation_stress_style_hint_stack",
+    "title": "Consolidation Stress Style Hint Stack",
+    "description": "Can repeated weak style hints become a durable response-style belief?",
+    "checkpoint": "hint_retained",
+    "prompt": "What response style should you use right now?",
+    "expected": "concise"
+  },
+  "judge": {
+    "passed": false,
+    "score": 0.0,
+    "method": "heuristic_semantic_judge",
+    "reason": "Canonicalized answer did not preserve enough of the expected meaning."
+  },
+  "runtime": {
+    "runtime_name": "structured_no_consolidation",
+    "eval_mode": "live",
+    "provider_name": "anthropic_messages",
+    "requested_model": "claude-sonnet-4-5-20250929",
+    "response_model": "claude-sonnet-4-5-20250929",
+    "finish_reason": "end_turn",
+    "latency_ms": 1177.431332999994,
+    "used_json": true,
+    "parse_failure": false,
+    "empty_answer": false,
+    "interaction_episode_id": "episode-18",
+    "usage_metrics": {
+      "input_tokens": 592.0,
+      "cache_creation_input_tokens": 0.0,
+      "cache_read_input_tokens": 0.0,
+      "output_tokens": 58.0,
+      "prompt_tokens": 592.0,
+      "completion_tokens": 58.0,
+      "total_tokens": 650.0
+    }
+  },
+  "prompt_messages": [
+    {
+      "role": "system",
+      "content": "You are participating in a BrainLayer evaluation. Follow the task literally. If the task begins with 'Record', convert it into the appropriate structured memory_observations entry and keep assistant_response as a short acknowledgement. If the task asks about the current response style, primary goal, collaboration mode, or another stored value, return only the shortest value needed to answer correctly, not a full sentence. Always return valid JSON matching the requested schema."
+    },
+    {
+      "role": "user",
+      "content": "BrainLayer context:\n- [episodes] episode-2: User recorded a preference hint indicating response_style should be 'headline version' rather than a walkthrough. (tags=interaction, assistant_reply) (score=7.27)\n- [episodes] episode-13: User asked about current response style; confirmed 'headline version' based on stored preferences. (tags=interaction, assistant_reply) (score=6.11)\n- [working_state] working-2: figure_caption_focus = trim figure caption spacing. Figure caption spacing can wait for the later polish pass. (score=4.85)\n- [working_state] working-1: timeline_cleanup_focus = tidy timeline labels. Timeline labels still need a later cleanup pass. (score=4.67)\n\nTask:\nWhat response style should you use right now?\n\nReturn a JSON object with the following keys:\n- \"assistant_response\": the answer for the user\n- \"episodic_summary\": a short summary worth storing as an episode\n- \"memory_observations\": an optional array of observations to write back to BrainLayer\n\nOnly emit memory observations when the current turn strongly justifies them.\nAllowed memory_type values: preference, correction, lesson, goal, relationship, preference_hint, lesson_hint, goal_hint, relationship_hint, noise.\nRequired payloads:\n- preference/correction: key, value, proposition\n- lesson/lesson_hint: trigger, action, summary\n- goal/goal_hint: key, value, summary\n- relationship/relationship_hint: key, value, summary, themes\n- noise: any small string payload\nEach memory_observations item must include memory_type and a nested payload object.\nDo not place key/value/summary/proposition directly at the top level of a memory observation.\nExample preference observation:\n{\"memory_type\":\"preference\",\"payload\":{\"key\":\"response_style\",\"value\":\"brief\",\"proposition\":\"The user prefers brief replies.\"}}\nExample goal observation:\n{\"memory_type\":\"goal\",\"payload\":{\"key\":\"primary_goal\",\"value\":\"ship eval summary\",\"summary\":\"The current primary goal is to ship the eval summary.\"}}\nIf no memory write is justified, return an empty memory_observations array."
+    }
+  ],
+  "retrieved_memories": [
+    {
+      "layer": "episodes",
+      "record_id": "episode-2",
+      "score": 7.26764705882353,
+      "content": "User recorded a preference hint indicating response_style should be 'headline version' rather than a walkthrough. (tags=interaction, assistant_reply)"
+    },
+    {
+      "layer": "episodes",
+      "record_id": "episode-13",
+      "score": 6.114705882352941,
+      "content": "User asked about current response style; confirmed 'headline version' based on stored preferences. (tags=interaction, assistant_reply)"
+    },
+    {
+      "layer": "working_state",
+      "record_id": "working-2",
+      "score": 4.85,
+      "content": "figure_caption_focus = trim figure caption spacing. Figure caption spacing can wait for the later polish pass."
+    },
+    {
+      "layer": "working_state",
+      "record_id": "working-1",
+      "score": 4.675,
+      "content": "timeline_cleanup_focus = tidy timeline labels. Timeline labels still need a later cleanup pass."
+    }
+  ],
+  "raw_model_output": "```json\n{\n  \"assistant_response\": \"headline version\",\n  \"episodic_summary\": \"User asked about current response style; confirmed 'headline version' based on stored preferences.\",\n  \"memory_observations\": []\n}\n```",
+  "parsed_output": {
+    "assistant_response": "headline version",
+    "episodic_summary": "User asked about current response style; confirmed 'headline version' based on stored preferences.",
+    "memory_observations": []
+  },
+  "consolidation_report": null,
+  "exported_state": {
+    "working_state": [
+      {
+        "id": "working-1",
+        "key": "timeline_cleanup_focus",
+        "value": "tidy timeline labels",
+        "content": "Timeline labels still need a later cleanup pass.",
+        "priority": 0.5,
+        "status": "active",
+        "source_refs": [
+          "episode-5"
+        ],
+        "updated_at": "2026-04-05T02:50:44+00:00"
+      },
+      {
+        "id": "working-2",
+        "key": "figure_caption_focus",
+        "value": "trim figure caption spacing",
+        "content": "Figure caption spacing can wait for the later polish pass.",
+        "priority": 0.5,
+        "status": "active",
+        "source_refs": [
+          "episode-16"
+        ],
+        "updated_at": "2026-04-05T02:50:58+00:00"
+      }
+    ],
+    "episodes": [
+      {
+        "id": "episode-1",
+        "scenario": "consolidation_stress_style_hint_stack",
+        "summary": "response_style is currently concise.",
+        "tags": [
+          "preference_hint",
+          "response_style"
+        ],
+        "metadata": {
+          "key": "response_style",
+          "value": "concise",
+          "proposition": "This probably wants the headline version instead of a walkthrough."
+        },
+        "salience": 0.5,
+        "outcome": "captured candidate signal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T02:50:39+00:00"
+      },
+      {
+        "id": "episode-2",
+        "scenario": "consolidation_stress_style_hint_stack",
+        "summary": "User recorded a preference hint indicating response_style should be 'headline version' rather than a walkthrough.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Record preference hint: key=response_style; value=headline version; proposition=This probably wants the headline version instead of a walkthrough.",
+          "assistant_response": "Noted.",
+          "model": "claude-sonnet-4-5-20250929",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [],
+        "timestamp": "2026-04-05T02:50:39+00:00"
+      },
+      {
+        "id": "episode-3",
+        "scenario": "consolidation_stress_style_hint_stack",
+        "summary": "The appendix figure labels still need a spacing pass.",
+        "tags": [
+          "noise"
+        ],
+        "metadata": {
+          "value": "The appendix figure labels still need a spacing pass."
+        },
+        "salience": 0.5,
+        "outcome": "ignored",
+        "source_refs": [],
+        "timestamp": "2026-04-05T02:50:41+00:00"
+      },
+      {
+        "id": "episode-4",
+        "scenario": "consolidation_stress_style_hint_stack",
+        "summary": "User recorded a noise observation about appendix figure label spacing.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Record noise: value=The appendix figure labels still need a spacing pass.",
+          "assistant_response": "Noted.",
+          "model": "claude-sonnet-4-5-20250929",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "episode-2",
+          "episode-1"
+        ],
+        "timestamp": "2026-04-05T02:50:41+00:00"
+      },
+      {
+        "id": "episode-5",
+        "scenario": "consolidation_stress_style_hint_stack",
+        "summary": "Timeline labels still need a later cleanup pass.",
+        "tags": [
+          "goal",
+          "timeline_cleanup_focus"
+        ],
+        "metadata": {
+          "key": "timeline_cleanup_focus",
+          "value": "tidy timeline labels",
+          "summary": "Timeline labels still need a later cleanup pass."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T02:50:44+00:00"
+      },
+      {
+        "id": "episode-6",
+        "scenario": "consolidation_stress_style_hint_stack",
+        "summary": "User recorded a goal about timeline label cleanup with salience 0.68.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Record goal: key=timeline_cleanup_focus; value=tidy timeline labels; salience=0.68; summary=Timeline labels still need a later cleanup pass.",
+          "assistant_response": "Recorded.",
+          "model": "claude-sonnet-4-5-20250929",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "episode-3",
+          "episode-4"
+        ],
+        "timestamp": "2026-04-05T02:50:44+00:00"
+      },
+      {
+        "id": "episode-7",
+        "scenario": "consolidation_stress_style_hint_stack",
+        "summary": "response_style is currently concise.",
+        "tags": [
+          "preference_hint",
+          "response_style"
+        ],
+        "metadata": {
+          "key": "response_style",
+          "value": "concise",
+          "proposition": "Keep this skim-friendly and high-signal."
+        },
+        "salience": 0.5,
+        "outcome": "captured candidate signal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T02:50:47+00:00"
+      },
+      {
+        "id": "episode-8",
+        "scenario": "consolidation_stress_style_hint_stack",
+        "summary": "User recorded preference hint: response_style = headline version (skim-friendly, high-signal).",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Record preference hint: key=response_style; value=headline version; proposition=Keep this skim-friendly and high-signal.",
+          "assistant_response": "Noted\u2014keeping it headline version.",
+          "model": "claude-sonnet-4-5-20250929",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "episode-2",
+          "episode-1",
+          "working-1"
+        ],
+        "timestamp": "2026-04-05T02:50:47+00:00"
+      },
+      {
+        "id": "episode-9",
+        "scenario": "consolidation_stress_style_hint_stack",
+        "summary": "The methods appendix still needs a glossary row.",
+        "tags": [
+          "noise"
+        ],
+        "metadata": {
+          "value": "The methods appendix still needs a glossary row."
+        },
+        "salience": 0.5,
+        "outcome": "ignored",
+        "source_refs": [],
+        "timestamp": "2026-04-05T02:50:49+00:00"
+      },
+      {
+        "id": "episode-10",
+        "scenario": "consolidation_stress_style_hint_stack",
+        "summary": "User recorded a noise observation about the methods appendix needing a glossary row.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Record noise: value=The methods appendix still needs a glossary row.",
+          "assistant_response": "Noted.",
+          "model": "claude-sonnet-4-5-20250929",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "episode-3",
+          "working-1",
+          "episode-4"
+        ],
+        "timestamp": "2026-04-05T02:50:49+00:00"
+      },
+      {
+        "id": "episode-11",
+        "scenario": "consolidation_stress_style_hint_stack",
+        "summary": "When retry_release, check authentication.",
+        "tags": [
+          "lesson_hint",
+          "retry_release"
+        ],
+        "metadata": {
+          "trigger": "retry_release",
+          "action": "check authentication",
+          "summary": "Before kicking the release again, verify auth first."
+        },
+        "salience": 0.5,
+        "outcome": "captured candidate signal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T02:50:51+00:00"
+      },
+      {
+        "id": "episode-12",
+        "scenario": "consolidation_stress_style_hint_stack",
+        "summary": "User recorded lesson hint: verify auth before retry_release.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Record lesson hint: trigger=retry_release; action=verify auth first; summary=Before kicking the release again, verify auth first.",
+          "assistant_response": "Recorded: Before retrying release, verify auth first.",
+          "model": "claude-sonnet-4-5-20250929",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-1",
+          "episode-8",
+          "episode-7"
+        ],
+        "timestamp": "2026-04-05T02:50:51+00:00"
+      },
+      {
+        "id": "episode-13",
+        "scenario": "consolidation_stress_style_hint_stack",
+        "summary": "User asked about current response style; confirmed 'headline version' based on stored preferences.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "What response style should you use right now?",
+          "assistant_response": "headline version",
+          "model": "claude-sonnet-4-5-20250929",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "episode-2",
+          "episode-8",
+          "working-1"
+        ],
+        "timestamp": "2026-04-05T02:50:53+00:00"
+      },
+      {
+        "id": "episode-14",
+        "scenario": "consolidation_stress_style_hint_stack",
+        "summary": "The changelog caption should keep title case.",
+        "tags": [
+          "noise"
+        ],
+        "metadata": {
+          "value": "The changelog caption should keep title case."
+        },
+        "salience": 0.5,
+        "outcome": "ignored",
+        "source_refs": [],
+        "timestamp": "2026-04-05T02:50:55+00:00"
+      },
+      {
+        "id": "episode-15",
+        "scenario": "consolidation_stress_style_hint_stack",
+        "summary": "User recorded a noise observation about the changelog caption needing to keep title case.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Record noise: value=The changelog caption should keep title case.",
+          "assistant_response": "Noted.",
+          "model": "claude-sonnet-4-5-20250929",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-1",
+          "episode-10",
+          "episode-9"
+        ],
+        "timestamp": "2026-04-05T02:50:55+00:00"
+      },
+      {
+        "id": "episode-16",
+        "scenario": "consolidation_stress_style_hint_stack",
+        "summary": "Figure caption spacing can wait for the later polish pass.",
+        "tags": [
+          "goal",
+          "figure_caption_focus"
+        ],
+        "metadata": {
+          "key": "figure_caption_focus",
+          "value": "trim figure caption spacing",
+          "summary": "Figure caption spacing can wait for the later polish pass."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T02:50:58+00:00"
+      },
+      {
+        "id": "episode-17",
+        "scenario": "consolidation_stress_style_hint_stack",
+        "summary": "User recorded a goal about figure caption spacing with salience 0.67.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Record goal: key=figure_caption_focus; value=trim figure caption spacing; salience=0.67; summary=Figure caption spacing can wait for the later polish pass.",
+          "assistant_response": "Recorded: figure caption spacing can wait for the later polish pass.",
+          "model": "claude-sonnet-4-5-20250929",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-1",
+          "episode-5",
+          "episode-6"
+        ],
+        "timestamp": "2026-04-05T02:50:58+00:00"
+      },
+      {
+        "id": "episode-18",
+        "scenario": "consolidation_stress_style_hint_stack",
+        "summary": "User asked about current response style; confirmed 'headline version' based on stored preferences.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "What response style should you use right now?",
+          "assistant_response": "headline version",
+          "model": "claude-sonnet-4-5-20250929",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "episode-2",
+          "episode-13",
+          "working-2",
+          "working-1"
+        ],
+        "timestamp": "2026-04-05T02:51:00+00:00"
+      }
+    ],
+    "beliefs": [],
+    "autobiographical_state": [],
+    "procedures": []
+  }
+}
