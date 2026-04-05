@@ -1,0 +1,12 @@
+[
+  {
+    "repeat_index": 1,
+    "label": "study-v3-anthropic-sonnet-forgetting-spot-clean-repeat1",
+    "status": "timeout",
+    "duration_seconds": 180.185897708,
+    "exit_code": -15,
+    "timed_out": true,
+    "log_path": "artifacts/natural_eval_repeat_runs/logs/study-v3-anthropic-sonnet-forgetting-spot-clean-repeat1.log",
+    "run_dir": ""
+  }
+]

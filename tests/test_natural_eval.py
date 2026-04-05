@@ -155,6 +155,24 @@ class NaturalEvalTests(unittest.TestCase):
         self.assertEqual(len(model_loop_results), 8)
         self.assertTrue(all(result.passed for result in model_loop_results))
 
+    def test_natural_eval_filters_runtime_names_and_scenario_slugs(self) -> None:
+        results = run_natural_eval_suite(
+            include_ablations=True,
+            scenario_pack="forgetting_stress",
+            runtime_profile=RUNTIME_PROFILE_STUDY_V2,
+            scenario_slugs=["forgetting_stress_natural_report_goal_crowding"],
+            runtime_names=["brainlayer_full", "brainlayer_no_forgetting"],
+        )
+
+        self.assertEqual(
+            {result.scenario_slug for result in results},
+            {"forgetting_stress_natural_report_goal_crowding"},
+        )
+        self.assertEqual(
+            {result.runtime_name for result in results},
+            {"brainlayer_full", "brainlayer_no_forgetting"},
+        )
+
     def test_study_v2_runtime_profile_exposes_stronger_baselines(self) -> None:
         results = run_natural_eval_suite(
             include_ablations=False,

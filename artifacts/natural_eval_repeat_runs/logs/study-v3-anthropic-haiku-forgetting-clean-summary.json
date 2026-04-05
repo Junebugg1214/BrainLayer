@@ -1,0 +1,12 @@
+[
+  {
+    "repeat_index": 1,
+    "label": "study-v3-anthropic-haiku-forgetting-clean-repeat1",
+    "status": "completed",
+    "duration_seconds": 218.2959205,
+    "exit_code": 0,
+    "timed_out": false,
+    "log_path": "artifacts/natural_eval_repeat_runs/logs/study-v3-anthropic-haiku-forgetting-clean-repeat1.log",
+    "run_dir": "artifacts/natural_eval_repeat_runs/20260405T004441Z-study-v3-anthropic-haiku-forgetting-clean-repeat1"
+  }
+]

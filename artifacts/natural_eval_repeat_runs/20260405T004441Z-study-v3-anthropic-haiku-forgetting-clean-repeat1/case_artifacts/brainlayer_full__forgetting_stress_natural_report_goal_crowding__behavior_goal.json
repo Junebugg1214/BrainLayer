@@ -1,0 +1,532 @@
+{
+  "suite_name": "natural",
+  "scenario": {
+    "slug": "forgetting_stress_natural_report_goal_crowding",
+    "title": "Forgetting Stress Natural Report Goal Crowding",
+    "description": "Can forgetting preserve the active report goal under stale natural-language clutter?",
+    "checkpoint": "behavior_goal",
+    "prompt": "What is the main goal right now?",
+    "expected": "ship eval report",
+    "evaluation_type": "behavior",
+    "target_layer": "",
+    "target_key": ""
+  },
+  "judge": {
+    "passed": true,
+    "score": 1.0,
+    "method": "heuristic_semantic_judge",
+    "reason": "Canonicalized answer preserved the expected meaning."
+  },
+  "runtime": {
+    "runtime_name": "brainlayer_full",
+    "eval_mode": "live",
+    "provider_name": "anthropic_messages",
+    "requested_model": "claude-haiku-4-5-20251001",
+    "response_model": "claude-haiku-4-5-20251001",
+    "finish_reason": "end_turn",
+    "latency_ms": 1181.5852499999978,
+    "used_json": true,
+    "parse_failure": false,
+    "empty_answer": false,
+    "interaction_episode_id": "episode-17",
+    "usage_metrics": {
+      "input_tokens": 898.0,
+      "cache_creation_input_tokens": 0.0,
+      "cache_read_input_tokens": 0.0,
+      "output_tokens": 85.0,
+      "prompt_tokens": 898.0,
+      "completion_tokens": 85.0,
+      "total_tokens": 983.0
+    }
+  },
+  "prompt_messages": [
+    {
+      "role": "system",
+      "content": "You are participating in a BrainLayer natural-conversation evaluation. When a normal user utterance reveals a stable preference, active goal, relationship framing, or reusable lesson, infer the appropriate structured memory_observations entry. Use BrainLayer's canonical memory keys instead of inventing synonyms. Response brevity, verbosity, or detail should use key=response_style, not response_length or tone. Current task objectives should use key=primary_goal, not citation_integrity or delivery_priority. Collaboration framing should use key=collaboration_mode. Reusable release-retry lessons should use trigger=retry_release and action=check authentication when that is the implied lesson. If the user says to keep answers brief, concise, short, or detailed, store that as a preference or correction on response_style. If the user says the main thing is preserving citations or shipping a report, store that as a goal on primary_goal, not as a preference. If the user asks for thinking together like a partner, store that as relationship framing on collaboration_mode. Use preference_hint or lesson_hint only when the signal is indirect or weak; use preference, goal, relationship, or lesson when the instruction is explicit. When the user simply asks for a value like the current response style or goal, return only the shortest value needed to answer correctly. Always return valid JSON."
+    },
+    {
+      "role": "user",
+      "content": "BrainLayer context:\n- [working_state] working-1: primary_goal = ship eval report. Primary goal is to ship the eval report; secondary polish tasks like figure caption spacing are deferred until after delivery. (score=6.89)\n- [episodes] episode-6: Sidebar legend is a secondary cleanup task to be addressed after main document refinement passes are complete. (tags=goal, task_queue) (score=5.67)\n- [episodes] episode-4: Timeline labels are a secondary cleanup task to be addressed after the main document refinement passes are complete. (tags=goal, task_queue) (score=5.55)\n- [working_state] working-4: deferred_refinements = evidence table signoff row, caption table lock, timeline label cleanup. Secondary polish tasks queued for after eval report delivery: evidence table signoff row, caption table lock, and timeline label cleanup. (score=4.85)\n- [procedures] procedure-1: When external_deadline_acceleration, deprioritize secondary tasks and focus on primary deliverable. When external constraints (funder timelines) shift, reprioritize the task queue immediately and defer non-critical refinement work. (confidence=0.50) (score=3.45)\n\nTask:\nWhat is the main goal right now?\n\nReturn a JSON object with the following keys:\n- \"assistant_response\": the answer for the user\n- \"episodic_summary\": a short summary worth storing as an episode\n- \"memory_observations\": an optional array of observations to write back to BrainLayer\n\nOnly emit memory observations when the current turn strongly justifies them.\nAllowed memory_type values: preference, correction, lesson, goal, relationship, preference_hint, lesson_hint, goal_hint, relationship_hint, noise.\nRequired payloads:\n- preference/correction: key, value, proposition\n- lesson/lesson_hint: trigger, action, summary\n- goal/goal_hint: key, value, summary\n- relationship/relationship_hint: key, value, summary, themes\n- noise: any small string payload\nEach memory_observations item must include memory_type and a nested payload object.\nDo not place key/value/summary/proposition directly at the top level of a memory observation.\nExample preference observation:\n{\"memory_type\":\"preference\",\"payload\":{\"key\":\"response_style\",\"value\":\"brief\",\"proposition\":\"The user prefers brief replies.\"}}\nExample goal observation:\n{\"memory_type\":\"goal\",\"payload\":{\"key\":\"primary_goal\",\"value\":\"ship eval summary\",\"summary\":\"The current primary goal is to ship the eval summary.\"}}\nIf no memory write is justified, return an empty memory_observations array."
+    }
+  ],
+  "retrieved_memories": [
+    {
+      "layer": "working_state",
+      "record_id": "working-1",
+      "score": 6.887499999999999,
+      "content": "primary_goal = ship eval report. Primary goal is to ship the eval report; secondary polish tasks like figure caption spacing are deferred until after delivery."
+    },
+    {
+      "layer": "episodes",
+      "record_id": "episode-6",
+      "score": 5.675,
+      "content": "Sidebar legend is a secondary cleanup task to be addressed after main document refinement passes are complete. (tags=goal, task_queue)"
+    },
+    {
+      "layer": "episodes",
+      "record_id": "episode-4",
+      "score": 5.55,
+      "content": "Timeline labels are a secondary cleanup task to be addressed after the main document refinement passes are complete. (tags=goal, task_queue)"
+    },
+    {
+      "layer": "working_state",
+      "record_id": "working-4",
+      "score": 4.85,
+      "content": "deferred_refinements = evidence table signoff row, caption table lock, timeline label cleanup. Secondary polish tasks queued for after eval report delivery: evidence table signoff row, caption table lock, and timeline label cleanup."
+    },
+    {
+      "layer": "procedures",
+      "record_id": "procedure-1",
+      "score": 3.45,
+      "content": "When external_deadline_acceleration, deprioritize secondary tasks and focus on primary deliverable. When external constraints (funder timelines) shift, reprioritize the task queue immediately and defer non-critical refinement work. (confidence=0.50)"
+    }
+  ],
+  "raw_model_output": "```json\n{\n  \"assistant_response\": \"Ship the eval report.\",\n  \"episodic_summary\": \"User asked for current primary goal. The main objective is to ship the eval report; secondary polish tasks (figure captions, sidebar legend, timeline labels, evidence table signoff) are deferred until after delivery.\",\n  \"memory_observations\": []\n}\n```",
+  "parsed_output": {
+    "assistant_response": "Ship the eval report.",
+    "episodic_summary": "User asked for current primary goal. The main objective is to ship the eval report; secondary polish tasks (figure captions, sidebar legend, timeline labels, evidence table signoff) are deferred until after delivery.",
+    "memory_observations": []
+  },
+  "consolidation_report": {
+    "promoted_belief_keys": [],
+    "promoted_procedure_triggers": [
+      "external_deadline_acceleration"
+    ],
+    "updated_working_keys": [
+      "primary_goal",
+      "task_queue",
+      "deferred_refinements"
+    ],
+    "updated_autobio_keys": [],
+    "forgotten_episode_ids": [],
+    "paused_working_item_ids": []
+  },
+  "exported_state": {
+    "working_state": [
+      {
+        "id": "working-1",
+        "key": "primary_goal",
+        "value": "ship eval report",
+        "content": "Primary goal is to ship the eval report; secondary polish tasks like figure caption spacing are deferred until after delivery.",
+        "priority": 1.0,
+        "status": "active",
+        "source_refs": [
+          "episode-8",
+          "episode-13"
+        ],
+        "updated_at": "2026-04-05T00:43:09+00:00"
+      },
+      {
+        "id": "working-2",
+        "key": "task_queue",
+        "value": "footer label alignment (deferred)",
+        "content": "Footer label alignment is a secondary polish task deferred until after the eval report ships.",
+        "priority": 0.5,
+        "status": "active",
+        "source_refs": [
+          "episode-11"
+        ],
+        "updated_at": "2026-04-05T00:43:09+00:00"
+      },
+      {
+        "id": "working-3",
+        "key": "procedure:external_deadline_acceleration",
+        "value": "deprioritize secondary tasks and focus on primary deliverable",
+        "content": "When external_deadline_acceleration, deprioritize secondary tasks and focus on primary deliverable",
+        "priority": 0.5,
+        "status": "active",
+        "source_refs": [
+          "episode-9",
+          "procedure-1"
+        ],
+        "updated_at": "2026-04-05T00:43:02+00:00"
+      },
+      {
+        "id": "working-4",
+        "key": "deferred_refinements",
+        "value": "evidence table signoff row, caption table lock, timeline label cleanup",
+        "content": "Secondary polish tasks queued for after eval report delivery: evidence table signoff row, caption table lock, and timeline label cleanup.",
+        "priority": 0.5,
+        "status": "active",
+        "source_refs": [
+          "episode-15"
+        ],
+        "updated_at": "2026-04-05T00:43:09+00:00"
+      }
+    ],
+    "episodes": [
+      {
+        "id": "episode-1",
+        "scenario": "forgetting_stress_natural_report_goal_crowding",
+        "summary": "User flagged a task for later: lock the caption table in the appendix.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Parking lot for later: lock the caption table in the appendix.",
+          "assistant_response": "Noted. Caption table in appendix will be locked.",
+          "model": "claude-haiku-4-5-20251001",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [],
+        "timestamp": "2026-04-05T00:42:49+00:00"
+      },
+      {
+        "id": "episode-2",
+        "scenario": "forgetting_stress_natural_report_goal_crowding",
+        "summary": "User is working through a structured cleanup workflow with multiple passes (caption table lock, glossary tightening). These are sequential refinement tasks.",
+        "tags": [
+          "goal",
+          "primary_goal"
+        ],
+        "metadata": {
+          "key": "primary_goal",
+          "value": "document cleanup and refinement",
+          "summary": "User is working through a structured cleanup workflow with multiple passes (caption table lock, glossary tightening). These are sequential refinement tasks."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T00:42:56+00:00"
+      },
+      {
+        "id": "episode-3",
+        "scenario": "forgetting_stress_natural_report_goal_crowding",
+        "summary": "User flagged a second cleanup item: tighten the glossary bullets during the glossary pass. (tags=interaction, task_queue) (score=6.35)",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Another later cleanup item: tighten the glossary bullets in the glossary pass.",
+          "assistant_response": "Got it. I've noted the glossary tightening task for the glossary pass. This joins the caption table lock from earlier\u2014both are queued for their respective cleanup phases.",
+          "model": "claude-haiku-4-5-20251001",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "episode-1"
+        ],
+        "timestamp": "2026-04-05T00:42:56+00:00"
+      },
+      {
+        "id": "episode-4",
+        "scenario": "forgetting_stress_natural_report_goal_crowding",
+        "summary": "Timeline labels are a secondary cleanup task to be addressed after the main document refinement passes are complete.",
+        "tags": [
+          "goal",
+          "task_queue"
+        ],
+        "metadata": {
+          "key": "task_queue",
+          "value": "timeline labels cleanup (deferred)",
+          "summary": "Timeline labels are a secondary cleanup task to be addressed after the main document refinement passes are complete."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T00:42:58+00:00"
+      },
+      {
+        "id": "episode-5",
+        "scenario": "forgetting_stress_natural_report_goal_crowding",
+        "summary": "User deferred timeline label cleanup to after the primary refinement workflow. This is a secondary task queued for later.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "The timeline labels can wait until after the main task, but they will need cleanup.",
+          "assistant_response": "Understood. Timeline labels are deferred\u2014they'll be a cleanup task after you complete the main document refinement passes (caption table lock and glossary tightening). I'll track that as a follow-up item.",
+          "model": "claude-haiku-4-5-20251001",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-1",
+          "episode-3",
+          "episode-2"
+        ],
+        "timestamp": "2026-04-05T00:42:58+00:00"
+      },
+      {
+        "id": "episode-6",
+        "scenario": "forgetting_stress_natural_report_goal_crowding",
+        "summary": "Sidebar legend is a secondary cleanup task to be addressed after main document refinement passes are complete.",
+        "tags": [
+          "goal",
+          "task_queue"
+        ],
+        "metadata": {
+          "key": "task_queue",
+          "value": "sidebar legend cleanup (deferred)",
+          "summary": "Sidebar legend is a secondary cleanup task to be addressed after main document refinement passes are complete."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T00:42:59+00:00"
+      },
+      {
+        "id": "episode-7",
+        "scenario": "forgetting_stress_natural_report_goal_crowding",
+        "summary": "User confirmed that sidebar legend cleanup is deferred until after primary refinement workflow. Secondary task acknowledged and sequenced.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "The sidebar legend can wait until after the main task, but it will need cleanup.",
+          "assistant_response": "Understood. The sidebar legend is queued as a secondary cleanup task after the main document refinement passes are complete.",
+          "model": "claude-haiku-4-5-20251001",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-2",
+          "episode-4",
+          "episode-5",
+          "working-1"
+        ],
+        "timestamp": "2026-04-05T00:42:59+00:00"
+      },
+      {
+        "id": "episode-8",
+        "scenario": "forgetting_stress_natural_report_goal_crowding",
+        "summary": "The immediate priority is shipping the eval report tonight due to funder packet timeline acceleration. All secondary refinement tasks are deferred.",
+        "tags": [
+          "goal",
+          "primary_goal"
+        ],
+        "metadata": {
+          "key": "primary_goal",
+          "value": "ship eval report",
+          "summary": "The immediate priority is shipping the eval report tonight due to funder packet timeline acceleration. All secondary refinement tasks are deferred."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T00:43:02+00:00"
+      },
+      {
+        "id": "episode-9",
+        "scenario": "forgetting_stress_natural_report_goal_crowding",
+        "summary": "When external_deadline_acceleration, deprioritize secondary tasks and focus on primary deliverable.",
+        "tags": [
+          "lesson",
+          "external_deadline_acceleration"
+        ],
+        "metadata": {
+          "trigger": "external_deadline_acceleration",
+          "action": "deprioritize secondary tasks and focus on primary deliverable",
+          "summary": "When external constraints (funder timelines) shift, reprioritize the task queue immediately and defer non-critical refinement work."
+        },
+        "salience": 0.5,
+        "outcome": "failure lesson",
+        "source_refs": [],
+        "timestamp": "2026-04-05T00:43:02+00:00"
+      },
+      {
+        "id": "episode-10",
+        "scenario": "forgetting_stress_natural_report_goal_crowding",
+        "summary": "User signaled urgent priority shift: funder packet moved up, eval report must ship tonight. Sidebar legend cleanup and other secondary tasks are now deferred. Primary focus is report delivery.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "The funder packet moved up, and right now the only thing that matters is shipping the eval report tonight.",
+          "assistant_response": "Understood. The eval report is now the priority\u2014shipping tonight. I'm deprioritizing the sidebar legend cleanup and any other secondary refinement tasks. What do you need from me to get the report ready to ship?",
+          "model": "claude-haiku-4-5-20251001",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-2",
+          "working-1",
+          "episode-7",
+          "episode-6"
+        ],
+        "timestamp": "2026-04-05T00:43:02+00:00"
+      },
+      {
+        "id": "episode-11",
+        "scenario": "forgetting_stress_natural_report_goal_crowding",
+        "summary": "Footer label alignment is a secondary polish task deferred until after the eval report ships.",
+        "tags": [
+          "goal",
+          "task_queue"
+        ],
+        "metadata": {
+          "key": "task_queue",
+          "value": "footer label alignment (deferred)",
+          "summary": "Footer label alignment is a secondary polish task deferred until after the eval report ships."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T00:43:04+00:00"
+      },
+      {
+        "id": "episode-12",
+        "scenario": "forgetting_stress_natural_report_goal_crowding",
+        "summary": "User deferred footer label alignment to post-delivery phase. Footer labels are a secondary refinement task to be completed after the main eval report is shipped, as part of final packet polish.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Later, once the main task is done, align the footer labels for packet polish.",
+          "assistant_response": "Understood. Footer label alignment is noted as a post-delivery polish task. Once the eval report ships, footer labels will be aligned as part of the packet polish phase.",
+          "model": "claude-haiku-4-5-20251001",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-2",
+          "episode-4",
+          "working-1",
+          "episode-6",
+          "procedure-1"
+        ],
+        "timestamp": "2026-04-05T00:43:04+00:00"
+      },
+      {
+        "id": "episode-13",
+        "scenario": "forgetting_stress_natural_report_goal_crowding",
+        "summary": "Primary goal is to ship the eval report; secondary polish tasks like figure caption spacing are deferred until after delivery.",
+        "tags": [
+          "goal",
+          "primary_goal"
+        ],
+        "metadata": {
+          "key": "primary_goal",
+          "value": "ship eval report",
+          "summary": "Primary goal is to ship the eval report; secondary polish tasks like figure caption spacing are deferred until after delivery."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T00:43:06+00:00"
+      },
+      {
+        "id": "episode-14",
+        "scenario": "forgetting_stress_natural_report_goal_crowding",
+        "summary": "User deferred figure caption spacing to post-delivery polish phase, consistent with secondary refinement tasks being completed after primary deliverable ships.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Later, figure caption spacing can get a polish pass.",
+          "assistant_response": "Noted. Figure caption spacing will get a polish pass after the eval report ships.",
+          "model": "claude-haiku-4-5-20251001",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-2",
+          "episode-1",
+          "working-3",
+          "episode-12",
+          "procedure-1"
+        ],
+        "timestamp": "2026-04-05T00:43:06+00:00"
+      },
+      {
+        "id": "episode-15",
+        "scenario": "forgetting_stress_natural_report_goal_crowding",
+        "summary": "Secondary polish tasks queued for after eval report delivery: evidence table signoff row, caption table lock, and timeline label cleanup.",
+        "tags": [
+          "goal",
+          "deferred_refinements"
+        ],
+        "metadata": {
+          "key": "deferred_refinements",
+          "value": "evidence table signoff row, caption table lock, timeline label cleanup",
+          "summary": "Secondary polish tasks queued for after eval report delivery: evidence table signoff row, caption table lock, and timeline label cleanup."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T00:43:08+00:00"
+      },
+      {
+        "id": "episode-16",
+        "scenario": "forgetting_stress_natural_report_goal_crowding",
+        "summary": "User flagged that the evidence table still needs a signoff row. This is a secondary refinement task, deferred pending primary report delivery.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Later, the evidence table still needs a signoff row.",
+          "assistant_response": "Understood. The evidence table needs a signoff row added. Given that shipping the eval report is the primary goal, I'll queue this as a secondary refinement task to complete after the main deliverable is finalized, consistent with your c...",
+          "model": "claude-haiku-4-5-20251001",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "episode-1",
+          "working-1",
+          "working-3",
+          "episode-5",
+          "procedure-1"
+        ],
+        "timestamp": "2026-04-05T00:43:08+00:00"
+      },
+      {
+        "id": "episode-17",
+        "scenario": "forgetting_stress_natural_report_goal_crowding",
+        "summary": "User asked for current primary goal. The main objective is to ship the eval report; secondary polish tasks (figure captions, sidebar legend, timeline labels, evidence table signoff) are deferred until after delivery.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "What is the main goal right now?",
+          "assistant_response": "Ship the eval report.",
+          "model": "claude-haiku-4-5-20251001",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-1",
+          "episode-6",
+          "episode-4",
+          "working-4",
+          "procedure-1"
+        ],
+        "timestamp": "2026-04-05T00:43:09+00:00"
+      }
+    ],
+    "beliefs": [],
+    "autobiographical_state": [],
+    "procedures": [
+      {
+        "id": "procedure-1",
+        "trigger": "external_deadline_acceleration",
+        "summary": "When external constraints (funder timelines) shift, reprioritize the task queue immediately and defer non-critical refinement work.",
+        "steps": [
+          "deprioritize secondary tasks and focus on primary deliverable"
+        ],
+        "confidence": 0.5,
+        "derived_from": [
+          "episode-9"
+        ],
+        "updated_at": "2026-04-05T00:43:09+00:00"
+      }
+    ]
+  }
+}

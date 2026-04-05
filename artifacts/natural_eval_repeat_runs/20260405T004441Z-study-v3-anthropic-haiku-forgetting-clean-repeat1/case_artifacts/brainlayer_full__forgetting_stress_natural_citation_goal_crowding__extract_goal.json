@@ -1,0 +1,301 @@
+{
+  "suite_name": "natural",
+  "scenario": {
+    "slug": "forgetting_stress_natural_citation_goal_crowding",
+    "title": "Forgetting Stress Natural Citation Goal Crowding",
+    "description": "Can forgetting keep stale natural-language goal clutter from crowding out the true current goal?",
+    "checkpoint": "extract_goal",
+    "prompt": "Right now the only thing I care about is preserving citations.",
+    "expected": "preserve citations",
+    "evaluation_type": "extraction",
+    "target_layer": "working_state",
+    "target_key": "primary_goal"
+  },
+  "judge": {
+    "passed": true,
+    "score": 1.0,
+    "method": "structural_exact_match",
+    "reason": "Stored working_state:primary_goal matched the expected value after normalized comparison."
+  },
+  "runtime": {
+    "runtime_name": "brainlayer_full",
+    "eval_mode": "live",
+    "provider_name": "anthropic_messages",
+    "requested_model": "claude-haiku-4-5-20251001",
+    "response_model": "claude-haiku-4-5-20251001",
+    "finish_reason": "end_turn",
+    "latency_ms": 2455.3600830000005,
+    "used_json": true,
+    "parse_failure": false,
+    "empty_answer": false,
+    "interaction_episode_id": "episode-9",
+    "usage_metrics": {
+      "input_tokens": 826.0,
+      "cache_creation_input_tokens": 0.0,
+      "cache_read_input_tokens": 0.0,
+      "output_tokens": 202.0,
+      "prompt_tokens": 826.0,
+      "completion_tokens": 202.0,
+      "total_tokens": 1028.0
+    }
+  },
+  "prompt_messages": [
+    {
+      "role": "system",
+      "content": "You are participating in a BrainLayer natural-conversation evaluation. When a normal user utterance reveals a stable preference, active goal, relationship framing, or reusable lesson, infer the appropriate structured memory_observations entry. Use BrainLayer's canonical memory keys instead of inventing synonyms. Response brevity, verbosity, or detail should use key=response_style, not response_length or tone. Current task objectives should use key=primary_goal, not citation_integrity or delivery_priority. Collaboration framing should use key=collaboration_mode. Reusable release-retry lessons should use trigger=retry_release and action=check authentication when that is the implied lesson. If the user says to keep answers brief, concise, short, or detailed, store that as a preference or correction on response_style. If the user says the main thing is preserving citations or shipping a report, store that as a goal on primary_goal, not as a preference. If the user asks for thinking together like a partner, store that as relationship framing on collaboration_mode. Use preference_hint or lesson_hint only when the signal is indirect or weak; use preference, goal, relationship, or lesson when the instruction is explicit. When the user simply asks for a value like the current response style or goal, return only the shortest value needed to answer correctly. Always return valid JSON."
+    },
+    {
+      "role": "user",
+      "content": "BrainLayer context:\n- [working_state] working-1: primary_goal = document cleanup and refinement (multi-pass: captions, glossary, timeline labels, sidebar legend). User is executing a structured multi-pass cleanup workflow with deferred secondary and tertiary tasks. Sidebar legend cleanup is queued after timeline labels. (score=4.85)\n- [episodes] episode-7: User confirmed sidebar legend cleanup is deferred to after primary and secondary refinement tasks. Cleanup priority: (1) caption table lock & glossary, (2) timeline labels, (3) sidebar legend. (tags=interaction, assistant_reply) (score=2.75)\n- [episodes] episode-6: User is executing a structured multi-pass cleanup workflow with deferred secondary and tertiary tasks. Sidebar legend cleanup is queued after timeline labels. (tags=goal, primary_goal) (score=2.56)\n\nTask:\nRight now the only thing I care about is preserving citations.\n\nReturn a JSON object with the following keys:\n- \"assistant_response\": the answer for the user\n- \"episodic_summary\": a short summary worth storing as an episode\n- \"memory_observations\": an optional array of observations to write back to BrainLayer\n\nOnly emit memory observations when the current turn strongly justifies them.\nAllowed memory_type values: preference, correction, lesson, goal, relationship, preference_hint, lesson_hint, goal_hint, relationship_hint, noise.\nRequired payloads:\n- preference/correction: key, value, proposition\n- lesson/lesson_hint: trigger, action, summary\n- goal/goal_hint: key, value, summary\n- relationship/relationship_hint: key, value, summary, themes\n- noise: any small string payload\nEach memory_observations item must include memory_type and a nested payload object.\nDo not place key/value/summary/proposition directly at the top level of a memory observation.\nExample preference observation:\n{\"memory_type\":\"preference\",\"payload\":{\"key\":\"response_style\",\"value\":\"brief\",\"proposition\":\"The user prefers brief replies.\"}}\nExample goal observation:\n{\"memory_type\":\"goal\",\"payload\":{\"key\":\"primary_goal\",\"value\":\"ship eval summary\",\"summary\":\"The current primary goal is to ship the eval summary.\"}}\nIf no memory write is justified, return an empty memory_observations array."
+    }
+  ],
+  "retrieved_memories": [
+    {
+      "layer": "working_state",
+      "record_id": "working-1",
+      "score": 4.85,
+      "content": "primary_goal = document cleanup and refinement (multi-pass: captions, glossary, timeline labels, sidebar legend). User is executing a structured multi-pass cleanup workflow with deferred secondary and tertiary tasks. Sidebar legend cleanup is queued after timeline labels."
+    },
+    {
+      "layer": "episodes",
+      "record_id": "episode-7",
+      "score": 2.75,
+      "content": "User confirmed sidebar legend cleanup is deferred to after primary and secondary refinement tasks. Cleanup priority: (1) caption table lock & glossary, (2) timeline labels, (3) sidebar legend. (tags=interaction, assistant_reply)"
+    },
+    {
+      "layer": "episodes",
+      "record_id": "episode-6",
+      "score": 2.557142857142857,
+      "content": "User is executing a structured multi-pass cleanup workflow with deferred secondary and tertiary tasks. Sidebar legend cleanup is queued after timeline labels. (tags=goal, primary_goal)"
+    }
+  ],
+  "raw_model_output": "```json\n{\n  \"assistant_response\": \"Understood. Preserving citations is now your primary focus. I'll prioritize citation integrity across all cleanup passes\u2014captions, glossary, timeline labels, and sidebar legend. Each refinement will verify that sources are complete and accurate before moving forward.\",\n  \"episodic_summary\": \"User shifted primary goal from multi-pass document cleanup workflow to citation preservation as the sole priority. This overrides the previous deferred-task sequencing.\",\n  \"memory_observations\": [\n    {\n      \"memory_type\": \"goal\",\n      \"payload\": {\n        \"key\": \"primary_goal\",\n        \"value\": \"preserve citations\",\n        \"summary\": \"User's current primary goal is preserving citations across all document refinement tasks. This takes precedence over the previous multi-pass cleanup workflow.\"\n      }\n    }\n  ]\n}\n```",
+  "parsed_output": {
+    "assistant_response": "Understood. Preserving citations is now your primary focus. I'll prioritize citation integrity across all cleanup passes\u2014captions, glossary, timeline labels, and sidebar legend. Each refinement will verify that sources are complete and accurate before moving forward.",
+    "episodic_summary": "User shifted primary goal from multi-pass document cleanup workflow to citation preservation as the sole priority. This overrides the previous deferred-task sequencing.",
+    "memory_observations": [
+      {
+        "text": "User's current primary goal is preserving citations across all document refinement tasks. This takes precedence over the previous multi-pass cleanup workflow.",
+        "memory_type": "goal",
+        "payload": {
+          "key": "primary_goal",
+          "value": "preserve citations",
+          "summary": "User's current primary goal is preserving citations across all document refinement tasks. This takes precedence over the previous multi-pass cleanup workflow."
+        },
+        "salience": 0.5
+      }
+    ]
+  },
+  "consolidation_report": {
+    "promoted_belief_keys": [],
+    "promoted_procedure_triggers": [],
+    "updated_working_keys": [
+      "primary_goal"
+    ],
+    "updated_autobio_keys": [],
+    "forgotten_episode_ids": [],
+    "paused_working_item_ids": []
+  },
+  "exported_state": {
+    "working_state": [
+      {
+        "id": "working-1",
+        "key": "primary_goal",
+        "value": "preserve citations",
+        "content": "User's current primary goal is preserving citations across all document refinement tasks. This takes precedence over the previous multi-pass cleanup workflow.",
+        "priority": 0.5,
+        "status": "active",
+        "source_refs": [
+          "episode-8"
+        ],
+        "updated_at": "2026-04-05T00:41:14+00:00"
+      }
+    ],
+    "episodes": [
+      {
+        "id": "episode-1",
+        "scenario": "forgetting_stress_natural_citation_goal_crowding",
+        "summary": "User flagged a task for later: lock the caption table in the appendix.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Parking lot for later: lock the caption table in the appendix.",
+          "assistant_response": "Noted. Caption table in appendix will be locked.",
+          "model": "claude-haiku-4-5-20251001",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [],
+        "timestamp": "2026-04-05T00:41:04+00:00"
+      },
+      {
+        "id": "episode-2",
+        "scenario": "forgetting_stress_natural_citation_goal_crowding",
+        "summary": "User is working through a structured cleanup workflow with multiple passes (caption table lock, glossary tightening). These are sequential refinement tasks.",
+        "tags": [
+          "goal",
+          "primary_goal"
+        ],
+        "metadata": {
+          "key": "primary_goal",
+          "value": "document cleanup and refinement",
+          "summary": "User is working through a structured cleanup workflow with multiple passes (caption table lock, glossary tightening). These are sequential refinement tasks."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T00:41:06+00:00"
+      },
+      {
+        "id": "episode-3",
+        "scenario": "forgetting_stress_natural_citation_goal_crowding",
+        "summary": "User flagged a second cleanup item: tighten the glossary bullets during the glossary pass. (tags=interaction, task_queue) (score=6.35)",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Another later cleanup item: tighten the glossary bullets in the glossary pass.",
+          "assistant_response": "Got it. I've noted the glossary tightening task for the glossary pass. This joins the caption table lock from earlier\u2014both are queued for their respective cleanup phases.",
+          "model": "claude-haiku-4-5-20251001",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "episode-1"
+        ],
+        "timestamp": "2026-04-05T00:41:06+00:00"
+      },
+      {
+        "id": "episode-4",
+        "scenario": "forgetting_stress_natural_citation_goal_crowding",
+        "summary": "User is executing a structured multi-pass cleanup workflow. Timeline labels are a secondary task to be addressed after the main refinement passes complete.",
+        "tags": [
+          "goal",
+          "primary_goal"
+        ],
+        "metadata": {
+          "key": "primary_goal",
+          "value": "document cleanup and refinement (caption table lock, glossary tightening; timeline labels deferred)",
+          "summary": "User is executing a structured multi-pass cleanup workflow. Timeline labels are a secondary task to be addressed after the main refinement passes complete."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T00:41:10+00:00"
+      },
+      {
+        "id": "episode-5",
+        "scenario": "forgetting_stress_natural_citation_goal_crowding",
+        "summary": "User deferred timeline label cleanup to after the primary document refinement tasks (caption table lock, glossary tightening). Timeline labels are queued as a secondary cleanup item.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "The timeline labels can wait until after the main task, but they will need cleanup.",
+          "assistant_response": "Understood. Timeline labels are noted as a follow-up task after the main cleanup workflow completes. They'll be ready for a dedicated pass once you finish the caption table lock and glossary tightening.",
+          "model": "claude-haiku-4-5-20251001",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-1",
+          "episode-3",
+          "episode-2"
+        ],
+        "timestamp": "2026-04-05T00:41:10+00:00"
+      },
+      {
+        "id": "episode-6",
+        "scenario": "forgetting_stress_natural_citation_goal_crowding",
+        "summary": "User is executing a structured multi-pass cleanup workflow with deferred secondary and tertiary tasks. Sidebar legend cleanup is queued after timeline labels.",
+        "tags": [
+          "goal",
+          "primary_goal"
+        ],
+        "metadata": {
+          "key": "primary_goal",
+          "value": "document cleanup and refinement (multi-pass: captions, glossary, timeline labels, sidebar legend)",
+          "summary": "User is executing a structured multi-pass cleanup workflow with deferred secondary and tertiary tasks. Sidebar legend cleanup is queued after timeline labels."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T00:41:11+00:00"
+      },
+      {
+        "id": "episode-7",
+        "scenario": "forgetting_stress_natural_citation_goal_crowding",
+        "summary": "User confirmed sidebar legend cleanup is deferred to after primary and secondary refinement tasks. Cleanup priority: (1) caption table lock & glossary, (2) timeline labels, (3) sidebar legend.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "The sidebar legend can wait until after the main task, but it will need cleanup.",
+          "assistant_response": "Understood. The sidebar legend is queued as a tertiary cleanup item\u2014after caption table lock, glossary tightening, and timeline labels are complete.",
+          "model": "claude-haiku-4-5-20251001",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-1",
+          "episode-4",
+          "episode-5"
+        ],
+        "timestamp": "2026-04-05T00:41:11+00:00"
+      },
+      {
+        "id": "episode-8",
+        "scenario": "forgetting_stress_natural_citation_goal_crowding",
+        "summary": "User's current primary goal is preserving citations across all document refinement tasks. This takes precedence over the previous multi-pass cleanup workflow.",
+        "tags": [
+          "goal",
+          "primary_goal"
+        ],
+        "metadata": {
+          "key": "primary_goal",
+          "value": "preserve citations",
+          "summary": "User's current primary goal is preserving citations across all document refinement tasks. This takes precedence over the previous multi-pass cleanup workflow."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T00:41:14+00:00"
+      },
+      {
+        "id": "episode-9",
+        "scenario": "forgetting_stress_natural_citation_goal_crowding",
+        "summary": "User shifted primary goal from multi-pass document cleanup workflow to citation preservation as the sole priority. This overrides the previous deferred-task sequencing.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Right now the only thing I care about is preserving citations.",
+          "assistant_response": "Understood. Preserving citations is now your primary focus. I'll prioritize citation integrity across all cleanup passes\u2014captions, glossary, timeline labels, and sidebar legend. Each refinement will verify that sources are complete and a...",
+          "model": "claude-haiku-4-5-20251001",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-1",
+          "episode-7",
+          "episode-6"
+        ],
+        "timestamp": "2026-04-05T00:41:14+00:00"
+      }
+    ],
+    "beliefs": [],
+    "autobiographical_state": [],
+    "procedures": []
+  }
+}

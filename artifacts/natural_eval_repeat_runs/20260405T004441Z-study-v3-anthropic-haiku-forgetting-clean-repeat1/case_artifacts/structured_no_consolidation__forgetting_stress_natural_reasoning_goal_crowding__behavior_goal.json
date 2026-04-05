@@ -1,0 +1,534 @@
+{
+  "suite_name": "natural",
+  "scenario": {
+    "slug": "forgetting_stress_natural_reasoning_goal_crowding",
+    "title": "Forgetting Stress Natural Reasoning Goal Crowding",
+    "description": "Can forgetting preserve a detailed-reasoning goal under stale natural-language clutter?",
+    "checkpoint": "behavior_goal",
+    "prompt": "What is the main goal right now?",
+    "expected": "provide detailed reasoning",
+    "evaluation_type": "behavior",
+    "target_layer": "",
+    "target_key": ""
+  },
+  "judge": {
+    "passed": false,
+    "score": 0.0,
+    "method": "heuristic_semantic_judge",
+    "reason": "Canonicalized answer did not preserve enough of the expected meaning."
+  },
+  "runtime": {
+    "runtime_name": "structured_no_consolidation",
+    "eval_mode": "live",
+    "provider_name": "anthropic_messages",
+    "requested_model": "claude-haiku-4-5-20251001",
+    "response_model": "claude-haiku-4-5-20251001",
+    "finish_reason": "end_turn",
+    "latency_ms": 1557.3760419999871,
+    "used_json": true,
+    "parse_failure": false,
+    "empty_answer": false,
+    "interaction_episode_id": "episode-16",
+    "usage_metrics": {
+      "input_tokens": 916.0,
+      "cache_creation_input_tokens": 0.0,
+      "cache_read_input_tokens": 0.0,
+      "output_tokens": 157.0,
+      "prompt_tokens": 916.0,
+      "completion_tokens": 157.0,
+      "total_tokens": 1073.0
+    }
+  },
+  "prompt_messages": [
+    {
+      "role": "system",
+      "content": "You are participating in a BrainLayer natural-conversation evaluation. When a normal user utterance reveals a stable preference, active goal, relationship framing, or reusable lesson, infer the appropriate structured memory_observations entry. Use BrainLayer's canonical memory keys instead of inventing synonyms. Response brevity, verbosity, or detail should use key=response_style, not response_length or tone. Current task objectives should use key=primary_goal, not citation_integrity or delivery_priority. Collaboration framing should use key=collaboration_mode. Reusable release-retry lessons should use trigger=retry_release and action=check authentication when that is the implied lesson. If the user says to keep answers brief, concise, short, or detailed, store that as a preference or correction on response_style. If the user says the main thing is preserving citations or shipping a report, store that as a goal on primary_goal, not as a preference. If the user asks for thinking together like a partner, store that as relationship framing on collaboration_mode. Use preference_hint or lesson_hint only when the signal is indirect or weak; use preference, goal, relationship, or lesson when the instruction is explicit. When the user simply asks for a value like the current response style or goal, return only the shortest value needed to answer correctly. Always return valid JSON."
+    },
+    {
+      "role": "user",
+      "content": "BrainLayer context:\n- [working_state] working-7: primary_goal = document cleanup and refinement with multi-pass sequencing, including evidence table signoff row. User is executing structured cleanup with sequential passes. A new task\u2014adding a signoff row to the evidence table\u2014has been identified and should be integrated into the refinement workflow, likely as part of tertiary or quaternary polish. (score=6.65)\n- [working_state] working-6: primary_goal = document cleanup and refinement with multi-pass sequencing. User is executing a structured cleanup workflow with sequential passes: primary (caption table lock, glossary), secondary (sidebar legend, timeline labels), tertiary (footer label alignment), and quaternary (figure caption spacing polish). (score=6.60)\n- [episodes] episode-6: Sidebar legend is a secondary cleanup task queued for after main document refinement passes are complete. (tags=goal, task_queue) (score=5.70)\n- [episodes] episode-4: Timeline labels are a secondary cleanup task to be addressed after the main document refinement passes are complete. (tags=goal, task_queue) (score=5.57)\n- [beliefs] belief-1: response_style = detailed. The user prefers detailed replies. (confidence=0.74) (score=4.29)\n\nTask:\nWhat is the main goal right now?\n\nReturn a JSON object with the following keys:\n- \"assistant_response\": the answer for the user\n- \"episodic_summary\": a short summary worth storing as an episode\n- \"memory_observations\": an optional array of observations to write back to BrainLayer\n\nOnly emit memory observations when the current turn strongly justifies them.\nAllowed memory_type values: preference, correction, lesson, goal, relationship, preference_hint, lesson_hint, goal_hint, relationship_hint, noise.\nRequired payloads:\n- preference/correction: key, value, proposition\n- lesson/lesson_hint: trigger, action, summary\n- goal/goal_hint: key, value, summary\n- relationship/relationship_hint: key, value, summary, themes\n- noise: any small string payload\nEach memory_observations item must include memory_type and a nested payload object.\nDo not place key/value/summary/proposition directly at the top level of a memory observation.\nExample preference observation:\n{\"memory_type\":\"preference\",\"payload\":{\"key\":\"response_style\",\"value\":\"brief\",\"proposition\":\"The user prefers brief replies.\"}}\nExample goal observation:\n{\"memory_type\":\"goal\",\"payload\":{\"key\":\"primary_goal\",\"value\":\"ship eval summary\",\"summary\":\"The current primary goal is to ship the eval summary.\"}}\nIf no memory write is justified, return an empty memory_observations array."
+    }
+  ],
+  "retrieved_memories": [
+    {
+      "layer": "working_state",
+      "record_id": "working-7",
+      "score": 6.6499999999999995,
+      "content": "primary_goal = document cleanup and refinement with multi-pass sequencing, including evidence table signoff row. User is executing structured cleanup with sequential passes. A new task\u2014adding a signoff row to the evidence table\u2014has been identified and should be integrated into the refinement workflow, likely as part of tertiary or quaternary polish."
+    },
+    {
+      "layer": "working_state",
+      "record_id": "working-6",
+      "score": 6.6,
+      "content": "primary_goal = document cleanup and refinement with multi-pass sequencing. User is executing a structured cleanup workflow with sequential passes: primary (caption table lock, glossary), secondary (sidebar legend, timeline labels), tertiary (footer label alignment), and quaternary (figure caption spacing polish)."
+    },
+    {
+      "layer": "episodes",
+      "record_id": "episode-6",
+      "score": 5.7,
+      "content": "Sidebar legend is a secondary cleanup task queued for after main document refinement passes are complete. (tags=goal, task_queue)"
+    },
+    {
+      "layer": "episodes",
+      "record_id": "episode-4",
+      "score": 5.566666666666666,
+      "content": "Timeline labels are a secondary cleanup task to be addressed after the main document refinement passes are complete. (tags=goal, task_queue)"
+    },
+    {
+      "layer": "beliefs",
+      "record_id": "belief-1",
+      "score": 4.29,
+      "content": "response_style = detailed. The user prefers detailed replies. (confidence=0.74)"
+    }
+  ],
+  "raw_model_output": "```json\n{\n  \"assistant_response\": \"The main goal right now is document cleanup and refinement with multi-pass sequencing, including adding a signoff row to the evidence table. You're executing structured cleanup passes: primary (caption table lock, glossary), secondary (sidebar legend, timeline labels), tertiary (footer label alignment), and quaternary (figure caption spacing polish), with the evidence table signoff row integrated as part of the tertiary or quaternary polish phase.\",\n  \"episodic_summary\": \"User confirmed current primary goal: document cleanup and refinement with multi-pass sequencing, including evidence table signoff row integration into the refinement workflow.\",\n  \"memory_observations\": []\n}\n```",
+  "parsed_output": {
+    "assistant_response": "The main goal right now is document cleanup and refinement with multi-pass sequencing, including adding a signoff row to the evidence table. You're executing structured cleanup passes: primary (caption table lock, glossary), secondary (sidebar legend, timeline labels), tertiary (footer label alignment), and quaternary (figure caption spacing polish), with the evidence table signoff row integrated as part of the tertiary or quaternary polish phase.",
+    "episodic_summary": "User confirmed current primary goal: document cleanup and refinement with multi-pass sequencing, including evidence table signoff row integration into the refinement workflow.",
+    "memory_observations": []
+  },
+  "consolidation_report": null,
+  "exported_state": {
+    "working_state": [
+      {
+        "id": "working-1",
+        "key": "primary_goal",
+        "value": "document cleanup and refinement",
+        "content": "User is working through a structured cleanup workflow with multiple passes (caption table lock, glossary tightening). These are sequential refinement tasks.",
+        "priority": 0.5,
+        "status": "active",
+        "source_refs": [
+          "episode-2"
+        ],
+        "updated_at": "2026-04-05T00:44:06+00:00"
+      },
+      {
+        "id": "working-2",
+        "key": "task_queue",
+        "value": "timeline labels cleanup (deferred)",
+        "content": "Timeline labels are a secondary cleanup task to be addressed after the main document refinement passes are complete.",
+        "priority": 0.5,
+        "status": "active",
+        "source_refs": [
+          "episode-4"
+        ],
+        "updated_at": "2026-04-05T00:44:08+00:00"
+      },
+      {
+        "id": "working-3",
+        "key": "task_queue",
+        "value": "sidebar legend cleanup (deferred after primary refinement)",
+        "content": "Sidebar legend is a secondary cleanup task queued for after main document refinement passes are complete.",
+        "priority": 0.5,
+        "status": "active",
+        "source_refs": [
+          "episode-6"
+        ],
+        "updated_at": "2026-04-05T00:44:10+00:00"
+      },
+      {
+        "id": "working-4",
+        "key": "response_style",
+        "value": "detailed",
+        "content": "The user prefers detailed replies.",
+        "priority": 0.74,
+        "status": "active",
+        "source_refs": [
+          "episode-8"
+        ],
+        "updated_at": "2026-04-05T00:44:14+00:00"
+      },
+      {
+        "id": "working-5",
+        "key": "task_queue",
+        "value": "footer labels alignment (deferred after secondary cleanup)",
+        "content": "Footer label alignment for packet polish is a tertiary cleanup task queued after primary refinement passes and secondary cleanup tasks (sidebar legend, timeline labels) are complete.",
+        "priority": 0.5,
+        "status": "active",
+        "source_refs": [
+          "episode-10"
+        ],
+        "updated_at": "2026-04-05T00:44:17+00:00"
+      },
+      {
+        "id": "working-6",
+        "key": "primary_goal",
+        "value": "document cleanup and refinement with multi-pass sequencing",
+        "content": "User is executing a structured cleanup workflow with sequential passes: primary (caption table lock, glossary), secondary (sidebar legend, timeline labels), tertiary (footer label alignment), and quaternary (figure caption spacing polish).",
+        "priority": 0.5,
+        "status": "active",
+        "source_refs": [
+          "episode-12"
+        ],
+        "updated_at": "2026-04-05T00:44:19+00:00"
+      },
+      {
+        "id": "working-7",
+        "key": "primary_goal",
+        "value": "document cleanup and refinement with multi-pass sequencing, including evidence table signoff row",
+        "content": "User is executing structured cleanup with sequential passes. A new task\u2014adding a signoff row to the evidence table\u2014has been identified and should be integrated into the refinement workflow, likely as part of tertiary or quaternary polish.",
+        "priority": 0.5,
+        "status": "active",
+        "source_refs": [
+          "episode-14"
+        ],
+        "updated_at": "2026-04-05T00:44:23+00:00"
+      }
+    ],
+    "episodes": [
+      {
+        "id": "episode-1",
+        "scenario": "forgetting_stress_natural_reasoning_goal_crowding",
+        "summary": "User flagged a task for later: lock the caption table in the appendix.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Parking lot for later: lock the caption table in the appendix.",
+          "assistant_response": "Noted. Caption table in appendix will be locked.",
+          "model": "claude-haiku-4-5-20251001",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [],
+        "timestamp": "2026-04-05T00:44:04+00:00"
+      },
+      {
+        "id": "episode-2",
+        "scenario": "forgetting_stress_natural_reasoning_goal_crowding",
+        "summary": "User is working through a structured cleanup workflow with multiple passes (caption table lock, glossary tightening). These are sequential refinement tasks.",
+        "tags": [
+          "goal",
+          "primary_goal"
+        ],
+        "metadata": {
+          "key": "primary_goal",
+          "value": "document cleanup and refinement",
+          "summary": "User is working through a structured cleanup workflow with multiple passes (caption table lock, glossary tightening). These are sequential refinement tasks."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T00:44:06+00:00"
+      },
+      {
+        "id": "episode-3",
+        "scenario": "forgetting_stress_natural_reasoning_goal_crowding",
+        "summary": "User flagged a second cleanup item: tighten the glossary bullets during the glossary pass. (tags=interaction, task_queue) (score=6.35)",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Another later cleanup item: tighten the glossary bullets in the glossary pass.",
+          "assistant_response": "Got it. I've noted the glossary tightening task for the glossary pass. This joins the caption table lock from earlier\u2014both are queued for their respective cleanup phases.",
+          "model": "claude-haiku-4-5-20251001",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "episode-1"
+        ],
+        "timestamp": "2026-04-05T00:44:06+00:00"
+      },
+      {
+        "id": "episode-4",
+        "scenario": "forgetting_stress_natural_reasoning_goal_crowding",
+        "summary": "Timeline labels are a secondary cleanup task to be addressed after the main document refinement passes are complete.",
+        "tags": [
+          "goal",
+          "task_queue"
+        ],
+        "metadata": {
+          "key": "task_queue",
+          "value": "timeline labels cleanup (deferred)",
+          "summary": "Timeline labels are a secondary cleanup task to be addressed after the main document refinement passes are complete."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T00:44:08+00:00"
+      },
+      {
+        "id": "episode-5",
+        "scenario": "forgetting_stress_natural_reasoning_goal_crowding",
+        "summary": "User deferred timeline label cleanup to after the primary refinement workflow. This is a secondary task queued for later.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "The timeline labels can wait until after the main task, but they will need cleanup.",
+          "assistant_response": "Understood. Timeline labels are deferred\u2014they'll be a cleanup task after you complete the main document refinement passes (caption table lock and glossary tightening). I'll track that as a follow-up item.",
+          "model": "claude-haiku-4-5-20251001",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-1",
+          "episode-3",
+          "episode-2"
+        ],
+        "timestamp": "2026-04-05T00:44:08+00:00"
+      },
+      {
+        "id": "episode-6",
+        "scenario": "forgetting_stress_natural_reasoning_goal_crowding",
+        "summary": "Sidebar legend is a secondary cleanup task queued for after main document refinement passes are complete.",
+        "tags": [
+          "goal",
+          "task_queue"
+        ],
+        "metadata": {
+          "key": "task_queue",
+          "value": "sidebar legend cleanup (deferred after primary refinement)",
+          "summary": "Sidebar legend is a secondary cleanup task queued for after main document refinement passes are complete."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T00:44:10+00:00"
+      },
+      {
+        "id": "episode-7",
+        "scenario": "forgetting_stress_natural_reasoning_goal_crowding",
+        "summary": "User confirmed that sidebar legend cleanup is a deferred secondary task, to be addressed after primary refinement workflow is finished.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "The sidebar legend can wait until after the main task, but it will need cleanup.",
+          "assistant_response": "Understood. The sidebar legend is queued as a secondary cleanup task after the main document refinement passes (caption table lock, glossary tightening) are complete.",
+          "model": "claude-haiku-4-5-20251001",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-2",
+          "episode-4",
+          "episode-5",
+          "working-1"
+        ],
+        "timestamp": "2026-04-05T00:44:10+00:00"
+      },
+      {
+        "id": "episode-8",
+        "scenario": "forgetting_stress_natural_reasoning_goal_crowding",
+        "summary": "The user prefers detailed replies.",
+        "tags": [
+          "preference",
+          "response_style"
+        ],
+        "metadata": {
+          "key": "response_style",
+          "value": "detailed",
+          "proposition": "The user prefers detailed replies."
+        },
+        "salience": 0.74,
+        "outcome": "captured preference",
+        "source_refs": [],
+        "timestamp": "2026-04-05T00:44:14+00:00"
+      },
+      {
+        "id": "episode-9",
+        "scenario": "forgetting_stress_natural_reasoning_goal_crowding",
+        "summary": "User requested a debrief focused on walking through the complete chain of reasoning for the document cleanup workflow. Confirmed the sequential structure: primary refinement passes (caption table, glossary) \u2192 secondary tasks (sidebar legend, timeline labels) queued for later.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "For this debrief, right now the only thing that matters is walking through the whole chain of reasoning.",
+          "assistant_response": "I'm ready to walk through the chain of reasoning with you. The current state shows:\n\n1. **Primary goal** (working-1): Document cleanup and refinement via sequential passes\u2014caption table lock, then glossary tightening.\n2. **Secondary queu...",
+          "model": "claude-haiku-4-5-20251001",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-1",
+          "working-3",
+          "episode-7",
+          "episode-5"
+        ],
+        "timestamp": "2026-04-05T00:44:14+00:00"
+      },
+      {
+        "id": "episode-10",
+        "scenario": "forgetting_stress_natural_reasoning_goal_crowding",
+        "summary": "Footer label alignment for packet polish is a tertiary cleanup task queued after primary refinement passes and secondary cleanup tasks (sidebar legend, timeline labels) are complete.",
+        "tags": [
+          "goal",
+          "task_queue"
+        ],
+        "metadata": {
+          "key": "task_queue",
+          "value": "footer labels alignment (deferred after secondary cleanup)",
+          "summary": "Footer label alignment for packet polish is a tertiary cleanup task queued after primary refinement passes and secondary cleanup tasks (sidebar legend, timeline labels) are complete."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T00:44:17+00:00"
+      },
+      {
+        "id": "episode-11",
+        "scenario": "forgetting_stress_natural_reasoning_goal_crowding",
+        "summary": "User added footer label alignment (packet polish) as a deferred task to be completed after primary refinement and secondary cleanup phases are done. Confirmed sequential task ordering: primary refinement \u2192 secondary cleanup \u2192 footer alignment.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Later, once the main task is done, align the footer labels for packet polish.",
+          "assistant_response": "Understood. Footer label alignment for packet polish is noted as a follow-up task to be completed after the main document refinement passes (caption table, glossary) and secondary cleanup tasks (sidebar legend, timeline labels) are finis...",
+          "model": "claude-haiku-4-5-20251001",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-2",
+          "working-3",
+          "episode-4",
+          "episode-9",
+          "belief-1"
+        ],
+        "timestamp": "2026-04-05T00:44:17+00:00"
+      },
+      {
+        "id": "episode-12",
+        "scenario": "forgetting_stress_natural_reasoning_goal_crowding",
+        "summary": "User is executing a structured cleanup workflow with sequential passes: primary (caption table lock, glossary), secondary (sidebar legend, timeline labels), tertiary (footer label alignment), and quaternary (figure caption spacing polish).",
+        "tags": [
+          "goal",
+          "primary_goal"
+        ],
+        "metadata": {
+          "key": "primary_goal",
+          "value": "document cleanup and refinement with multi-pass sequencing",
+          "summary": "User is executing a structured cleanup workflow with sequential passes: primary (caption table lock, glossary), secondary (sidebar legend, timeline labels), tertiary (footer label alignment), and quaternary (figure caption spacing polish)."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T00:44:19+00:00"
+      },
+      {
+        "id": "episode-13",
+        "scenario": "forgetting_stress_natural_reasoning_goal_crowding",
+        "summary": "User added figure caption spacing to the cleanup task queue as a later-stage polish pass, confirming the multi-pass refinement workflow extends to caption formatting details.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Later, figure caption spacing can get a polish pass.",
+          "assistant_response": "Understood. Figure caption spacing polish is noted as a quaternary task\u2014it will come after the primary refinement passes (caption table lock, glossary tightening), secondary cleanup (sidebar legend, timeline labels), and tertiary alignme...",
+          "model": "claude-haiku-4-5-20251001",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-5",
+          "working-1",
+          "episode-9",
+          "episode-1",
+          "belief-1"
+        ],
+        "timestamp": "2026-04-05T00:44:19+00:00"
+      },
+      {
+        "id": "episode-14",
+        "scenario": "forgetting_stress_natural_reasoning_goal_crowding",
+        "summary": "User is executing structured cleanup with sequential passes. A new task\u2014adding a signoff row to the evidence table\u2014has been identified and should be integrated into the refinement workflow, likely as part of tertiary or quaternary polish.",
+        "tags": [
+          "goal",
+          "primary_goal"
+        ],
+        "metadata": {
+          "key": "primary_goal",
+          "value": "document cleanup and refinement with multi-pass sequencing, including evidence table signoff row",
+          "summary": "User is executing structured cleanup with sequential passes. A new task\u2014adding a signoff row to the evidence table\u2014has been identified and should be integrated into the refinement workflow, likely as part of tertiary or quaternary polish."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T00:44:23+00:00"
+      },
+      {
+        "id": "episode-15",
+        "scenario": "forgetting_stress_natural_reasoning_goal_crowding",
+        "summary": "User identified a missing signoff row requirement for the evidence table during document cleanup workflow. This is a new refinement task that integrates with the existing multi-pass sequential structure (primary \u2192 secondary \u2192 tertiary \u2192 quaternary passes).",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Later, the evidence table still needs a signoff row.",
+          "assistant_response": "The evidence table needs a signoff row added. This fits naturally into your quaternary pass (figure caption spacing polish) or can be prioritized as a tertiary refinement task depending on the table's current state. Should this signoff r...",
+          "model": "claude-haiku-4-5-20251001",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-6",
+          "working-1",
+          "episode-9",
+          "episode-1",
+          "belief-1"
+        ],
+        "timestamp": "2026-04-05T00:44:23+00:00"
+      },
+      {
+        "id": "episode-16",
+        "scenario": "forgetting_stress_natural_reasoning_goal_crowding",
+        "summary": "User confirmed current primary goal: document cleanup and refinement with multi-pass sequencing, including evidence table signoff row integration into the refinement workflow.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "What is the main goal right now?",
+          "assistant_response": "The main goal right now is document cleanup and refinement with multi-pass sequencing, including adding a signoff row to the evidence table. You're executing structured cleanup passes: primary (caption table lock, glossary), secondary (s...",
+          "model": "claude-haiku-4-5-20251001",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-7",
+          "working-6",
+          "episode-6",
+          "episode-4",
+          "belief-1"
+        ],
+        "timestamp": "2026-04-05T00:44:25+00:00"
+      }
+    ],
+    "beliefs": [
+      {
+        "id": "belief-1",
+        "key": "response_style",
+        "proposition": "The user prefers detailed replies.",
+        "value": "detailed",
+        "confidence": 0.74,
+        "status": "active",
+        "evidence_episode_ids": [
+          "episode-8"
+        ],
+        "updated_at": "2026-04-05T00:44:14+00:00"
+      }
+    ],
+    "autobiographical_state": [],
+    "procedures": []
+  }
+}
