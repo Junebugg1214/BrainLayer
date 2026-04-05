@@ -1,0 +1,334 @@
+{
+  "suite_name": "natural",
+  "scenario": {
+    "slug": "forgetting_stress_natural_citation_goal_crowding",
+    "title": "Forgetting Stress Natural Citation Goal Crowding",
+    "description": "Can forgetting keep stale natural-language goal clutter from crowding out the true current goal?",
+    "checkpoint": "extract_goal",
+    "prompt": "Right now the only thing I care about is preserving citations.",
+    "expected": "preserve citations",
+    "evaluation_type": "extraction",
+    "target_layer": "working_state",
+    "target_key": "primary_goal"
+  },
+  "judge": {
+    "passed": true,
+    "score": 1.0,
+    "method": "structural_exact_match",
+    "reason": "Stored working_state:primary_goal matched the expected value after normalized comparison."
+  },
+  "runtime": {
+    "runtime_name": "brainlayer_no_forgetting",
+    "eval_mode": "live",
+    "provider_name": "anthropic_messages",
+    "requested_model": "claude-sonnet-4-5-20250929",
+    "response_model": "claude-sonnet-4-5-20250929",
+    "finish_reason": "end_turn",
+    "latency_ms": 3071.6839580000083,
+    "used_json": true,
+    "parse_failure": false,
+    "empty_answer": false,
+    "interaction_episode_id": "episode-10",
+    "usage_metrics": {
+      "input_tokens": 771.0,
+      "cache_creation_input_tokens": 0.0,
+      "cache_read_input_tokens": 0.0,
+      "output_tokens": 128.0,
+      "prompt_tokens": 771.0,
+      "completion_tokens": 128.0,
+      "total_tokens": 899.0
+    }
+  },
+  "prompt_messages": [
+    {
+      "role": "system",
+      "content": "You are participating in a BrainLayer natural-conversation evaluation. When a normal user utterance reveals a stable preference, active goal, relationship framing, or reusable lesson, infer the appropriate structured memory_observations entry. Use BrainLayer's canonical memory keys instead of inventing synonyms. Response brevity, verbosity, or detail should use key=response_style, not response_length or tone. Current task objectives should use key=primary_goal, not citation_integrity or delivery_priority. Collaboration framing should use key=collaboration_mode. Reusable release-retry lessons should use trigger=retry_release and action=check authentication when that is the implied lesson. If the user says to keep answers brief, concise, short, or detailed, store that as a preference or correction on response_style. If the user says the main thing is preserving citations or shipping a report, store that as a goal on primary_goal, not as a preference. If the user asks for thinking together like a partner, store that as relationship framing on collaboration_mode. Use preference_hint or lesson_hint only when the signal is indirect or weak; use preference, goal, relationship, or lesson when the instruction is explicit. When the user simply asks for a value like the current response style or goal, return only the shortest value needed to answer correctly. Always return valid JSON."
+    },
+    {
+      "role": "user",
+      "content": "BrainLayer context:\n- [working_state] working-1: deferred_task = clean up timeline labels and sidebar legend after main task. User has deferred cleanup of both timeline labels and sidebar legend until the main task is complete. (score=4.85)\n- [episodes] episode-8: User deferred sidebar legend cleanup until after the main task, similar to the timeline label cleanup. (tags=interaction, assistant_reply) (score=2.75)\n- [episodes] episode-7: User has deferred cleanup of both timeline labels and sidebar legend until the main task is complete. (tags=goal, deferred_task) (score=2.58)\n\nTask:\nRight now the only thing I care about is preserving citations.\n\nReturn a JSON object with the following keys:\n- \"assistant_response\": the answer for the user\n- \"episodic_summary\": a short summary worth storing as an episode\n- \"memory_observations\": an optional array of observations to write back to BrainLayer\n\nOnly emit memory observations when the current turn strongly justifies them.\nAllowed memory_type values: preference, correction, lesson, goal, relationship, preference_hint, lesson_hint, goal_hint, relationship_hint, noise.\nRequired payloads:\n- preference/correction: key, value, proposition\n- lesson/lesson_hint: trigger, action, summary\n- goal/goal_hint: key, value, summary\n- relationship/relationship_hint: key, value, summary, themes\n- noise: any small string payload\nEach memory_observations item must include memory_type and a nested payload object.\nDo not place key/value/summary/proposition directly at the top level of a memory observation.\nExample preference observation:\n{\"memory_type\":\"preference\",\"payload\":{\"key\":\"response_style\",\"value\":\"brief\",\"proposition\":\"The user prefers brief replies.\"}}\nExample goal observation:\n{\"memory_type\":\"goal\",\"payload\":{\"key\":\"primary_goal\",\"value\":\"ship eval summary\",\"summary\":\"The current primary goal is to ship the eval summary.\"}}\nIf no memory write is justified, return an empty memory_observations array."
+    }
+  ],
+  "retrieved_memories": [
+    {
+      "layer": "working_state",
+      "record_id": "working-1",
+      "score": 4.85,
+      "content": "deferred_task = clean up timeline labels and sidebar legend after main task. User has deferred cleanup of both timeline labels and sidebar legend until the main task is complete."
+    },
+    {
+      "layer": "episodes",
+      "record_id": "episode-8",
+      "score": 2.75,
+      "content": "User deferred sidebar legend cleanup until after the main task, similar to the timeline label cleanup. (tags=interaction, assistant_reply)"
+    },
+    {
+      "layer": "episodes",
+      "record_id": "episode-7",
+      "score": 2.575,
+      "content": "User has deferred cleanup of both timeline labels and sidebar legend until the main task is complete. (tags=goal, deferred_task)"
+    }
+  ],
+  "raw_model_output": "```json\n{\n  \"assistant_response\": \"Understood. I'll prioritize preserving citations above all else.\",\n  \"episodic_summary\": \"User stated that preserving citations is their only current priority.\",\n  \"memory_observations\": [\n    {\n      \"memory_type\": \"goal\",\n      \"payload\": {\n        \"key\": \"primary_goal\",\n        \"value\": \"preserve citations\",\n        \"summary\": \"The current primary goal is to preserve citations above all else.\"\n      }\n    }\n  ]\n}\n```",
+  "parsed_output": {
+    "assistant_response": "Understood. I'll prioritize preserving citations above all else.",
+    "episodic_summary": "User stated that preserving citations is their only current priority.",
+    "memory_observations": [
+      {
+        "text": "The current primary goal is to preserve citations above all else.",
+        "memory_type": "goal",
+        "payload": {
+          "key": "primary_goal",
+          "value": "preserve citations",
+          "summary": "The current primary goal is to preserve citations above all else."
+        },
+        "salience": 0.5
+      }
+    ]
+  },
+  "consolidation_report": {
+    "promoted_belief_keys": [],
+    "promoted_procedure_triggers": [],
+    "updated_working_keys": [
+      "deferred_task",
+      "primary_goal"
+    ],
+    "updated_autobio_keys": [],
+    "forgotten_episode_ids": [],
+    "paused_working_item_ids": []
+  },
+  "exported_state": {
+    "working_state": [
+      {
+        "id": "working-1",
+        "key": "deferred_task",
+        "value": "clean up timeline labels and sidebar legend after main task",
+        "content": "User has deferred cleanup of both timeline labels and sidebar legend until the main task is complete.",
+        "priority": 0.5,
+        "status": "active",
+        "source_refs": [
+          "episode-7"
+        ],
+        "updated_at": "2026-04-05T01:39:56+00:00"
+      },
+      {
+        "id": "working-2",
+        "key": "primary_goal",
+        "value": "preserve citations",
+        "content": "The current primary goal is to preserve citations above all else.",
+        "priority": 0.5,
+        "status": "active",
+        "source_refs": [
+          "episode-9"
+        ],
+        "updated_at": "2026-04-05T01:39:56+00:00"
+      }
+    ],
+    "episodes": [
+      {
+        "id": "episode-1",
+        "scenario": "forgetting_stress_natural_citation_goal_crowding",
+        "summary": "User has a deferred task to lock the caption table in the appendix.",
+        "tags": [
+          "goal",
+          "deferred_task"
+        ],
+        "metadata": {
+          "key": "deferred_task",
+          "value": "lock caption table in appendix",
+          "summary": "User has a deferred task to lock the caption table in the appendix."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T01:39:39+00:00"
+      },
+      {
+        "id": "episode-2",
+        "scenario": "forgetting_stress_natural_citation_goal_crowding",
+        "summary": "User requested to park a task for later: lock the caption table in the appendix.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Parking lot for later: lock the caption table in the appendix.",
+          "assistant_response": "Noted\u2014I'll remember to lock the caption table in the appendix for later.",
+          "model": "claude-sonnet-4-5-20250929",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [],
+        "timestamp": "2026-04-05T01:39:39+00:00"
+      },
+      {
+        "id": "episode-3",
+        "scenario": "forgetting_stress_natural_citation_goal_crowding",
+        "summary": "User has a deferred task to tighten the glossary bullets in the glossary pass.",
+        "tags": [
+          "goal",
+          "deferred_task"
+        ],
+        "metadata": {
+          "key": "deferred_task",
+          "value": "tighten glossary bullets in glossary pass",
+          "summary": "User has a deferred task to tighten the glossary bullets in the glossary pass."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T01:39:46+00:00"
+      },
+      {
+        "id": "episode-4",
+        "scenario": "forgetting_stress_natural_citation_goal_crowding",
+        "summary": "User requested to park another task for later: tighten the glossary bullets in the glossary pass.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Another later cleanup item: tighten the glossary bullets in the glossary pass.",
+          "assistant_response": "Got it\u2014I've noted that you want to tighten the glossary bullets during the glossary pass as another cleanup item for later.",
+          "model": "claude-sonnet-4-5-20250929",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-1",
+          "episode-2",
+          "episode-1"
+        ],
+        "timestamp": "2026-04-05T01:39:46+00:00"
+      },
+      {
+        "id": "episode-5",
+        "scenario": "forgetting_stress_natural_citation_goal_crowding",
+        "summary": "User has deferred cleanup of timeline labels until the main task is complete.",
+        "tags": [
+          "goal",
+          "deferred_task"
+        ],
+        "metadata": {
+          "key": "deferred_task",
+          "value": "clean up timeline labels after main task",
+          "summary": "User has deferred cleanup of timeline labels until the main task is complete."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T01:39:50+00:00"
+      },
+      {
+        "id": "episode-6",
+        "scenario": "forgetting_stress_natural_citation_goal_crowding",
+        "summary": "User deferred timeline label cleanup until after the main task is complete.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "The timeline labels can wait until after the main task, but they will need cleanup.",
+          "assistant_response": "Got it\u2014timeline labels are deferred until after the main task, and they'll need cleanup when you get to them.",
+          "model": "claude-sonnet-4-5-20250929",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-1",
+          "episode-4",
+          "episode-3"
+        ],
+        "timestamp": "2026-04-05T01:39:50+00:00"
+      },
+      {
+        "id": "episode-7",
+        "scenario": "forgetting_stress_natural_citation_goal_crowding",
+        "summary": "User has deferred cleanup of both timeline labels and sidebar legend until the main task is complete.",
+        "tags": [
+          "goal",
+          "deferred_task"
+        ],
+        "metadata": {
+          "key": "deferred_task",
+          "value": "clean up timeline labels and sidebar legend after main task",
+          "summary": "User has deferred cleanup of both timeline labels and sidebar legend until the main task is complete."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T01:39:53+00:00"
+      },
+      {
+        "id": "episode-8",
+        "scenario": "forgetting_stress_natural_citation_goal_crowding",
+        "summary": "User deferred sidebar legend cleanup until after the main task, similar to the timeline label cleanup.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "The sidebar legend can wait until after the main task, but it will need cleanup.",
+          "assistant_response": "Understood. I'll note that the sidebar legend cleanup is deferred until after the main task is complete.",
+          "model": "claude-sonnet-4-5-20250929",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-1",
+          "episode-6",
+          "episode-5"
+        ],
+        "timestamp": "2026-04-05T01:39:53+00:00"
+      },
+      {
+        "id": "episode-9",
+        "scenario": "forgetting_stress_natural_citation_goal_crowding",
+        "summary": "The current primary goal is to preserve citations above all else.",
+        "tags": [
+          "goal",
+          "primary_goal"
+        ],
+        "metadata": {
+          "key": "primary_goal",
+          "value": "preserve citations",
+          "summary": "The current primary goal is to preserve citations above all else."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T01:39:56+00:00"
+      },
+      {
+        "id": "episode-10",
+        "scenario": "forgetting_stress_natural_citation_goal_crowding",
+        "summary": "User stated that preserving citations is their only current priority.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Right now the only thing I care about is preserving citations.",
+          "assistant_response": "Understood. I'll prioritize preserving citations above all else.",
+          "model": "claude-sonnet-4-5-20250929",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-1",
+          "episode-8",
+          "episode-7"
+        ],
+        "timestamp": "2026-04-05T01:39:56+00:00"
+      }
+    ],
+    "beliefs": [],
+    "autobiographical_state": [],
+    "procedures": []
+  }
+}

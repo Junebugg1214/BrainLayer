@@ -1,0 +1,12 @@
+[
+  {
+    "repeat_index": 1,
+    "label": "study-v3-anthropic-sonnet-forgetting-summary_goal_crowding-repeat1",
+    "status": "completed",
+    "duration_seconds": 102.4141255,
+    "exit_code": 0,
+    "timed_out": false,
+    "log_path": "artifacts/natural_eval_repeat_runs/logs/study-v3-anthropic-sonnet-forgetting-summary_goal_crowding-repeat1.log",
+    "run_dir": "artifacts/natural_eval_repeat_runs/20260405T014324Z-study-v3-anthropic-sonnet-forgetting-summary-goal-crowding-repeat1"
+  }
+]

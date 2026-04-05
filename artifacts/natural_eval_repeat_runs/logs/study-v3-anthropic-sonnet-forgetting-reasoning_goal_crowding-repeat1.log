@@ -1,0 +1,21 @@
+[2026-04-05T01:45:00+00:00] command: /Applications/Xcode.app/Contents/Developer/usr/bin/python3 /Users/marcsaint-jour/Documents/New project/scripts/run_natural_model_evals.py --mode live --model claude-sonnet-4-5-20250929 --provider-name anthropic_messages --base-url https://api.anthropic.com --api-key-env ANTHROPIC_API_KEY --request-path /v1/messages --timeout-seconds 20.0 --max-output-tokens-field none --temperature 0.0 --max-output-tokens 400 --scenario-pack forgetting_stress --runtime-profile study_v2 --export-results artifacts/natural_eval_repeat_runs --label study-v3-anthropic-sonnet-forgetting-reasoning_goal_crowding-repeat1 --scenario-slug forgetting_stress_natural_reasoning_goal_crowding --runtime-name brainlayer_full --runtime-name brainlayer_no_forgetting --runtime-name structured_no_consolidation
+Natural Conversation BrainLayer Eval Report
+===========================================
+
+Mode: live | provider=anthropic_messages | requested_model=claude-sonnet-4-5-20250929
+
+[PASS] brainlayer_full on forgetting_stress_natural_reasoning_goal_crowding/extract_goal: expected='provide detailed reasoning', actual='provide detailed reasoning', layers=working_state,working_state,episodes,episodes, target=extraction:working_state:primary_goal, score=1.00, scoring=structural_exact_match, latency_ms=5016.2, json=true
+[PASS] brainlayer_full on forgetting_stress_natural_reasoning_goal_crowding/behavior_goal: expected='provide detailed reasoning', actual='Provide detailed reasoning.', layers=working_state,episodes,episodes,working_state,beliefs,autobiographical_state, target=behavior, score=1.00, scoring=exact_match, latency_ms=2127.0, json=true
+[PASS] structured_no_consolidation on forgetting_stress_natural_reasoning_goal_crowding/extract_goal: expected='provide detailed reasoning', actual='provide detailed reasoning', layers=working_state,working_state,episodes,episodes, target=extraction:working_state:primary_goal, score=1.00, scoring=structural_exact_match, latency_ms=3616.1, json=true
+[PASS] structured_no_consolidation on forgetting_stress_natural_reasoning_goal_crowding/behavior_goal: expected='provide detailed reasoning', actual='Provide detailed reasoning.', layers=working_state,working_state,episodes,episodes, target=behavior, score=1.00, scoring=exact_match, latency_ms=1954.1, json=true
+[PASS] brainlayer_no_forgetting on forgetting_stress_natural_reasoning_goal_crowding/extract_goal: expected='provide detailed reasoning', actual='provide detailed reasoning', layers=working_state,episodes,episodes, target=extraction:working_state:primary_goal, score=1.00, scoring=structural_exact_match, latency_ms=4811.8, json=true
+[PASS] brainlayer_no_forgetting on forgetting_stress_natural_reasoning_goal_crowding/behavior_goal: expected='provide detailed reasoning', actual='Provide detailed reasoning.', layers=working_state,episodes,episodes,working_state, target=behavior, score=1.00, scoring=exact_match, latency_ms=2457.0, json=true
+
+Summary
+-------
+brainlayer_full: 2/2 | extraction=1/1, behavior=1/1, avg_score=1.00, avg_records=20.5, avg_latency_ms=3571.6, parse_failures=0, errors=0, avg_total_tokens=1055.5
+brainlayer_no_forgetting: 2/2 | extraction=1/1, behavior=1/1, avg_score=1.00, avg_records=15.5, avg_latency_ms=3634.4, parse_failures=0, errors=0, avg_total_tokens=925.5
+structured_no_consolidation: 2/2 | extraction=1/1, behavior=1/1, avg_score=1.00, avg_records=20.0, avg_latency_ms=2785.1, parse_failures=0, errors=0, avg_total_tokens=925.5
+
+Natural-eval exports written to artifacts/natural_eval_repeat_runs/20260405T014637Z-study-v3-anthropic-sonnet-forgetting-reasoning-goal-crowding-repeat1
+X post saved to artifacts/natural_eval_repeat_runs/20260405T014637Z-study-v3-anthropic-sonnet-forgetting-reasoning-goal-crowding-repeat1/x_post.txt

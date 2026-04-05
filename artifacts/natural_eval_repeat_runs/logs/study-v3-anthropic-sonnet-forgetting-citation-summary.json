@@ -1,0 +1,12 @@
+[
+  {
+    "repeat_index": 1,
+    "label": "study-v3-anthropic-sonnet-forgetting-citation-repeat1",
+    "status": "completed",
+    "duration_seconds": 91.282464917,
+    "exit_code": 0,
+    "timed_out": false,
+    "log_path": "artifacts/natural_eval_repeat_runs/logs/study-v3-anthropic-sonnet-forgetting-citation-repeat1.log",
+    "run_dir": "artifacts/natural_eval_repeat_runs/20260405T014005Z-study-v3-anthropic-sonnet-forgetting-citation-repeat1"
+  }
+]

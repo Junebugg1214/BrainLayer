@@ -1886,6 +1886,7 @@ def run_model_eval_scenario(
     behavior_scoring_mode: str = "judge",
     behavior_judge: BehaviorJudge | None = None,
     runtime_profile: str = RUNTIME_PROFILE_DEFAULT,
+    runtime_names: Sequence[str] | None = None,
 ) -> List[ModelEvalResult]:
     active_adapter = adapter or HeuristicBrainLayerEvalAdapter()
     active_eval_mode = eval_mode
@@ -1895,11 +1896,14 @@ def run_model_eval_scenario(
     active_behavior_judge = behavior_judge or _build_behavior_judge(behavior_scoring_mode)
 
     results: List[ModelEvalResult] = []
+    selected_runtime_names = set(runtime_names or [])
     for variant in build_runtime_variants(
         include_ablations=include_ablations,
         runtime_profile=runtime_profile,
     ):
         runtime_name = variant.name
+        if selected_runtime_names and runtime_name not in selected_runtime_names:
+            continue
         active_variant_config = BrainLayerRuntimeConfig(
             **{
                 **active_runtime_config.__dict__,
@@ -2026,8 +2030,17 @@ def run_model_eval_suite(
     behavior_scoring_mode: str = "judge",
     behavior_judge: BehaviorJudge | None = None,
     runtime_profile: str = RUNTIME_PROFILE_DEFAULT,
+    scenario_slugs: Sequence[str] | None = None,
+    runtime_names: Sequence[str] | None = None,
 ) -> List[ModelEvalResult]:
     active_scenarios = list(scenarios or get_model_eval_scenarios(scenario_pack))
+    selected_scenario_slugs = set(scenario_slugs or [])
+    if selected_scenario_slugs:
+        active_scenarios = [
+            scenario
+            for scenario in active_scenarios
+            if scenario.slug in selected_scenario_slugs
+        ]
     results: List[ModelEvalResult] = []
     for scenario in active_scenarios:
         results.extend(
@@ -2042,6 +2055,7 @@ def run_model_eval_suite(
                 behavior_scoring_mode=behavior_scoring_mode,
                 behavior_judge=behavior_judge,
                 runtime_profile=runtime_profile,
+                runtime_names=runtime_names,
             )
         )
     return results
@@ -2064,6 +2078,8 @@ def run_live_model_eval_suite(
     behavior_scoring_mode: str = "judge",
     behavior_judge: BehaviorJudge | None = None,
     runtime_profile: str = RUNTIME_PROFILE_DEFAULT,
+    scenario_slugs: Sequence[str] | None = None,
+    runtime_names: Sequence[str] | None = None,
 ) -> List[ModelEvalResult]:
     adapter = build_live_model_eval_adapter(
         provider_name=provider_name,
@@ -2089,6 +2105,8 @@ def run_live_model_eval_suite(
         behavior_scoring_mode=behavior_scoring_mode,
         behavior_judge=behavior_judge,
         runtime_profile=runtime_profile,
+        scenario_slugs=scenario_slugs,
+        runtime_names=runtime_names,
     )
 
 
@@ -2544,6 +2562,18 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="Choose the default BrainLayer runtime set or the study-v2 stronger-baseline set.",
     )
     parser.add_argument(
+        "--scenario-slug",
+        action="append",
+        default=[],
+        help="Optional scenario slug filter. May be supplied multiple times.",
+    )
+    parser.add_argument(
+        "--runtime-name",
+        action="append",
+        default=[],
+        help="Optional runtime-name filter. May be supplied multiple times.",
+    )
+    parser.add_argument(
         "--score-exact",
         action="store_true",
         help="Disable judge-backed semantic behavior scoring and require exact normalized matches.",
@@ -2580,6 +2610,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         runtime_config=runtime_config,
         behavior_scoring_mode="exact" if args.score_exact else "judge",
         runtime_profile=args.runtime_profile,
+        scenario_slugs=args.scenario_slug or None,
+        runtime_names=args.runtime_name or None,
     )
     if args.dump_states:
         dump_model_eval_states(results, args.dump_states)

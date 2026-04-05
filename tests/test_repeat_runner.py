@@ -4,6 +4,7 @@ import unittest
 from pathlib import Path
 
 from brainlayer.repeat_runner import (
+    build_model_eval_command,
     build_natural_eval_command,
     render_repeat_summary_markdown,
     run_logged_command,
@@ -55,6 +56,31 @@ class RepeatRunnerTests(unittest.TestCase):
             self.assertEqual(result.status, "timeout")
             self.assertTrue(log_path.exists())
             self.assertIn("start", log_path.read_text(encoding="utf-8"))
+
+    def test_build_model_eval_command_includes_filters(self) -> None:
+        command = build_model_eval_command(
+            mode="live",
+            model="claude-sonnet-4-5-20250929",
+            provider_name="anthropic_messages",
+            base_url="https://api.anthropic.com",
+            api_key_env="ANTHROPIC_API_KEY",
+            request_path="/v1/messages",
+            timeout_seconds=12.0,
+            max_output_tokens_field="none",
+            temperature=0.0,
+            max_output_tokens=400,
+            scenario_pack="consolidation_stress",
+            runtime_profile="study_v2",
+            export_results=Path("artifacts/model_eval_repeat_runs"),
+            label="repeat-check",
+            scenario_slugs=["x"],
+            runtime_names=["brainlayer_full", "brainlayer_no_consolidation"],
+        )
+
+        self.assertIn("--scenario-slug", command)
+        self.assertIn("--runtime-name", command)
+        self.assertIn("brainlayer_no_consolidation", command)
+        self.assertIn("x", command)
 
     def test_render_repeat_summary_markdown(self) -> None:
         markdown = render_repeat_summary_markdown(

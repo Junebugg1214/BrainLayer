@@ -1,0 +1,282 @@
+{
+  "suite_name": "contradiction",
+  "scenario": {
+    "slug": "consolidation_stress_relationship_hint_stack",
+    "title": "Consolidation Stress Relationship Hint Stack",
+    "description": "Can repeated weak relationship hints become durable collaboration framing?",
+    "checkpoint": "relationship_retained",
+    "prompt": "What collaboration mode should define this project right now?",
+    "expected": "research partner"
+  },
+  "judge": {
+    "passed": true,
+    "score": 1.0,
+    "method": "exact_match",
+    "reason": "Expected answer matched after normalized token comparison."
+  },
+  "runtime": {
+    "runtime_name": "brainlayer_no_consolidation",
+    "eval_mode": "live",
+    "provider_name": "anthropic_messages",
+    "requested_model": "claude-sonnet-4-5-20250929",
+    "response_model": "claude-sonnet-4-5-20250929",
+    "finish_reason": "end_turn",
+    "latency_ms": 1287.3847090000013,
+    "used_json": true,
+    "parse_failure": false,
+    "empty_answer": false,
+    "interaction_episode_id": "episode-10",
+    "usage_metrics": {
+      "input_tokens": 503.0,
+      "cache_creation_input_tokens": 0.0,
+      "cache_read_input_tokens": 0.0,
+      "output_tokens": 56.0,
+      "prompt_tokens": 503.0,
+      "completion_tokens": 56.0,
+      "total_tokens": 559.0
+    }
+  },
+  "prompt_messages": [
+    {
+      "role": "system",
+      "content": "You are participating in a BrainLayer evaluation. Follow the task literally. If the task begins with 'Record', convert it into the appropriate structured memory_observations entry and keep assistant_response as a short acknowledgement. If the task asks about the current response style, primary goal, collaboration mode, or another stored value, return only the shortest value needed to answer correctly, not a full sentence. Always return valid JSON matching the requested schema."
+    },
+    {
+      "role": "user",
+      "content": "BrainLayer context:\n- [episodes] episode-7: User asked about current collaboration mode; confirmed as research partner based on stored relationship hints. (tags=interaction, assistant_reply) (score=6.13)\n- [episodes] episode-6: Recorded relationship hint: collaboration mode is research partner. (tags=interaction, assistant_reply) (score=6.02)\n\nTask:\nWhat collaboration mode should define this project right now?\n\nReturn a JSON object with the following keys:\n- \"assistant_response\": the answer for the user\n- \"episodic_summary\": a short summary worth storing as an episode\n- \"memory_observations\": an optional array of observations to write back to BrainLayer\n\nOnly emit memory observations when the current turn strongly justifies them.\nAllowed memory_type values: preference, correction, lesson, goal, relationship, preference_hint, lesson_hint, goal_hint, relationship_hint, noise.\nRequired payloads:\n- preference/correction: key, value, proposition\n- lesson/lesson_hint: trigger, action, summary\n- goal/goal_hint: key, value, summary\n- relationship/relationship_hint: key, value, summary, themes\n- noise: any small string payload\nEach memory_observations item must include memory_type and a nested payload object.\nDo not place key/value/summary/proposition directly at the top level of a memory observation.\nExample preference observation:\n{\"memory_type\":\"preference\",\"payload\":{\"key\":\"response_style\",\"value\":\"brief\",\"proposition\":\"The user prefers brief replies.\"}}\nExample goal observation:\n{\"memory_type\":\"goal\",\"payload\":{\"key\":\"primary_goal\",\"value\":\"ship eval summary\",\"summary\":\"The current primary goal is to ship the eval summary.\"}}\nIf no memory write is justified, return an empty memory_observations array."
+    }
+  ],
+  "retrieved_memories": [
+    {
+      "layer": "episodes",
+      "record_id": "episode-7",
+      "score": 6.127777777777778,
+      "content": "User asked about current collaboration mode; confirmed as research partner based on stored relationship hints. (tags=interaction, assistant_reply)"
+    },
+    {
+      "layer": "episodes",
+      "record_id": "episode-6",
+      "score": 6.016666666666667,
+      "content": "Recorded relationship hint: collaboration mode is research partner. (tags=interaction, assistant_reply)"
+    }
+  ],
+  "raw_model_output": "```json\n{\n  \"assistant_response\": \"research partner\",\n  \"episodic_summary\": \"User asked about current collaboration mode; confirmed as research partner based on stored context.\",\n  \"memory_observations\": []\n}\n```",
+  "parsed_output": {
+    "assistant_response": "research partner",
+    "episodic_summary": "User asked about current collaboration mode; confirmed as research partner based on stored context.",
+    "memory_observations": []
+  },
+  "consolidation_report": {
+    "promoted_belief_keys": [],
+    "promoted_procedure_triggers": [],
+    "updated_working_keys": [],
+    "updated_autobio_keys": [],
+    "forgotten_episode_ids": [],
+    "paused_working_item_ids": []
+  },
+  "exported_state": {
+    "working_state": [],
+    "episodes": [
+      {
+        "id": "episode-1",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "The collaboration mode is likely research partner.",
+        "tags": [
+          "relationship_hint",
+          "collaboration_mode"
+        ],
+        "metadata": {
+          "key": "collaboration_mode",
+          "value": "research partner",
+          "summary": "The collaboration mode is likely research partner.",
+          "themes": "relationship,research-mode"
+        },
+        "salience": 0.5,
+        "outcome": "captured candidate signal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T02:26:14+00:00"
+      },
+      {
+        "id": "episode-2",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "Recorded collaboration mode as research partner.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Record relationship hint: key=collaboration_mode; value=research partner; summary=The collaboration mode is likely research partner.; themes=relationship,research-mode",
+          "assistant_response": "Noted.",
+          "model": "claude-sonnet-4-5-20250929",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [],
+        "timestamp": "2026-04-05T02:26:14+00:00"
+      },
+      {
+        "id": "episode-3",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "Captured low-salience turn detail.",
+        "tags": [
+          "noise"
+        ],
+        "metadata": {
+          "note": "The roadmap appendix still needs a timeline legend."
+        },
+        "salience": 0.5,
+        "outcome": "ignored",
+        "source_refs": [],
+        "timestamp": "2026-04-05T02:26:16+00:00"
+      },
+      {
+        "id": "episode-4",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "Recorded noise about roadmap appendix needing a timeline legend.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Record noise: value=The roadmap appendix still needs a timeline legend.",
+          "assistant_response": "Noted.",
+          "model": "claude-sonnet-4-5-20250929",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "episode-2",
+          "episode-1"
+        ],
+        "timestamp": "2026-04-05T02:26:16+00:00"
+      },
+      {
+        "id": "episode-5",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "The collaboration mode is likely research partner.",
+        "tags": [
+          "relationship_hint",
+          "collaboration_mode"
+        ],
+        "metadata": {
+          "key": "collaboration_mode",
+          "value": "research partner",
+          "summary": "The collaboration mode is likely research partner.",
+          "themes": "relationship,research-mode"
+        },
+        "salience": 0.5,
+        "outcome": "captured candidate signal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T02:26:19+00:00"
+      },
+      {
+        "id": "episode-6",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "Recorded relationship hint: collaboration mode is research partner.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Record relationship hint: key=collaboration_mode; value=research partner; summary=The collaboration mode is likely research partner.; themes=relationship,research-mode",
+          "assistant_response": "Recorded collaboration mode as research partner.",
+          "model": "claude-sonnet-4-5-20250929",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "episode-1",
+          "episode-2"
+        ],
+        "timestamp": "2026-04-05T02:26:19+00:00"
+      },
+      {
+        "id": "episode-7",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "User asked about current collaboration mode; confirmed as research partner based on stored relationship hints.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "What collaboration mode should define this project right now?",
+          "assistant_response": "research partner",
+          "model": "claude-sonnet-4-5-20250929",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "episode-6",
+          "episode-5"
+        ],
+        "timestamp": "2026-04-05T02:26:24+00:00"
+      },
+      {
+        "id": "episode-8",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "The methods appendix still needs a glossary row.",
+        "tags": [
+          "noise"
+        ],
+        "metadata": {
+          "value": "The methods appendix still needs a glossary row."
+        },
+        "salience": 0.5,
+        "outcome": "ignored",
+        "source_refs": [],
+        "timestamp": "2026-04-05T02:26:25+00:00"
+      },
+      {
+        "id": "episode-9",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "Recorded noise about methods appendix needing a glossary row.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Record noise: value=The methods appendix still needs a glossary row.",
+          "assistant_response": "Noted.",
+          "model": "claude-sonnet-4-5-20250929",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "episode-4",
+          "episode-3"
+        ],
+        "timestamp": "2026-04-05T02:26:25+00:00"
+      },
+      {
+        "id": "episode-10",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "User asked about current collaboration mode; confirmed as research partner based on stored context.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "What collaboration mode should define this project right now?",
+          "assistant_response": "research partner",
+          "model": "claude-sonnet-4-5-20250929",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "episode-7",
+          "episode-6"
+        ],
+        "timestamp": "2026-04-05T02:26:27+00:00"
+      }
+    ],
+    "beliefs": [],
+    "autobiographical_state": [],
+    "procedures": []
+  }
+}

@@ -1,0 +1,21 @@
+[2026-04-05T02:25:08+00:00] command: /Applications/Xcode.app/Contents/Developer/usr/bin/python3 /Users/marcsaint-jour/Documents/New project/scripts/run_model_evals.py --mode live --model claude-sonnet-4-5-20250929 --provider-name anthropic_messages --base-url https://api.anthropic.com --api-key-env ANTHROPIC_API_KEY --request-path /v1/messages --timeout-seconds 20.0 --max-output-tokens-field none --temperature 0.0 --max-output-tokens 400 --scenario-pack consolidation_stress --runtime-profile study_v2 --export-results artifacts/model_eval_repeat_runs --label study-v3-anthropic-sonnet-consolidation-goal_hint_stack-repeat1 --scenario-slug consolidation_stress_goal_hint_stack --runtime-name brainlayer_full --runtime-name brainlayer_no_consolidation --runtime-name structured_no_consolidation
+Model-Backed BrainLayer Eval Report
+===================================
+
+Mode: live | provider=anthropic_messages | requested_model=claude-sonnet-4-5-20250929
+
+[PASS] brainlayer_full on consolidation_stress_goal_hint_stack/goal_promoted: expected='preserve citations', actual='preserve citations', layers=working_state,episodes,episodes, score=1.00, scoring=exact_match, latency_ms=1945.6, json=true, finish=end_turn
+[PASS] brainlayer_full on consolidation_stress_goal_hint_stack/goal_retained: expected='preserve citations', actual='preserve citations', layers=working_state,episodes,episodes, score=1.00, scoring=exact_match, latency_ms=2362.6, json=true, finish=end_turn
+[PASS] structured_no_consolidation on consolidation_stress_goal_hint_stack/goal_promoted: expected='preserve citations', actual='preserve citations', layers=episodes,episodes, score=1.00, scoring=exact_match, latency_ms=2073.4, json=true, finish=end_turn
+[PASS] structured_no_consolidation on consolidation_stress_goal_hint_stack/goal_retained: expected='preserve citations', actual='preserve citations', layers=episodes,episodes, score=1.00, scoring=exact_match, latency_ms=1288.9, json=true, finish=end_turn
+[PASS] brainlayer_no_consolidation on consolidation_stress_goal_hint_stack/goal_promoted: expected='preserve citations', actual='preserve citations', layers=episodes,episodes, score=1.00, scoring=exact_match, latency_ms=2016.0, json=true, finish=end_turn
+[PASS] brainlayer_no_consolidation on consolidation_stress_goal_hint_stack/goal_retained: expected='preserve citations', actual='preserve citations', layers=episodes,episodes, score=1.00, scoring=exact_match, latency_ms=1402.3, json=true, finish=end_turn
+
+Summary
+-------
+brainlayer_full: 2/2 | avg_records=9.5, avg_episodes=8.5, avg_score=1.00, avg_latency_ms=2154.1, parse_failures=0, empty_answers=0, errors=0, avg_total_tokens=597.0
+brainlayer_no_consolidation: 2/2 | avg_records=8.5, avg_episodes=8.5, avg_score=1.00, avg_latency_ms=1709.2, parse_failures=0, empty_answers=0, errors=0, avg_total_tokens=568.0
+structured_no_consolidation: 2/2 | avg_records=8.5, avg_episodes=8.5, avg_score=1.00, avg_latency_ms=1681.1, parse_failures=0, empty_answers=0, errors=0, avg_total_tokens=568.0
+
+Model-loop exports written to artifacts/model_eval_repeat_runs/20260405T022549Z-study-v3-anthropic-sonnet-consolidation-goal-hint-stack-repeat1
+X post saved to artifacts/model_eval_repeat_runs/20260405T022549Z-study-v3-anthropic-sonnet-consolidation-goal-hint-stack-repeat1/x_post.txt

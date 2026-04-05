@@ -1,0 +1,4 @@
+runtime_name,passed,total,pass_rate,parse_failures,empty_answers,errors,skipped,avg_active_working_items,avg_applied_observation_count,avg_autobio_notes,avg_beliefs,avg_episodes,avg_latency_ms,avg_naive_notes,avg_procedures,avg_score,avg_summary_procedures,avg_summary_slots,avg_total_records,avg_usage_cache_creation_input_tokens,avg_usage_cache_read_input_tokens,avg_usage_completion_tokens,avg_usage_input_tokens,avg_usage_output_tokens,avg_usage_prompt_tokens,avg_usage_total_tokens
+brainlayer_full,2,2,1.0,0,0,0,0,1.0,0.0,0.0,0.0,8.5,2154.0588540000003,0.0,0.0,1.0,0.0,0.0,9.5,0.0,0.0,58.0,539.0,58.0,539.0,597.0
+brainlayer_no_consolidation,2,2,1.0,0,0,0,0,0.0,0.0,0.0,0.0,8.5,1709.1712295000007,0.0,0.0,1.0,0.0,0.0,8.5,0.0,0.0,63.0,505.0,63.0,505.0,568.0
+structured_no_consolidation,2,2,1.0,0,0,0,0,0.0,0.0,0.0,0.0,8.5,1681.1290835000018,0.0,0.0,1.0,0.0,0.0,8.5,0.0,0.0,63.0,505.0,63.0,505.0,568.0

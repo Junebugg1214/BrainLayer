@@ -1,0 +1,21 @@
+[2026-04-05T01:41:42+00:00] command: /Applications/Xcode.app/Contents/Developer/usr/bin/python3 /Users/marcsaint-jour/Documents/New project/scripts/run_natural_model_evals.py --mode live --model claude-sonnet-4-5-20250929 --provider-name anthropic_messages --base-url https://api.anthropic.com --api-key-env ANTHROPIC_API_KEY --request-path /v1/messages --timeout-seconds 20.0 --max-output-tokens-field none --temperature 0.0 --max-output-tokens 400 --scenario-pack forgetting_stress --runtime-profile study_v2 --export-results artifacts/natural_eval_repeat_runs --label study-v3-anthropic-sonnet-forgetting-summary_goal_crowding-repeat1 --scenario-slug forgetting_stress_natural_summary_goal_crowding --runtime-name brainlayer_full --runtime-name brainlayer_no_forgetting --runtime-name structured_no_consolidation
+Natural Conversation BrainLayer Eval Report
+===========================================
+
+Mode: live | provider=anthropic_messages | requested_model=claude-sonnet-4-5-20250929
+
+[PASS] brainlayer_full on forgetting_stress_natural_summary_goal_crowding/extract_goal: expected='ship eval summary', actual='ship eval summary', layers=working_state,working_state,episodes,episodes, target=extraction:working_state:primary_goal, score=1.00, scoring=structural_exact_match, latency_ms=4741.3, json=true
+[PASS] brainlayer_full on forgetting_stress_natural_summary_goal_crowding/behavior_goal: expected='ship eval summary', actual='Ship eval summary', layers=working_state,working_state,episodes,episodes, target=behavior, score=1.00, scoring=exact_match, latency_ms=2051.5, json=true
+[PASS] structured_no_consolidation on forgetting_stress_natural_summary_goal_crowding/extract_goal: expected='ship eval summary', actual='ship eval summary', layers=working_state,working_state,episodes,episodes, target=extraction:working_state:primary_goal, score=1.00, scoring=structural_exact_match, latency_ms=5123.9, json=true
+[PASS] structured_no_consolidation on forgetting_stress_natural_summary_goal_crowding/behavior_goal: expected='ship eval summary', actual='Ship eval summary.', layers=working_state,working_state,episodes,episodes, target=behavior, score=1.00, scoring=exact_match, latency_ms=2032.3, json=true
+[PASS] brainlayer_no_forgetting on forgetting_stress_natural_summary_goal_crowding/extract_goal: expected='ship eval summary', actual='ship eval summary', layers=working_state,episodes,episodes, target=extraction:working_state:primary_goal, score=1.00, scoring=structural_exact_match, latency_ms=4050.2, json=true
+[PASS] brainlayer_no_forgetting on forgetting_stress_natural_summary_goal_crowding/behavior_goal: expected='ship eval summary', actual='Ship eval summary.', layers=working_state,working_state,episodes,episodes, target=behavior, score=1.00, scoring=exact_match, latency_ms=2149.1, json=true
+
+Summary
+-------
+brainlayer_full: 2/2 | extraction=1/1, behavior=1/1, avg_score=1.00, avg_records=16.5, avg_latency_ms=3396.4, parse_failures=0, errors=0, avg_total_tokens=1025.5
+brainlayer_no_forgetting: 2/2 | extraction=1/1, behavior=1/1, avg_score=1.00, avg_records=16.0, avg_latency_ms=3099.7, parse_failures=0, errors=0, avg_total_tokens=915.0
+structured_no_consolidation: 2/2 | extraction=1/1, behavior=1/1, avg_score=1.00, avg_records=20.0, avg_latency_ms=3578.1, parse_failures=0, errors=0, avg_total_tokens=923.5
+
+Natural-eval exports written to artifacts/natural_eval_repeat_runs/20260405T014324Z-study-v3-anthropic-sonnet-forgetting-summary-goal-crowding-repeat1
+X post saved to artifacts/natural_eval_repeat_runs/20260405T014324Z-study-v3-anthropic-sonnet-forgetting-summary-goal-crowding-repeat1/x_post.txt

@@ -1,0 +1,12 @@
+[
+  {
+    "repeat_index": 1,
+    "label": "study-v3-anthropic-haiku-consolidation-clean-repeat1",
+    "status": "completed",
+    "duration_seconds": 74.849321125,
+    "exit_code": 0,
+    "timed_out": false,
+    "log_path": "artifacts/model_eval_repeat_runs/logs/study-v3-anthropic-haiku-consolidation-clean-repeat1.log",
+    "run_dir": "artifacts/model_eval_repeat_runs/20260405T022323Z-study-v3-anthropic-haiku-consolidation-clean-repeat1"
+  }
+]

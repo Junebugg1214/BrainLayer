@@ -1,0 +1,21 @@
+[2026-04-05T01:38:34+00:00] command: /Applications/Xcode.app/Contents/Developer/usr/bin/python3 /Users/marcsaint-jour/Documents/New project/scripts/run_natural_model_evals.py --mode live --model claude-sonnet-4-5-20250929 --provider-name anthropic_messages --base-url https://api.anthropic.com --api-key-env ANTHROPIC_API_KEY --request-path /v1/messages --timeout-seconds 20.0 --max-output-tokens-field none --temperature 0.0 --max-output-tokens 400 --scenario-pack forgetting_stress --runtime-profile study_v2 --export-results artifacts/natural_eval_repeat_runs --label study-v3-anthropic-sonnet-forgetting-citation-repeat1 --scenario-slug forgetting_stress_natural_citation_goal_crowding --runtime-name brainlayer_full --runtime-name brainlayer_no_forgetting --runtime-name structured_no_consolidation
+Natural Conversation BrainLayer Eval Report
+===========================================
+
+Mode: live | provider=anthropic_messages | requested_model=claude-sonnet-4-5-20250929
+
+[PASS] brainlayer_full on forgetting_stress_natural_citation_goal_crowding/extract_goal: expected='preserve citations', actual='preserve citations', layers=working_state,episodes,episodes, target=extraction:working_state:primary_goal, score=1.00, scoring=structural_exact_match, latency_ms=3093.2, json=true
+[PASS] brainlayer_full on forgetting_stress_natural_citation_goal_crowding/behavior_goal: expected='preserve citations', actual='Preserve citations.', layers=working_state,working_state,episodes,episodes, target=behavior, score=1.00, scoring=exact_match, latency_ms=1942.0, json=true
+[PASS] structured_no_consolidation on forgetting_stress_natural_citation_goal_crowding/extract_goal: expected='preserve citations', actual='preserve citations', layers=working_state,working_state,episodes,episodes, target=extraction:working_state:primary_goal, score=1.00, scoring=structural_exact_match, latency_ms=3175.2, json=true
+[FAIL] structured_no_consolidation on forgetting_stress_natural_citation_goal_crowding/behavior_goal: expected='preserve citations', actual='Complete the main task, then handle seven deferred polish tasks: lock caption table in appendix, tighten glossary bullets, clean up timeline labels, clean up sidebar legend, align footer labels for packet polish, figure caption spacing polish pass, and evidence table signoff row.', layers=working_state,working_state,episodes,episodes, target=behavior, score=0.00, scoring=heuristic_semantic_judge, latency_ms=3039.5, json=true, score_reason=Canonicalized answer did not preserve enough of the expected meaning.
+[PASS] brainlayer_no_forgetting on forgetting_stress_natural_citation_goal_crowding/extract_goal: expected='preserve citations', actual='preserve citations', layers=working_state,episodes,episodes, target=extraction:working_state:primary_goal, score=1.00, scoring=structural_exact_match, latency_ms=3071.7, json=true
+[PASS] brainlayer_no_forgetting on forgetting_stress_natural_citation_goal_crowding/behavior_goal: expected='preserve citations', actual='Preserve citations.', layers=working_state,working_state,episodes,episodes, target=behavior, score=1.00, scoring=exact_match, latency_ms=1948.0, json=true
+
+Summary
+-------
+brainlayer_full: 2/2 | extraction=1/1, behavior=1/1, avg_score=1.00, avg_records=16.0, avg_latency_ms=2517.6, parse_failures=0, errors=0, avg_total_tokens=872.0
+brainlayer_no_forgetting: 2/2 | extraction=1/1, behavior=1/1, avg_score=1.00, avg_records=14.5, avg_latency_ms=2509.8, parse_failures=0, errors=0, avg_total_tokens=879.0
+structured_no_consolidation: 1/2 | extraction=1/1, behavior=0/1, avg_score=0.50, avg_records=20.0, avg_latency_ms=3107.3, parse_failures=0, errors=0, avg_total_tokens=1102.0
+
+Natural-eval exports written to artifacts/natural_eval_repeat_runs/20260405T014005Z-study-v3-anthropic-sonnet-forgetting-citation-repeat1
+X post saved to artifacts/natural_eval_repeat_runs/20260405T014005Z-study-v3-anthropic-sonnet-forgetting-citation-repeat1/x_post.txt

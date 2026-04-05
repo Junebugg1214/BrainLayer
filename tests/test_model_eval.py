@@ -120,6 +120,24 @@ class ModelEvalTests(unittest.TestCase):
         self.assertEqual(len(model_loop_results), 8)
         self.assertTrue(all(result.passed for result in model_loop_results))
 
+    def test_model_eval_filters_runtime_names_and_scenario_slugs(self) -> None:
+        results = run_model_eval_suite(
+            include_ablations=True,
+            scenario_pack="consolidation_stress",
+            runtime_profile=RUNTIME_PROFILE_STUDY_V2,
+            scenario_slugs=["consolidation_stress_goal_hint_stack"],
+            runtime_names=["brainlayer_full", "brainlayer_no_consolidation"],
+        )
+
+        self.assertEqual(
+            {result.scenario_slug for result in results},
+            {"consolidation_stress_goal_hint_stack"},
+        )
+        self.assertEqual(
+            {result.runtime_name for result in results},
+            {"brainlayer_full", "brainlayer_no_consolidation"},
+        )
+
     def test_study_v2_runtime_profile_exposes_stronger_baselines(self) -> None:
         results = run_model_eval_suite(
             include_ablations=False,

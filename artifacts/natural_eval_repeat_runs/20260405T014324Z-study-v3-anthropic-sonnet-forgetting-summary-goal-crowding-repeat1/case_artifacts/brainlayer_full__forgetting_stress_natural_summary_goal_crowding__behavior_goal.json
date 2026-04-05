@@ -1,0 +1,495 @@
+{
+  "suite_name": "natural",
+  "scenario": {
+    "slug": "forgetting_stress_natural_summary_goal_crowding",
+    "title": "Forgetting Stress Natural Summary Goal Crowding",
+    "description": "Can forgetting preserve the active summary goal under stale natural-language clutter?",
+    "checkpoint": "behavior_goal",
+    "prompt": "What is the main goal right now?",
+    "expected": "ship eval summary",
+    "evaluation_type": "behavior",
+    "target_layer": "",
+    "target_key": ""
+  },
+  "judge": {
+    "passed": true,
+    "score": 1.0,
+    "method": "exact_match",
+    "reason": "Expected answer matched after normalized token comparison."
+  },
+  "runtime": {
+    "runtime_name": "brainlayer_full",
+    "eval_mode": "live",
+    "provider_name": "anthropic_messages",
+    "requested_model": "claude-sonnet-4-5-20250929",
+    "response_model": "claude-sonnet-4-5-20250929",
+    "finish_reason": "end_turn",
+    "latency_ms": 2051.541584000006,
+    "used_json": true,
+    "parse_failure": false,
+    "empty_answer": false,
+    "interaction_episode_id": "episode-17",
+    "usage_metrics": {
+      "input_tokens": 943.0,
+      "cache_creation_input_tokens": 0.0,
+      "cache_read_input_tokens": 0.0,
+      "output_tokens": 60.0,
+      "prompt_tokens": 943.0,
+      "completion_tokens": 60.0,
+      "total_tokens": 1003.0
+    }
+  },
+  "prompt_messages": [
+    {
+      "role": "system",
+      "content": "You are participating in a BrainLayer natural-conversation evaluation. When a normal user utterance reveals a stable preference, active goal, relationship framing, or reusable lesson, infer the appropriate structured memory_observations entry. Use BrainLayer's canonical memory keys instead of inventing synonyms. Response brevity, verbosity, or detail should use key=response_style, not response_length or tone. Current task objectives should use key=primary_goal, not citation_integrity or delivery_priority. Collaboration framing should use key=collaboration_mode. Reusable release-retry lessons should use trigger=retry_release and action=check authentication when that is the implied lesson. If the user says to keep answers brief, concise, short, or detailed, store that as a preference or correction on response_style. If the user says the main thing is preserving citations or shipping a report, store that as a goal on primary_goal, not as a preference. If the user asks for thinking together like a partner, store that as relationship framing on collaboration_mode. Use preference_hint or lesson_hint only when the signal is indirect or weak; use preference, goal, relationship, or lesson when the instruction is explicit. When the user simply asks for a value like the current response style or goal, return only the shortest value needed to answer correctly. Always return valid JSON."
+    },
+    {
+      "role": "user",
+      "content": "BrainLayer context:\n- [working_state] working-3: primary_goal = ship eval summary. Leadership brief changed; the current primary goal is to get the evaluation digest out tonight, superseding all other tasks. (score=6.65)\n- [working_state] working-2: deferred_tasks = lock caption table in appendix; tighten glossary bullets in glossary pass; cleanup timeline labels; cleanup sidebar legend; align footer labels for packet polish; figure caption spacing polish pass; add signoff row to evidence table. User has deferred cleanup tasks including lock caption table, tighten glossary bullets, cleanup timeline labels, cleanup sidebar legend, align footer labels, figure caption spacing, and add signoff row to evidence table\u2014all to be done after the main task. (score=6.53)\n- [episodes] episode-15: User has deferred cleanup tasks including lock caption table, tighten glossary bullets, cleanup timeline labels, cleanup sidebar legend, align footer labels, figure caption spacing, and add signoff row to evidence table\u2014all to be done after the main task. (tags=goal, deferred_tasks) (score=6.24)\n- [episodes] episode-13: User has deferred cleanup tasks including lock caption table, tighten glossary bullets, cleanup timeline labels, cleanup sidebar legend, align footer labels, and figure caption spacing\u2014all to be done after the main task. (tags=goal, deferred_tasks) (score=6.11)\n\nTask:\nWhat is the main goal right now?\n\nReturn a JSON object with the following keys:\n- \"assistant_response\": the answer for the user\n- \"episodic_summary\": a short summary worth storing as an episode\n- \"memory_observations\": an optional array of observations to write back to BrainLayer\n\nOnly emit memory observations when the current turn strongly justifies them.\nAllowed memory_type values: preference, correction, lesson, goal, relationship, preference_hint, lesson_hint, goal_hint, relationship_hint, noise.\nRequired payloads:\n- preference/correction: key, value, proposition\n- lesson/lesson_hint: trigger, action, summary\n- goal/goal_hint: key, value, summary\n- relationship/relationship_hint: key, value, summary, themes\n- noise: any small string payload\nEach memory_observations item must include memory_type and a nested payload object.\nDo not place key/value/summary/proposition directly at the top level of a memory observation.\nExample preference observation:\n{\"memory_type\":\"preference\",\"payload\":{\"key\":\"response_style\",\"value\":\"brief\",\"proposition\":\"The user prefers brief replies.\"}}\nExample goal observation:\n{\"memory_type\":\"goal\",\"payload\":{\"key\":\"primary_goal\",\"value\":\"ship eval summary\",\"summary\":\"The current primary goal is to ship the eval summary.\"}}\nIf no memory write is justified, return an empty memory_observations array."
+    }
+  ],
+  "retrieved_memories": [
+    {
+      "layer": "working_state",
+      "record_id": "working-3",
+      "score": 6.6499999999999995,
+      "content": "primary_goal = ship eval summary. Leadership brief changed; the current primary goal is to get the evaluation digest out tonight, superseding all other tasks."
+    },
+    {
+      "layer": "working_state",
+      "record_id": "working-2",
+      "score": 6.533333333333333,
+      "content": "deferred_tasks = lock caption table in appendix; tighten glossary bullets in glossary pass; cleanup timeline labels; cleanup sidebar legend; align footer labels for packet polish; figure caption spacing polish pass; add signoff row to evidence table. User has deferred cleanup tasks including lock caption table, tighten glossary bullets, cleanup timeline labels, cleanup sidebar legend, align footer labels, figure caption spacing, and add signoff row to evidence table\u2014all to be done after the main task."
+    },
+    {
+      "layer": "episodes",
+      "record_id": "episode-15",
+      "score": 6.2375,
+      "content": "User has deferred cleanup tasks including lock caption table, tighten glossary bullets, cleanup timeline labels, cleanup sidebar legend, align footer labels, figure caption spacing, and add signoff row to evidence table\u2014all to be done after the main task. (tags=goal, deferred_tasks)"
+    },
+    {
+      "layer": "episodes",
+      "record_id": "episode-13",
+      "score": 6.1125,
+      "content": "User has deferred cleanup tasks including lock caption table, tighten glossary bullets, cleanup timeline labels, cleanup sidebar legend, align footer labels, and figure caption spacing\u2014all to be done after the main task. (tags=goal, deferred_tasks)"
+    }
+  ],
+  "raw_model_output": "```json\n{\n  \"assistant_response\": \"Ship eval summary\",\n  \"episodic_summary\": \"User asked what the main goal is right now; confirmed it's shipping the eval summary tonight.\",\n  \"memory_observations\": []\n}\n```",
+  "parsed_output": {
+    "assistant_response": "Ship eval summary",
+    "episodic_summary": "User asked what the main goal is right now; confirmed it's shipping the eval summary tonight.",
+    "memory_observations": []
+  },
+  "consolidation_report": {
+    "promoted_belief_keys": [],
+    "promoted_procedure_triggers": [],
+    "updated_working_keys": [
+      "deferred_task",
+      "deferred_tasks",
+      "primary_goal"
+    ],
+    "updated_autobio_keys": [],
+    "forgotten_episode_ids": [],
+    "paused_working_item_ids": []
+  },
+  "exported_state": {
+    "working_state": [
+      {
+        "id": "working-1",
+        "key": "deferred_task",
+        "value": "lock caption table in appendix",
+        "content": "User has a deferred task to lock the caption table in the appendix.",
+        "priority": 0.5,
+        "status": "active",
+        "source_refs": [
+          "episode-1"
+        ],
+        "updated_at": "2026-04-05T01:42:16+00:00"
+      },
+      {
+        "id": "working-2",
+        "key": "deferred_tasks",
+        "value": "lock caption table in appendix; tighten glossary bullets in glossary pass; cleanup timeline labels; cleanup sidebar legend; align footer labels for packet polish; figure caption spacing polish pass; add signoff row to evidence table",
+        "content": "User has deferred cleanup tasks including lock caption table, tighten glossary bullets, cleanup timeline labels, cleanup sidebar legend, align footer labels, figure caption spacing, and add signoff row to evidence table\u2014all to be done after the main task.",
+        "priority": 0.5,
+        "status": "active",
+        "source_refs": [
+          "episode-15"
+        ],
+        "updated_at": "2026-04-05T01:42:16+00:00"
+      },
+      {
+        "id": "working-3",
+        "key": "primary_goal",
+        "value": "ship eval summary",
+        "content": "Leadership brief changed; the current primary goal is to get the evaluation digest out tonight, superseding all other tasks.",
+        "priority": 0.5,
+        "status": "active",
+        "source_refs": [
+          "episode-9"
+        ],
+        "updated_at": "2026-04-05T01:42:16+00:00"
+      }
+    ],
+    "episodes": [
+      {
+        "id": "episode-1",
+        "scenario": "forgetting_stress_natural_summary_goal_crowding",
+        "summary": "User has a deferred task to lock the caption table in the appendix.",
+        "tags": [
+          "goal",
+          "deferred_task"
+        ],
+        "metadata": {
+          "key": "deferred_task",
+          "value": "lock caption table in appendix",
+          "summary": "User has a deferred task to lock the caption table in the appendix."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T01:41:46+00:00"
+      },
+      {
+        "id": "episode-2",
+        "scenario": "forgetting_stress_natural_summary_goal_crowding",
+        "summary": "User noted a parking-lot item: lock the caption table in the appendix for later.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Parking lot for later: lock the caption table in the appendix.",
+          "assistant_response": "Noted \u2013 I'll remember to lock the caption table in the appendix when we get to it.",
+          "model": "claude-sonnet-4-5-20250929",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [],
+        "timestamp": "2026-04-05T01:41:46+00:00"
+      },
+      {
+        "id": "episode-3",
+        "scenario": "forgetting_stress_natural_summary_goal_crowding",
+        "summary": "User has deferred cleanup tasks: lock caption table in appendix and tighten glossary bullets in glossary pass.",
+        "tags": [
+          "goal",
+          "deferred_tasks"
+        ],
+        "metadata": {
+          "key": "deferred_tasks",
+          "value": "lock caption table in appendix; tighten glossary bullets in glossary pass",
+          "summary": "User has deferred cleanup tasks: lock caption table in appendix and tighten glossary bullets in glossary pass."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T01:41:49+00:00"
+      },
+      {
+        "id": "episode-4",
+        "scenario": "forgetting_stress_natural_summary_goal_crowding",
+        "summary": "User noted another deferred cleanup task: tighten the glossary bullets in the glossary pass.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Another later cleanup item: tighten the glossary bullets in the glossary pass.",
+          "assistant_response": "Got it\u2014added to the cleanup list: tighten the glossary bullets during the glossary pass.",
+          "model": "claude-sonnet-4-5-20250929",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "episode-2",
+          "working-1",
+          "episode-1"
+        ],
+        "timestamp": "2026-04-05T01:41:49+00:00"
+      },
+      {
+        "id": "episode-5",
+        "scenario": "forgetting_stress_natural_summary_goal_crowding",
+        "summary": "User has deferred cleanup tasks: lock caption table, tighten glossary bullets, and cleanup timeline labels\u2014all to be done after the main task.",
+        "tags": [
+          "goal",
+          "deferred_tasks"
+        ],
+        "metadata": {
+          "key": "deferred_tasks",
+          "value": "lock caption table in appendix; tighten glossary bullets in glossary pass; cleanup timeline labels",
+          "summary": "User has deferred cleanup tasks: lock caption table, tighten glossary bullets, and cleanup timeline labels\u2014all to be done after the main task."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T01:41:53+00:00"
+      },
+      {
+        "id": "episode-6",
+        "scenario": "forgetting_stress_natural_summary_goal_crowding",
+        "summary": "User deferred another cleanup task: timeline labels will need cleanup after the main task.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "The timeline labels can wait until after the main task, but they will need cleanup.",
+          "assistant_response": "Noted. I've added timeline label cleanup to the deferred tasks list\u2014it'll be handled after the main task is complete.",
+          "model": "claude-sonnet-4-5-20250929",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-2",
+          "working-1",
+          "episode-4",
+          "episode-3"
+        ],
+        "timestamp": "2026-04-05T01:41:53+00:00"
+      },
+      {
+        "id": "episode-7",
+        "scenario": "forgetting_stress_natural_summary_goal_crowding",
+        "summary": "User has deferred cleanup tasks: lock caption table, tighten glossary bullets, cleanup timeline labels, and cleanup sidebar legend\u2014all to be done after the main task.",
+        "tags": [
+          "goal",
+          "deferred_tasks"
+        ],
+        "metadata": {
+          "key": "deferred_tasks",
+          "value": "lock caption table in appendix; tighten glossary bullets in glossary pass; cleanup timeline labels; cleanup sidebar legend",
+          "summary": "User has deferred cleanup tasks: lock caption table, tighten glossary bullets, cleanup timeline labels, and cleanup sidebar legend\u2014all to be done after the main task."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T01:41:58+00:00"
+      },
+      {
+        "id": "episode-8",
+        "scenario": "forgetting_stress_natural_summary_goal_crowding",
+        "summary": "User deferred another cleanup task: sidebar legend will need cleanup after the main task.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "The sidebar legend can wait until after the main task, but it will need cleanup.",
+          "assistant_response": "Noted\u2014I've added the sidebar legend cleanup to the deferred tasks list. It will be handled after the main task.",
+          "model": "claude-sonnet-4-5-20250929",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "episode-6",
+          "working-2",
+          "episode-5",
+          "working-1"
+        ],
+        "timestamp": "2026-04-05T01:41:58+00:00"
+      },
+      {
+        "id": "episode-9",
+        "scenario": "forgetting_stress_natural_summary_goal_crowding",
+        "summary": "Leadership brief changed; the current primary goal is to get the evaluation digest out tonight, superseding all other tasks.",
+        "tags": [
+          "goal",
+          "primary_goal"
+        ],
+        "metadata": {
+          "key": "primary_goal",
+          "value": "ship eval summary",
+          "summary": "Leadership brief changed; the current primary goal is to get the evaluation digest out tonight, superseding all other tasks."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T01:42:03+00:00"
+      },
+      {
+        "id": "episode-10",
+        "scenario": "forgetting_stress_natural_summary_goal_crowding",
+        "summary": "User shifted priority: leadership brief changed, and the only thing that matters now is shipping the evaluation digest tonight. All previous deferred tasks are superseded by this urgent goal.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "The leadership brief changed, and right now the only thing that matters is getting the evaluation digest out tonight.",
+          "assistant_response": "Understood. The evaluation digest is the priority tonight\u2014everything else is deferred. I'll focus exclusively on getting that out.",
+          "model": "claude-sonnet-4-5-20250929",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-2",
+          "working-1",
+          "episode-8",
+          "episode-7"
+        ],
+        "timestamp": "2026-04-05T01:42:03+00:00"
+      },
+      {
+        "id": "episode-11",
+        "scenario": "forgetting_stress_natural_summary_goal_crowding",
+        "summary": "User has deferred cleanup tasks: lock caption table, tighten glossary bullets, cleanup timeline labels, cleanup sidebar legend, and align footer labels\u2014all to be done after the main task.",
+        "tags": [
+          "goal",
+          "deferred_tasks"
+        ],
+        "metadata": {
+          "key": "deferred_tasks",
+          "value": "lock caption table in appendix; tighten glossary bullets in glossary pass; cleanup timeline labels; cleanup sidebar legend; align footer labels for packet polish",
+          "summary": "User has deferred cleanup tasks: lock caption table, tighten glossary bullets, cleanup timeline labels, cleanup sidebar legend, and align footer labels\u2014all to be done after the main task."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T01:42:06+00:00"
+      },
+      {
+        "id": "episode-12",
+        "scenario": "forgetting_stress_natural_summary_goal_crowding",
+        "summary": "User deferred another cleanup task: align footer labels for packet polish, to be done after the main task.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Later, once the main task is done, align the footer labels for packet polish.",
+          "assistant_response": "Got it\u2014I've added 'align footer labels for packet polish' to your deferred cleanup tasks.",
+          "model": "claude-sonnet-4-5-20250929",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-2",
+          "episode-7",
+          "episode-5",
+          "working-1"
+        ],
+        "timestamp": "2026-04-05T01:42:06+00:00"
+      },
+      {
+        "id": "episode-13",
+        "scenario": "forgetting_stress_natural_summary_goal_crowding",
+        "summary": "User has deferred cleanup tasks including lock caption table, tighten glossary bullets, cleanup timeline labels, cleanup sidebar legend, align footer labels, and figure caption spacing\u2014all to be done after the main task.",
+        "tags": [
+          "goal",
+          "deferred_tasks"
+        ],
+        "metadata": {
+          "key": "deferred_tasks",
+          "value": "lock caption table in appendix; tighten glossary bullets in glossary pass; cleanup timeline labels; cleanup sidebar legend; align footer labels for packet polish; figure caption spacing polish pass",
+          "summary": "User has deferred cleanup tasks including lock caption table, tighten glossary bullets, cleanup timeline labels, cleanup sidebar legend, align footer labels, and figure caption spacing\u2014all to be done after the main task."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T01:42:10+00:00"
+      },
+      {
+        "id": "episode-14",
+        "scenario": "forgetting_stress_natural_summary_goal_crowding",
+        "summary": "User deferred figure caption spacing to a later polish pass.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Later, figure caption spacing can get a polish pass.",
+          "assistant_response": "Noted\u2014figure caption spacing added to the polish pass list.",
+          "model": "claude-sonnet-4-5-20250929",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-2",
+          "working-3",
+          "episode-3",
+          "episode-2"
+        ],
+        "timestamp": "2026-04-05T01:42:10+00:00"
+      },
+      {
+        "id": "episode-15",
+        "scenario": "forgetting_stress_natural_summary_goal_crowding",
+        "summary": "User has deferred cleanup tasks including lock caption table, tighten glossary bullets, cleanup timeline labels, cleanup sidebar legend, align footer labels, figure caption spacing, and add signoff row to evidence table\u2014all to be done after the main task.",
+        "tags": [
+          "goal",
+          "deferred_tasks"
+        ],
+        "metadata": {
+          "key": "deferred_tasks",
+          "value": "lock caption table in appendix; tighten glossary bullets in glossary pass; cleanup timeline labels; cleanup sidebar legend; align footer labels for packet polish; figure caption spacing polish pass; add signoff row to evidence table",
+          "summary": "User has deferred cleanup tasks including lock caption table, tighten glossary bullets, cleanup timeline labels, cleanup sidebar legend, align footer labels, figure caption spacing, and add signoff row to evidence table\u2014all to be done after the main task."
+        },
+        "salience": 0.5,
+        "outcome": "captured goal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T01:42:14+00:00"
+      },
+      {
+        "id": "episode-16",
+        "scenario": "forgetting_stress_natural_summary_goal_crowding",
+        "summary": "User deferred adding a signoff row to the evidence table for later.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Later, the evidence table still needs a signoff row.",
+          "assistant_response": "Noted\u2014I've added the evidence table signoff row to the deferred tasks list.",
+          "model": "claude-sonnet-4-5-20250929",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-2",
+          "working-1",
+          "episode-2",
+          "episode-14"
+        ],
+        "timestamp": "2026-04-05T01:42:14+00:00"
+      },
+      {
+        "id": "episode-17",
+        "scenario": "forgetting_stress_natural_summary_goal_crowding",
+        "summary": "User asked what the main goal is right now; confirmed it's shipping the eval summary tonight.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "What is the main goal right now?",
+          "assistant_response": "Ship eval summary",
+          "model": "claude-sonnet-4-5-20250929",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-3",
+          "working-2",
+          "episode-15",
+          "episode-13"
+        ],
+        "timestamp": "2026-04-05T01:42:16+00:00"
+      }
+    ],
+    "beliefs": [],
+    "autobiographical_state": [],
+    "procedures": []
+  }
+}

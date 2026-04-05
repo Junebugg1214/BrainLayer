@@ -1,0 +1,268 @@
+{
+  "suite_name": "contradiction",
+  "scenario": {
+    "slug": "consolidation_stress_relationship_hint_stack",
+    "title": "Consolidation Stress Relationship Hint Stack",
+    "description": "Can repeated weak relationship hints become durable collaboration framing?",
+    "checkpoint": "relationship_promoted",
+    "prompt": "What collaboration mode should define this project right now?",
+    "expected": "research partner"
+  },
+  "judge": {
+    "passed": true,
+    "score": 1.0,
+    "method": "exact_match",
+    "reason": "Expected answer matched after normalized token comparison."
+  },
+  "runtime": {
+    "runtime_name": "brainlayer_full",
+    "eval_mode": "live",
+    "provider_name": "anthropic_messages",
+    "requested_model": "claude-haiku-4-5-20251001",
+    "response_model": "claude-haiku-4-5-20251001",
+    "finish_reason": "end_turn",
+    "latency_ms": 1533.8727500000005,
+    "used_json": true,
+    "parse_failure": false,
+    "empty_answer": false,
+    "interaction_episode_id": "episode-7",
+    "usage_metrics": {
+      "input_tokens": 582.0,
+      "cache_creation_input_tokens": 0.0,
+      "cache_read_input_tokens": 0.0,
+      "output_tokens": 52.0,
+      "prompt_tokens": 582.0,
+      "completion_tokens": 52.0,
+      "total_tokens": 634.0
+    }
+  },
+  "prompt_messages": [
+    {
+      "role": "system",
+      "content": "You are participating in a BrainLayer evaluation. Follow the task literally. If the task begins with 'Record', convert it into the appropriate structured memory_observations entry and keep assistant_response as a short acknowledgement. If the task asks about the current response style, primary goal, collaboration mode, or another stored value, return only the shortest value needed to answer correctly, not a full sentence. Always return valid JSON matching the requested schema."
+    },
+    {
+      "role": "user",
+      "content": "BrainLayer context:\n- [working_state] working-1: collaboration_mode = research partner. The collaboration mode is likely research partner. (score=8.95)\n- [autobiographical_state] autobio-1: collaboration_mode = research partner. The collaboration mode is likely research partner. (themes=relationship, research-mode) (score=7.45)\n- [episodes] episode-6: Recorded relationship hint indicating collaboration mode is research partner, with themes of relationship and research-mode. (tags=interaction, assistant_reply) (score=6.35)\n- [episodes] episode-5: The collaboration mode is likely research partner. (tags=relationship_hint, collaboration_mode) (score=6.13)\n\nTask:\nWhat collaboration mode should define this project right now?\n\nReturn a JSON object with the following keys:\n- \"assistant_response\": the answer for the user\n- \"episodic_summary\": a short summary worth storing as an episode\n- \"memory_observations\": an optional array of observations to write back to BrainLayer\n\nOnly emit memory observations when the current turn strongly justifies them.\nAllowed memory_type values: preference, correction, lesson, goal, relationship, preference_hint, lesson_hint, goal_hint, relationship_hint, noise.\nRequired payloads:\n- preference/correction: key, value, proposition\n- lesson/lesson_hint: trigger, action, summary\n- goal/goal_hint: key, value, summary\n- relationship/relationship_hint: key, value, summary, themes\n- noise: any small string payload\nEach memory_observations item must include memory_type and a nested payload object.\nDo not place key/value/summary/proposition directly at the top level of a memory observation.\nExample preference observation:\n{\"memory_type\":\"preference\",\"payload\":{\"key\":\"response_style\",\"value\":\"brief\",\"proposition\":\"The user prefers brief replies.\"}}\nExample goal observation:\n{\"memory_type\":\"goal\",\"payload\":{\"key\":\"primary_goal\",\"value\":\"ship eval summary\",\"summary\":\"The current primary goal is to ship the eval summary.\"}}\nIf no memory write is justified, return an empty memory_observations array."
+    }
+  ],
+  "retrieved_memories": [
+    {
+      "layer": "working_state",
+      "record_id": "working-1",
+      "score": 8.95,
+      "content": "collaboration_mode = research partner. The collaboration mode is likely research partner."
+    },
+    {
+      "layer": "autobiographical_state",
+      "record_id": "autobio-1",
+      "score": 7.45,
+      "content": "collaboration_mode = research partner. The collaboration mode is likely research partner. (themes=relationship, research-mode)"
+    },
+    {
+      "layer": "episodes",
+      "record_id": "episode-6",
+      "score": 6.35,
+      "content": "Recorded relationship hint indicating collaboration mode is research partner, with themes of relationship and research-mode. (tags=interaction, assistant_reply)"
+    },
+    {
+      "layer": "episodes",
+      "record_id": "episode-5",
+      "score": 6.133333333333333,
+      "content": "The collaboration mode is likely research partner. (tags=relationship_hint, collaboration_mode)"
+    }
+  ],
+  "raw_model_output": "```json\n{\n  \"assistant_response\": \"research partner\",\n  \"episodic_summary\": \"User confirmed collaboration mode is research partner for the current project.\",\n  \"memory_observations\": []\n}\n```",
+  "parsed_output": {
+    "assistant_response": "research partner",
+    "episodic_summary": "User confirmed collaboration mode is research partner for the current project.",
+    "memory_observations": []
+  },
+  "consolidation_report": {
+    "promoted_belief_keys": [],
+    "promoted_procedure_triggers": [],
+    "updated_working_keys": [],
+    "updated_autobio_keys": [
+      "collaboration_mode"
+    ],
+    "forgotten_episode_ids": [],
+    "paused_working_item_ids": []
+  },
+  "exported_state": {
+    "working_state": [
+      {
+        "id": "working-1",
+        "key": "collaboration_mode",
+        "value": "research partner",
+        "content": "The collaboration mode is likely research partner.",
+        "priority": 1.0,
+        "status": "active",
+        "source_refs": [
+          "episode-1",
+          "episode-5",
+          "autobio-1"
+        ],
+        "updated_at": "2026-04-05T02:22:49+00:00"
+      }
+    ],
+    "episodes": [
+      {
+        "id": "episode-1",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "The collaboration mode is likely research partner.",
+        "tags": [
+          "relationship_hint",
+          "collaboration_mode"
+        ],
+        "metadata": {
+          "key": "collaboration_mode",
+          "value": "research partner",
+          "summary": "The collaboration mode is likely research partner.",
+          "themes": "relationship, research-mode"
+        },
+        "salience": 0.5,
+        "outcome": "captured candidate signal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T02:22:45+00:00"
+      },
+      {
+        "id": "episode-2",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "Recorded relationship hint indicating collaboration mode is research partner, with themes of relationship and research-mode.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Record relationship hint: key=collaboration_mode; value=research partner; summary=The collaboration mode is likely research partner.; themes=relationship,research-mode",
+          "assistant_response": "Recorded collaboration mode as research partner.",
+          "model": "claude-haiku-4-5-20251001",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [],
+        "timestamp": "2026-04-05T02:22:45+00:00"
+      },
+      {
+        "id": "episode-3",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "Captured low-salience turn detail.",
+        "tags": [
+          "noise"
+        ],
+        "metadata": {},
+        "salience": 0.5,
+        "outcome": "ignored",
+        "source_refs": [],
+        "timestamp": "2026-04-05T02:22:46+00:00"
+      },
+      {
+        "id": "episode-4",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "User recorded a noise observation about the roadmap appendix requiring a timeline legend.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Record noise: value=The roadmap appendix still needs a timeline legend.",
+          "assistant_response": "Recorded.",
+          "model": "claude-haiku-4-5-20251001",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "episode-2",
+          "episode-1"
+        ],
+        "timestamp": "2026-04-05T02:22:46+00:00"
+      },
+      {
+        "id": "episode-5",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "The collaboration mode is likely research partner.",
+        "tags": [
+          "relationship_hint",
+          "collaboration_mode"
+        ],
+        "metadata": {
+          "key": "collaboration_mode",
+          "value": "research partner",
+          "summary": "The collaboration mode is likely research partner.",
+          "themes": "relationship, research-mode"
+        },
+        "salience": 0.5,
+        "outcome": "captured candidate signal",
+        "source_refs": [],
+        "timestamp": "2026-04-05T02:22:47+00:00"
+      },
+      {
+        "id": "episode-6",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "Recorded relationship hint indicating collaboration mode is research partner, with themes of relationship and research-mode.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "Record relationship hint: key=collaboration_mode; value=research partner; summary=The collaboration mode is likely research partner.; themes=relationship,research-mode",
+          "assistant_response": "Recorded collaboration mode as research partner.",
+          "model": "claude-haiku-4-5-20251001",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "episode-2",
+          "episode-1"
+        ],
+        "timestamp": "2026-04-05T02:22:47+00:00"
+      },
+      {
+        "id": "episode-7",
+        "scenario": "consolidation_stress_relationship_hint_stack",
+        "summary": "User confirmed collaboration mode is research partner for the current project.",
+        "tags": [
+          "interaction",
+          "assistant_reply"
+        ],
+        "metadata": {
+          "prompt": "What collaboration mode should define this project right now?",
+          "assistant_response": "research partner",
+          "model": "claude-haiku-4-5-20251001",
+          "used_json": "true"
+        },
+        "salience": 0.55,
+        "outcome": "completed model-backed turn",
+        "source_refs": [
+          "working-1",
+          "autobio-1",
+          "episode-6",
+          "episode-5"
+        ],
+        "timestamp": "2026-04-05T02:22:49+00:00"
+      }
+    ],
+    "beliefs": [],
+    "autobiographical_state": [
+      {
+        "id": "autobio-1",
+        "key": "collaboration_mode",
+        "value": "research partner",
+        "summary": "The collaboration mode is likely research partner.",
+        "themes": [
+          "relationship",
+          "research-mode"
+        ],
+        "supporting_ids": [
+          "episode-1",
+          "episode-5"
+        ],
+        "updated_at": "2026-04-05T02:22:49+00:00"
+      }
+    ],
+    "procedures": []
+  }
+}
