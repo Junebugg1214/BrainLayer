@@ -961,8 +961,8 @@ CONSOLIDATION_STRESS_MODEL_EVAL_SCENARIOS: List[ModelEvalScenario] = [
         turns=[
             ModelEvalTurn(
                 prompt=(
-                    "Record preference hint: key=response_style; value=concise; "
-                    "proposition=The user likely prefers concise replies."
+                    "Record preference hint: key=response_style; value=headline version; "
+                    "proposition=This probably wants the headline version instead of a walkthrough."
                 )
             ),
             ModelEvalTurn(
@@ -970,8 +970,23 @@ CONSOLIDATION_STRESS_MODEL_EVAL_SCENARIOS: List[ModelEvalScenario] = [
             ),
             ModelEvalTurn(
                 prompt=(
-                    "Record preference hint: key=response_style; value=concise; "
-                    "proposition=The user likely prefers concise replies."
+                    "Record goal: key=timeline_cleanup_focus; value=tidy timeline labels; salience=0.68; "
+                    "summary=Timeline labels still need a later cleanup pass."
+                )
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record preference hint: key=response_style; value=headline version; "
+                    "proposition=Keep this skim-friendly and high-signal."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The methods appendix still needs a glossary row."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record lesson hint: trigger=retry_release; action=verify auth first; "
+                    "summary=Before kicking the release again, verify auth first."
                 )
             ),
             ModelEvalTurn(
@@ -981,6 +996,12 @@ CONSOLIDATION_STRESS_MODEL_EVAL_SCENARIOS: List[ModelEvalScenario] = [
             ),
             ModelEvalTurn(
                 prompt="Record noise: value=The changelog caption should keep title case."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=figure_caption_focus; value=trim figure caption spacing; salience=0.67; "
+                    "summary=Figure caption spacing can wait for the later polish pass."
+                )
             ),
             ModelEvalTurn(
                 prompt="What response style should you use right now?",
@@ -996,8 +1017,8 @@ CONSOLIDATION_STRESS_MODEL_EVAL_SCENARIOS: List[ModelEvalScenario] = [
         turns=[
             ModelEvalTurn(
                 prompt=(
-                    "Record goal hint: key=primary_goal; value=preserve citations; "
-                    "summary=The current primary goal is likely to preserve citations."
+                    "Record goal hint: key=primary_goal; value=keep citations intact; "
+                    "summary=The current primary goal is likely to keep citations intact while the draft shifts."
                 )
             ),
             ModelEvalTurn(
@@ -1005,8 +1026,23 @@ CONSOLIDATION_STRESS_MODEL_EVAL_SCENARIOS: List[ModelEvalScenario] = [
             ),
             ModelEvalTurn(
                 prompt=(
-                    "Record goal hint: key=primary_goal; value=preserve citations; "
-                    "summary=The current primary goal is likely to preserve citations."
+                    "Record goal: key=sidebar_cleanup_focus; value=patch sidebar legend; salience=0.7; "
+                    "summary=The sidebar legend can wait for a later visual QA pass."
+                )
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal hint: key=primary_goal; value=preserve source citations; "
+                    "summary=The current primary goal is likely to preserve source citations in the next draft."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The methods appendix still needs a glossary row."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=evidence_table_focus; value=add evidence signoff row; salience=0.71; "
+                    "summary=The evidence table still needs a later signoff row."
                 )
             ),
             ModelEvalTurn(
@@ -1016,6 +1052,12 @@ CONSOLIDATION_STRESS_MODEL_EVAL_SCENARIOS: List[ModelEvalScenario] = [
             ),
             ModelEvalTurn(
                 prompt="Record noise: value=The section divider still needs a provenance row."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=packet_footer_focus; value=align footer labels; salience=0.69; "
+                    "summary=Footer labels can wait until the packet polish pass."
+                )
             ),
             ModelEvalTurn(
                 prompt="What is the current primary goal for this task?",
@@ -1031,8 +1073,8 @@ CONSOLIDATION_STRESS_MODEL_EVAL_SCENARIOS: List[ModelEvalScenario] = [
         turns=[
             ModelEvalTurn(
                 prompt=(
-                    "Record relationship hint: key=collaboration_mode; value=research partner; "
-                    "summary=The collaboration mode is likely research partner.; "
+                    "Record relationship hint: key=collaboration_mode; value=co-investigator; "
+                    "summary=This should feel like co-designing the framing, not just closing tickets.; "
                     "themes=relationship,research-mode"
                 )
             ),
@@ -1041,9 +1083,24 @@ CONSOLIDATION_STRESS_MODEL_EVAL_SCENARIOS: List[ModelEvalScenario] = [
             ),
             ModelEvalTurn(
                 prompt=(
-                    "Record relationship hint: key=collaboration_mode; value=research partner; "
-                    "summary=The collaboration mode is likely research partner.; "
+                    "Record goal: key=methods_cleanup_focus; value=add glossary row; salience=0.67; "
+                    "summary=The methods appendix still needs a glossary row later."
+                )
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record relationship hint: key=collaboration_mode; value=thought partner; "
+                    "summary=We need joint framing and method choices, not a ticket queue handoff.; "
                     "themes=relationship,research-mode"
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The evidence appendix still needs a provenance column."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=timeline_cleanup_focus; value=tidy timeline labels; salience=0.68; "
+                    "summary=Timeline labels can wait for the later cleanup pass."
                 )
             ),
             ModelEvalTurn(
@@ -1053,6 +1110,12 @@ CONSOLIDATION_STRESS_MODEL_EVAL_SCENARIOS: List[ModelEvalScenario] = [
             ),
             ModelEvalTurn(
                 prompt="Record noise: value=The methods appendix still needs a glossary row."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record lesson hint: trigger=retry_release; action=verify auth first; "
+                    "summary=Before kicking the release again, verify auth first."
+                )
             ),
             ModelEvalTurn(
                 prompt="What collaboration mode should define this project right now?",
@@ -1068,8 +1131,8 @@ CONSOLIDATION_STRESS_MODEL_EVAL_SCENARIOS: List[ModelEvalScenario] = [
         turns=[
             ModelEvalTurn(
                 prompt=(
-                    "Record lesson hint: trigger=retry_release; action=check authentication; "
-                    "summary=Before retrying a release, confirm repository authentication first."
+                    "Record lesson hint: trigger=rollout_retry; action=verify auth first; "
+                    "summary=The last rollout failed because the repository login had expired."
                 )
             ),
             ModelEvalTurn(
@@ -1077,17 +1140,29 @@ CONSOLIDATION_STRESS_MODEL_EVAL_SCENARIOS: List[ModelEvalScenario] = [
             ),
             ModelEvalTurn(
                 prompt=(
-                    "Record lesson hint: trigger=retry_release; action=check authentication; "
-                    "summary=Before retrying a release, confirm repository authentication first."
+                    "Record goal: key=packet_footer_focus; value=align footer labels; salience=0.69; "
+                    "summary=Footer labels can wait for the packet polish pass."
+                )
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record lesson hint: trigger=release_retry; action=confirm the credentials first; "
+                    "summary=Before kicking the release again, confirm the credentials."
+                )
+            ),
+            ModelEvalTurn(
+                prompt="Record noise: value=The release packet still needs a final owner row."
+            ),
+            ModelEvalTurn(
+                prompt=(
+                    "Record goal: key=evidence_table_focus; value=add evidence signoff row; salience=0.71; "
+                    "summary=The evidence table still needs a later signoff row."
                 )
             ),
             ModelEvalTurn(
                 prompt="Before retrying the release, what should you do first?",
                 expected_answer="check authentication",
                 checkpoint="lesson_promoted",
-            ),
-            ModelEvalTurn(
-                prompt="Record noise: value=The release packet still needs a final owner row."
             ),
             ModelEvalTurn(
                 prompt="Before retrying the release, what should you do first?",

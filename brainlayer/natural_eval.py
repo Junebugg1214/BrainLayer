@@ -912,15 +912,21 @@ CONSOLIDATION_STRESS_NATURAL_EVAL_SCENARIOS: List[NaturalEvalScenario] = [
         description="Can repeated weak style hints become a durable response-style belief?",
         turns=[
             NaturalEvalTurn(
-                prompt="Still too long for the handoff note."
+                prompt="This handoff note should stay skim-only."
             ),
             NaturalEvalTurn(
-                prompt="I only need the gist before the next call.",
+                prompt="Parking lot for later: the appendix figure labels still need a spacing pass."
+            ),
+            NaturalEvalTurn(
+                prompt="Give me the headline version before I jump to the next call.",
                 checkpoint="extract_style",
                 evaluation_type="extraction",
                 target_layer="beliefs",
                 target_key="response_style",
                 expected_value="concise",
+            ),
+            NaturalEvalTurn(
+                prompt="Later, the changelog caption still needs title case cleanup."
             ),
             NaturalEvalTurn(
                 prompt="How should you answer by default right now?",
@@ -936,15 +942,24 @@ CONSOLIDATION_STRESS_NATURAL_EVAL_SCENARIOS: List[NaturalEvalScenario] = [
         description="Can repeated weak goal hints become a durable working-state goal?",
         turns=[
             NaturalEvalTurn(
-                prompt="Let's keep the citation anchors from slipping while we sort the rest out."
+                prompt="Let's keep the source anchors intact while we sort the rest out."
             ),
             NaturalEvalTurn(
-                prompt="We still can't lose the citation anchors in the next draft.",
+                prompt="Parking lot for later: the appendix footnotes still need a style pass."
+            ),
+            NaturalEvalTurn(
+                prompt="Even if the prose shifts, the references have to survive untouched in the next draft.",
                 checkpoint="extract_goal",
                 evaluation_type="extraction",
                 target_layer="working_state",
                 target_key="primary_goal",
                 expected_value="preserve citations",
+            ),
+            NaturalEvalTurn(
+                prompt="Later, the methods appendix still needs a glossary row."
+            ),
+            NaturalEvalTurn(
+                prompt="Later, the footer labels can wait for the packet polish pass."
             ),
             NaturalEvalTurn(
                 prompt="What is the main goal right now?",
@@ -960,15 +975,21 @@ CONSOLIDATION_STRESS_NATURAL_EVAL_SCENARIOS: List[NaturalEvalScenario] = [
         description="Can repeated weak relationship hints become durable collaboration framing?",
         turns=[
             NaturalEvalTurn(
-                prompt="Less ticket queue, more thinking together on the framing."
+                prompt="Don't drop back into ticket-queue mode here; stay in co-investigator mode on the framing."
             ),
             NaturalEvalTurn(
-                prompt="I want more of a co-thinking partner vibe on this pass.",
+                prompt="Parking lot for later: the roadmap appendix still needs a timeline legend."
+            ),
+            NaturalEvalTurn(
+                prompt="I need more thought-partner energy on the methods choices in this pass.",
                 checkpoint="extract_relationship",
                 evaluation_type="extraction",
                 target_layer="autobiographical_state",
                 target_key="collaboration_mode",
                 expected_value="research partner",
+            ),
+            NaturalEvalTurn(
+                prompt="Later, the methods appendix still needs a glossary row."
             ),
             NaturalEvalTurn(
                 prompt="What collaboration mode should define this project right now?",
@@ -984,15 +1005,21 @@ CONSOLIDATION_STRESS_NATURAL_EVAL_SCENARIOS: List[NaturalEvalScenario] = [
         description="Can repeated weak operational hints become a reusable procedure?",
         turns=[
             NaturalEvalTurn(
-                prompt="Let's not rerun the release blind again."
+                prompt="That rollout smelled like a login issue again."
             ),
             NaturalEvalTurn(
-                prompt="Double-check the GitHub login before trying the release again.",
+                prompt="Parking lot for later: the launch checklist still needs a rollback column."
+            ),
+            NaturalEvalTurn(
+                prompt="Before you kick the release again, I'd sanity-check the login.",
                 checkpoint="extract_lesson",
                 evaluation_type="extraction",
                 target_layer="procedures",
                 target_key="retry_release",
                 expected_value="check authentication",
+            ),
+            NaturalEvalTurn(
+                prompt="Later, the release packet still needs a final owner row."
             ),
             NaturalEvalTurn(
                 prompt="Before retrying the release, what should you do first?",
@@ -1379,7 +1406,13 @@ class HeuristicNaturalConversationAdapter(LLMAdapter):
                 },
             }
 
-        if "less ticket queue" in lowered or "co-thinking partner vibe" in lowered:
+        if (
+            "less ticket queue" in lowered
+            or "co-thinking partner vibe" in lowered
+            or "co-investigator mode on the framing" in lowered
+            or "thought-partner energy on the methods choices" in lowered
+            or "thought partner energy on the methods choices" in lowered
+        ):
             return {
                 "text": "The collaboration mode is likely research partner.",
                 "memory_type": "relationship_hint",
@@ -1452,7 +1485,14 @@ class HeuristicNaturalConversationAdapter(LLMAdapter):
                 },
             }
 
-        if "not rerun the release blind again" in lowered or "double-check the github login before trying the release again" in lowered:
+        if (
+            "not rerun the release blind again" in lowered
+            or "double-check the github login before trying the release again" in lowered
+            or "repo login had expired" in lowered
+            or "before you kick the release again, confirm the credentials" in lowered
+            or "smelled like a login issue again" in lowered
+            or "sanity-check the login" in lowered
+        ):
             return {
                 "text": "Before retrying a release, check authentication first.",
                 "memory_type": "lesson_hint",
@@ -1657,7 +1697,12 @@ class HeuristicNaturalConversationAdapter(LLMAdapter):
                 },
             }
 
-        if "citation anchors from slipping" in lowered or "can't lose the citation anchors" in lowered:
+        if (
+            "citation anchors from slipping" in lowered
+            or "can't lose the citation anchors" in lowered
+            or "source anchors intact" in lowered
+            or "references have to survive untouched" in lowered
+        ):
             return {
                 "text": "The current primary goal is likely to preserve citations.",
                 "memory_type": "goal_hint",
@@ -1764,7 +1809,12 @@ class HeuristicNaturalConversationAdapter(LLMAdapter):
                 },
             }
 
-        if "trim that down" in lowered or "only need the gist" in lowered:
+        if (
+            "trim that down" in lowered
+            or "only need the gist" in lowered
+            or "stay skim-only" in lowered
+            or "headline version" in lowered
+        ):
             return {
                 "text": "The user likely prefers concise replies.",
                 "memory_type": "preference_hint",
